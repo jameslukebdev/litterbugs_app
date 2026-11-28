@@ -31,6 +31,7 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+.analytics-local/
 *.pem
 
 # Generated native projects
@@ -43,3 +44,17 @@ supabase/.temp/
 *.tsbuildinfo
 services/auth-bridge/.wrangler/
 .vercel
+
+# Local agent/scratch output (kept out of git)
+work/
+output/
+.playwright-mcp/
+.codex-attachments/
+.agents/
+*.swp
+release-assets/**/*.zip
+/seelitterad*
+
+# Cloudflare website build output
+apps/web/.open-next/
+apps/web/.wrangler/

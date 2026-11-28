@@ -508,6 +508,7 @@ export type Database = {
           refund_requested_at: string | null
           refunded_at: string | null
           report_id: string
+          show_contributor_name: boolean | null
           status: string
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
@@ -534,6 +535,7 @@ export type Database = {
           refund_requested_at?: string | null
           refunded_at?: string | null
           report_id: string
+          show_contributor_name?: boolean | null
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -560,6 +562,7 @@ export type Database = {
           refund_requested_at?: string | null
           refunded_at?: string | null
           report_id?: string
+          show_contributor_name?: boolean | null
           status?: string
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -717,6 +720,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          nearby_report_ids?: string[] | null
           read_at: string | null
           report_id: string
           review_id: string | null
@@ -729,6 +733,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          nearby_report_ids?: string[] | null
           read_at?: string | null
           report_id: string
           review_id?: string | null
@@ -741,6 +746,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          nearby_report_ids?: string[] | null
           read_at?: string | null
           report_id?: string
           review_id?: string | null
@@ -1049,6 +1055,17 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          user_id: string
+          latitude: number | null
+          longitude: number | null
+          location_updated_at: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -1173,8 +1190,22 @@ export type Database = {
           },
         ]
       }
+      report_preferences: {
+        Row: {
+          user_id: string
+          report_id: string
+          kind: string
+          enabled: boolean
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       reports: {
         Row: {
+          /** Absent on backends predating the recurring-cleanup migration. */
+          cleanup_site_id?: string
+          previous_report_id?: string | null
           cancelled_at: string | null
           cleanup_state: string
           created_at: string | null
@@ -1370,6 +1401,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_weekly_email_preferences: { Args: Record<PropertyKey, never>; Returns: Json };
+      set_weekly_email_preference: { Args: { target_subscribed: boolean }; Returns: Json };
+      admin_weekly_email_recipients: { Args: Record<PropertyKey, never>; Returns: Json };
+      unsubscribe_weekly_email: { Args: { target_email: string; target_request_key: string }; Returns: undefined };
+
+      cleanup_contributor_credits: {
+        Args: { report_ids: string[] }
+        Returns: { report_id: string; names: string[]; anonymous_count: number; donations: Json }[]
+      }
+      set_cleanup_contributor_visibility: {
+        Args: { contribution_id: string; show_name: boolean }
+        Returns: boolean
+      }
+      owner_analytics_business: { Args: never; Returns: Json };
+      owner_analytics_clarity_cache: { Args: { target_lease?: string; observed_source?: Json }; Returns: Json };
       write_customer_draft: { Args: DraftWrite; Returns: CloudDraft };
       expire_customer_drafts: { Args: Record<string, never>; Returns: { path: string }[] };
       sync_report_preferences: {
@@ -1385,6 +1431,22 @@ export type Database = {
           location_captured_at: string
         }
         Returns: Database['public']['Tables']['reports']['Row']
+      }
+      reserve_site_report: {
+        Args: { source_report_id: string; new_report_id: string; draft: Json }
+        Returns: Database['public']['Tables']['reports']['Row']
+      }
+      report_site_history: {
+        Args: { target_report_id: string }
+        Returns: { report_id: string; cleanup_site_id: string }[]
+      }
+      cleanup_site_reports: {
+        Args: { target_site_id: string }
+        Returns: { report_id: string; cleanup_site_id: string }[]
+      }
+      cleanup_site_directory: {
+        Args: { feed_kind: string; page_size?: number; page_offset?: number }
+        Returns: { cleanup_site_id: string; report_id: string; current_report_id: string | null; completed_count: number; report_count: number; last_activity_at: string | null }[]
       }
       accept_cleanup_waiver: {
         Args: {
@@ -2231,6 +2293,34 @@ export type Database = {
           cleanup_description: string
           cleanup_duration_minutes?: number
           cleanup_photo_paths: string[]
+          target_cleanup_id: string
+          target_submission_id: string
+        }
+        Returns: {
+          bags_or_items_removed: number | null
+          cleanup_attempt_id: string
+          created_at: string
+          description: string
+          duration_minutes: number | null
+          id: string
+          submission_number: number
+          submitted_by: string | null
+          weight_pounds: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cleanup_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_cleanup_with_details: {
+        Args: {
+          cleanup_bags_or_items_removed?: number
+          cleanup_description: string
+          cleanup_duration_minutes?: number
+          cleanup_photo_paths: string[]
+          cleanup_weight_pounds?: number
           target_cleanup_id: string
           target_submission_id: string
         }

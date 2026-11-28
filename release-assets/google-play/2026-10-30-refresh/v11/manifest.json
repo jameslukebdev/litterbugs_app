@@ -1,0 +1,132 @@
+{
+  "created": "2026-10-30",
+  "status": "Review draft; not published",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "gallery": [
+    {
+      "id": "native-v11-1",
+      "file": "01-make-money-reporting.png",
+      "title": "Make money reporting litter.",
+      "type": "AI-generated illustrative photograph",
+      "source": "source/reporting-photo.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": false,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-2",
+      "file": "02-make-money-cleaning.png",
+      "title": "Make money cleaning up.",
+      "type": "user-provided website screenshot with headline",
+      "source": "source/captures/funded-cleanup-user.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-3",
+      "file": "03-donate.png",
+      "title": "Donate to a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/donate-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#efe4ff"
+    },
+    {
+      "id": "native-v11-4",
+      "file": "04-map.png",
+      "title": "Find litter on the map.",
+      "type": "user-provided website screenshot with headline",
+      "source": "source/captures/boone-map-user.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-5",
+      "file": "05-reports.png",
+      "title": "Find your next cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/reports-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-6",
+      "file": "06-before-after.png",
+      "title": "See the difference.",
+      "type": "user-provided website screenshot with headline",
+      "source": "source/captures/greenwood-before-after-user.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-7",
+      "file": "07-share.png",
+      "title": "Get others involved.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/sharing-build21.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#7531a5"
+    },
+    {
+      "id": "native-v11-8",
+      "file": "08-track-your-litter.png",
+      "title": "Track how much litter you’ve collected.",
+      "type": "user-provided website screenshot with headline",
+      "source": "source/captures/collection-progress-user.png",
+      "width": 1080,
+      "height": 1920,
+      "phoneBorder": true,
+      "background": "#efe4ff"
+    }
+  ],
+  "realScreenshots": 7,
+  "nativeAppScreenshots": 3,
+  "websiteScreenshots": 4,
+  "graphics": 1,
+  "featureGraphics": [],
+  "provenance": {
+    "collectionProgress": "Owner-supplied October 30 4:28 PM screenshot showing Caterpillar rank, 63 points, next-rank progress and completed reports. Entire source preserved; no activity, quantities or metrics fabricated. Replaces the filters panel at owner request.",
+    "app": "Three native build-21 screenshots captured October 30 via ADB. Map, funded cleanup, before/after and collection-progress images are user-provided website screenshots, not native Android captures. The old build-20 map is no longer used.",
+    "map": "User-provided Boone-area website screenshot, October 30. Full screenshot preserved including real individual report markers, clusters, map attribution and controls. No synthetic pins or UI changes.",
+    "fundedCleanup": "User-supplied October 30 website capture of Lots of trash near steps to Greenwood Lot. The displayed reward is original UI, not a fabricated earnings example. Full screenshot preserved.",
+    "impact": "User-provided Greenwood Lot before/after website screenshot. Entire image preserved; no labels, photos, or UI modified. Not represented as native Android UI.",
+    "screens": "Original 1080x2340 captures retained; proportionally resized in full, with no UI edits. Real existing public reports. Public reporter profile and cleanup illustrations removed; reporting graphic retained. Donation screen is before payment with app default amount; no payment made.",
+    "illustrations": "New photorealistic reporting image generated with built-in ImageGen using the owner photo as composition reference. First-person phone photographing litter with a generic camera preview; not real cleanup evidence or Litterbugs app UI. No earnings shown. Prompt saved in source/reporting-photo-prompt.txt.",
+    "excluded": "Blank map tiles under local signing, location-permission dialogs, test-payment screenshots, and public reporter profile excluded.",
+    "video": "On hold at owner request. Existing video remains unchanged in ../v3/video-app-preview.mp4."
+  },
+  "hookPriority": [
+    "Make money reporting litter",
+    "Make money cleaning up",
+    "Donate to a cleanup"
+  ],
+  "visualSystem": {
+    "headingSize": 100,
+    "headingLineSpacing": 108,
+    "imageTop": 390,
+    "phoneBorderWidth": 16,
+    "backgrounds": [
+      "#7531a5",
+      "#efe4ff"
+    ],
+    "allSevenScreenshotsFramed": true,
+    "collectionPanelImageTop": 490
+  },
+  "remaining": [
+    "Review gallery before any upload."
+  ],
+  "notUploaded": true
+}

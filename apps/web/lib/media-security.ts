@@ -1,9 +1,8 @@
 import 'server-only';
+import { inspectCloudflareImage, isAnimatedRaster, renderCloudflareImage, usesCloudflareImages } from '@/lib/cloudflare-images';
 
 import { createHash, randomUUID } from 'node:crypto';
 
-import convert from 'heic-convert';
-import sharp from 'sharp';
 
 export const MEDIA_QUARANTINE_BUCKET = 'media_quarantine';
 export const MEDIA_MAX_SOURCE_BYTES = 5 * 1024 * 1024;
@@ -13,6 +12,7 @@ export const MEDIA_MAX_DIMENSION = 12_000;
 export const MEDIA_MAX_PIXELS = 40_000_000;
 export const MEDIA_SCAN_TIMEOUT_MS = 8_000;
 export const CLOUDMERSIVE_SCAN_ENDPOINT = 'https://api.cloudmersive.com/virus/scan/file';
+export const CLOUDMERSIVE_CONTENT_ENDPOINT = 'https://api.cloudmersive.com/image/nsfw/classify';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const QUARANTINE_EXTENSION_PATTERN = /\.(jpe?g|png|webp|heic|heif)$/i;
@@ -24,7 +24,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/heif',
 ]);
 
-export type SecureMediaKind = 'report' | 'cleanup' | 'avatar';
+export type SecureMediaKind = 'report' | 'cleanup' | 'avatar' | 'issue';
 
 export interface SecureMediaRequest {
   kind: SecureMediaKind;
@@ -35,7 +35,7 @@ export interface SecureMediaRequest {
 }
 
 export interface ValidatedSecureMediaRequest extends SecureMediaRequest {
-  destinationBucket: 'report_photos' | 'cleanup_photos' | 'profile_avatars';
+  destinationBucket: 'report_photos' | 'cleanup_photos' | 'profile_avatars' | 'cleanup_issue_photos';
   destinationPath: string;
 }
 
@@ -81,7 +81,7 @@ export function validateSecureMediaRequest(
   if (!isUuid(userId) || !isRecord(value) || typeof value.kind !== 'string') {
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
-  if (!['report', 'cleanup', 'avatar'].includes(value.kind)) {
+  if (!['report', 'cleanup', 'avatar', 'issue'].includes(value.kind)) {
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
   const kind = value.kind as SecureMediaKind;
@@ -89,6 +89,10 @@ export function validateSecureMediaRequest(
     throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
   }
 
+  if (kind === 'issue') {
+    if (!hasExactKeys(value, ['kind', 'quarantinePath', 'subjectId']) || !isUuid(value.subjectId)) throw new MediaSecurityError('MEDIA_INVALID_REQUEST',400,'The photo request is invalid.');
+    return { kind, quarantinePath:value.quarantinePath as string, subjectId:value.subjectId, destinationBucket:'cleanup_issue_photos', destinationPath:`${userId}/${value.subjectId}/${createId()}.jpg` };
+  }
   if (kind === 'report') {
     if (!hasExactKeys(value, ['kind', 'quarantinePath', 'subjectId']) || !isUuid(value.subjectId)) {
       throw new MediaSecurityError('MEDIA_INVALID_REQUEST', 400, 'The photo request is invalid.');
@@ -197,6 +201,7 @@ export async function requireCleanMalwareScan(
 ) {
   const configuration = scanConfiguration(options.env ?? process.env);
   if (!configuration) {
+    console.warn('[media-scan] Scanner configuration is incomplete');
     throw new MediaSecurityError(
       'MEDIA_SCAN_UNAVAILABLE',
       503,
@@ -223,7 +228,9 @@ export async function requireCleanMalwareScan(
     form.append('inputFile', new Blob([uploadBytes.buffer], { type: contentType }), 'litterbugs-upload');
     const response = await (options.fetchImpl ?? fetch)(CLOUDMERSIVE_SCAN_ENDPOINT, {
       method: 'POST',
-      redirect: 'error',
+      // Workers supports manual redirects. The response check below rejects 3xx
+      // without forwarding the scanner key or the uploaded photo.
+      redirect: 'manual',
       cache: 'no-store',
       credentials: 'omit',
       headers: {
@@ -236,10 +243,12 @@ export async function requireCleanMalwareScan(
     });
     const declaredLength = Number(response.headers.get('content-length') ?? 0);
     if (!response.ok || (declaredLength && declaredLength > 1024)) {
+      console.warn('[media-scan] Scanner returned an unsuccessful or oversized response', { status: response.status });
       throw new MediaSecurityError('MEDIA_SCAN_UNAVAILABLE', 503, 'Photo safety checking is temporarily unavailable. Please try again shortly.');
     }
     const responseBytes = new Uint8Array(await response.arrayBuffer());
     if (responseBytes.length < 1 || responseBytes.length > 1024) {
+      console.warn('[media-scan] Scanner response body has an invalid size');
       throw new MediaSecurityError('MEDIA_SCAN_UNAVAILABLE', 503, 'Photo safety checking is temporarily unavailable. Please try again shortly.');
     }
     let payload: unknown;
@@ -249,6 +258,7 @@ export async function requireCleanMalwareScan(
       payload = null;
     }
     if (!validCloudmersiveResponse(payload)) {
+      console.warn('[media-scan] Scanner response did not match the verdict schema');
       throw new MediaSecurityError('MEDIA_SCAN_UNAVAILABLE', 503, 'Photo safety checking is temporarily unavailable. Please try again shortly.');
     }
     if (!payload.CleanResult) {
@@ -256,7 +266,49 @@ export async function requireCleanMalwareScan(
     }
   } catch (error) {
     if (error instanceof MediaSecurityError) throw error;
+    console.warn('[media-scan] Scanner request failed', {
+      timedOut: controller.signal.aborted,
+      typeError: error instanceof TypeError,
+    });
     throw new MediaSecurityError('MEDIA_SCAN_UNAVAILABLE', 503, 'Photo safety checking is temporarily unavailable. Please try again shortly.');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// This check is separate from malware scanning and funding/photo-quality review.
+// Only the reconstructed JPEG is shared; no account, location or storage URL.
+export async function requireAppropriatePhoto(
+  bytes: Uint8Array,
+  options: { env?: MediaScannerEnvironment; fetchImpl?: typeof fetch } = {},
+) {
+  const configuration = scanConfiguration(options.env ?? process.env);
+  const unavailable = () => new MediaSecurityError('MEDIA_CONTENT_UNAVAILABLE', 503, 'Photo content checking is temporarily unavailable. Please try again shortly.');
+  if (!configuration) throw unavailable();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const form = new FormData();
+    form.append('imageFile', new Blob([new Uint8Array(bytes).buffer], { type: 'image/jpeg' }), 'litterbugs-photo.jpg');
+    const response = await (options.fetchImpl ?? fetch)(CLOUDMERSIVE_CONTENT_ENDPOINT, {
+      method: 'POST', redirect: 'manual', cache: 'no-store', credentials: 'omit',
+      headers: { apikey: configuration.apiKey, accept: 'application/json' },
+      body: form, signal: controller.signal,
+    });
+    if (!response.ok || Number(response.headers.get('content-length') ?? 0) > 2048) throw unavailable();
+    const resultBytes = new Uint8Array(await response.arrayBuffer());
+    if (resultBytes.length < 1 || resultBytes.length > 2048) throw unavailable();
+    const result: unknown = JSON.parse(new TextDecoder().decode(resultBytes));
+    if (!isRecord(result) || result.Successful !== true
+      || typeof result.Score !== 'number' || !Number.isFinite(result.Score)
+      || result.Score < 0 || result.Score > 1
+      || !['SafeContent_HighProbability', 'SafeContent_ModerateProbability', 'RacyContent', 'UnsafeContent_HighProbability'].includes(String(result.ClassificationOutcome))) throw unavailable();
+    if (result.Score > 0.2 || result.ClassificationOutcome !== 'SafeContent_HighProbability') {
+      throw new MediaSecurityError('MEDIA_CONTENT_REJECTED', 422, 'This photo may contain inappropriate content. Choose another photo. If this seems wrong, contact admin@litterbugs.app.');
+    }
+  } catch (error) {
+    if (error instanceof MediaSecurityError) throw error;
+    throw unavailable();
   } finally {
     clearTimeout(timeout);
   }
@@ -268,15 +320,29 @@ export async function sanitizeImage(bytes: Uint8Array, declaredMimeType: string)
   }
   const detectedMimeType = detectImageMimeType(bytes);
   const normalizedDeclared = declaredMimeType === 'image/jpg' ? 'image/jpeg' : declaredMimeType;
-  if (!detectedMimeType || detectedMimeType !== normalizedDeclared) {
+  const heifFamily = (value: string | null) => value === 'image/heic' || value === 'image/heif';
+  if (!detectedMimeType || (detectedMimeType !== normalizedDeclared
+    && !(heifFamily(detectedMimeType) && heifFamily(normalizedDeclared)))) {
     throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 415, 'The selected file is not a valid supported image.');
   }
 
   try {
+    if (usesCloudflareImages()) {
+      if (isAnimatedRaster(bytes)) throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 415, 'The selected image cannot be processed safely.');
+      const metadata = await inspectCloudflareImage(bytes);
+      if (metadata.width > MEDIA_MAX_DIMENSION || metadata.height > MEDIA_MAX_DIMENSION
+        || metadata.width * metadata.height > MEDIA_MAX_PIXELS) {
+        throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 415, 'The selected image cannot be processed safely.');
+      }
+      const output = await renderCloudflareImage(bytes, { width: 4096, height: 4096, format: 'image/jpeg', quality: 88, whiteBackground: true });
+      if (output.length > MEDIA_MAX_OUTPUT_BYTES) throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 413, 'The selected image cannot be processed within the 5 MB limit.');
+      return { bytes: new Uint8Array(output), contentType: 'image/jpeg' as const,
+        sha256: createHash('sha256').update(output).digest('hex') };
+    }
     const decoded = detectedMimeType === 'image/heic' || detectedMimeType === 'image/heif'
-      ? Buffer.from(await convert({ buffer: bytes, format: 'JPEG', quality: 0.9 }))
+      ? Buffer.from(await (await import('heic-convert')).default({ buffer: bytes, format: 'JPEG', quality: 0.9 }))
       : Buffer.from(bytes);
-    const metadata = await sharp(decoded, {
+    const metadata = await (await import('sharp')).default(decoded, {
       animated: false,
       failOn: 'warning',
       limitInputPixels: MEDIA_MAX_PIXELS,
@@ -291,7 +357,7 @@ export async function sanitizeImage(bytes: Uint8Array, declaredMimeType: string)
     ) {
       throw new MediaSecurityError('MEDIA_INVALID_IMAGE', 415, 'The selected image cannot be processed safely.');
     }
-    const output = await sharp(decoded, {
+    const output = await (await import('sharp')).default(decoded, {
       animated: false,
       failOn: 'warning',
       limitInputPixels: MEDIA_MAX_PIXELS,

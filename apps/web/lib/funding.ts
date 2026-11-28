@@ -14,9 +14,10 @@ export type ContributionIntent = {
   totalAmountCents: number;
   currency: 'usd';
   pricingVersion?: number;
+  showContributorName?: boolean | null;
 };
 
-export type ContributionQuote = Pick<ContributionIntent, 'principalAmountCents' | 'platformFeeCents' | 'totalAmountCents' | 'currency'> & { pricingVersion: 1 | 2 };
+export type ContributionQuote = Pick<ContributionIntent, 'principalAmountCents' | 'platformFeeCents' | 'totalAmountCents' | 'currency'> & { pricingVersion: 1 | 2; supportsContributorVisibility?: boolean };
 
 export async function loadContributionQuote(principalAmountCents: number): Promise<ContributionQuote> {
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
@@ -35,6 +36,8 @@ export type PayoutStatus = {
   onboardingStatus: 'not_started' | 'pending' | 'restricted' | 'enabled';
   payoutsEnabled: boolean;
   requirementsDue: string[];
+  /** Whether this member already confirmed age and eligibility (the server records it). */
+  age18Confirmed?: boolean;
 };
 
 export function formatUsd(cents = 0) {
@@ -104,6 +107,7 @@ export async function createCleanupContribution(
   principalAmountCents: number,
   clientRequestId = crypto.randomUUID(),
   pricingVersion?: number,
+  showContributorName?: boolean,
 ): Promise<ContributionIntent> {
   const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await createClient().functions.invoke('create-cleanup-contribution', {
@@ -112,6 +116,7 @@ export async function createCleanupContribution(
       principalAmountCents,
       clientRequestId,
       pricingVersion: version,
+      ...(typeof showContributorName === 'boolean' ? { showContributorName } : {}),
     },
   });
   if (error || data?.error) {
@@ -125,7 +130,7 @@ export async function loadPayoutStatus(): Promise<PayoutStatus> {
     body: { mode: 'status' },
   });
   if (error || data?.error) {
-    throw new Error(await edgeFunctionErrorMessage(data, error, 'Payout status could not be loaded. Please try again.'));
+    throw new Error(await edgeFunctionErrorMessage(data, error, 'We couldn’t load your payout status. Please try again.'));
   }
   return data as PayoutStatus;
 }
@@ -146,4 +151,40 @@ export async function createPayoutLink(mode: 'link' | 'dashboard') {
     ));
   }
   return data as PayoutStatus & { url: string };
+}
+
+export type PayoutSession = {
+  clientSecret: string;
+  publishableKey: string;
+  expiresAt: number;
+};
+
+export type PayoutSessionMode = 'session' | 'manage';
+
+/** A fresh, short-lived session for the signed-in member. Never persist or track its secret. */
+export async function createPayoutSession(mode: PayoutSessionMode = 'session'): Promise<PayoutSession> {
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined'
+    && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
+    const response = await fetch('/api/local/payout-session', {
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mode === 'manage' ? { mode } : { confirmAge18: true }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Your payout form couldn’t open. Please try again.');
+    return verifiedPayoutSession(data);
+  }
+  const { data, error } = await createClient().functions.invoke('create-cleaner-onboarding-link', {
+    body: mode === 'manage' ? { mode } : { mode, returnTarget: 'web', confirmAge18: true },
+  });
+  if (error) throw new Error('The secure payout form didn’t load here. Try again, or continue on Stripe’s website.');
+  return verifiedPayoutSession(data);
+}
+
+function verifiedPayoutSession(data: Partial<PayoutSession> & { error?: unknown }): PayoutSession {
+  if (!data || data.error || typeof data.clientSecret !== 'string' || !data.clientSecret
+    || typeof data?.publishableKey !== 'string' || !/^pk_(test|live)_/.test(data.publishableKey)
+    || typeof data.expiresAt !== 'number' || !Number.isFinite(data.expiresAt) || data.expiresAt * 1000 <= Date.now()) {
+    throw new Error('The secure payout form didn’t load here. Try again, or continue on Stripe’s website.');
+  }
+  return data as PayoutSession;
 }

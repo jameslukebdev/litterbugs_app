@@ -1,0 +1,104 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const cache = vi.hoisted(() => new Map<string, Promise<unknown>>());
+vi.mock('server-only', () => ({}));
+vi.mock('next/cache', () => ({ unstable_cache: (fn: () => unknown, keys: string[]) => async () => {
+  const key = JSON.stringify(keys);
+  if (!cache.has(key)) cache.set(key, Promise.resolve().then(fn).catch(error => { cache.delete(key); throw error; }));
+  return cache.get(key);
+} }));
+import { fetchGoogle, appQuery, liveSource, normalizeApp, normalizeFriction, normalizeProduct, productQuery } from './providers';
+
+beforeEach(() => cache.clear());
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+const window = { start: '2026-11-06', end: '2026-11-12', timezone: 'America/New_York' };
+describe('owner analytics providers', () => {
+  it('keeps app production activity separate from web and test builds', () => {
+    const query = appQuery(window);
+    expect(query.properties).toContainEqual({ key: 'surface', type: 'event', operator: 'exact', value: ['app'] });
+    expect(query.properties).toContainEqual({ key: 'app_environment', type: 'event', operator: 'exact', value: ['production'] });
+    expect(query.properties).toContainEqual({ key: '$is_emulator', type: 'event', operator: 'is_not', value: ['true'] });
+    const timing = query.series[8];
+    expect('properties' in timing && timing.properties).toContainEqual({ key: 'backgrounded', type: 'event', operator: 'exact', value: ['false'] });
+    expect(query.series.some(row => 'event' in row && row.event === '$exception')).toBe(false);
+    expect(query.series[12]).toMatchObject({ kind: 'GroupNode', operator: 'OR', math: 'unique_session' });
+    expect(query.properties).toContainEqual({ key: '$app_namespace', type: 'event', operator: 'exact', value: ['com.litterbugs.app'] });
+    const eligibility = query.properties.filter(row => row.type === 'hogql').map(row => row.key).join('\n');
+    expect(eligibility).toContain("properties.$app_build = '29'");
+    expect(eligibility).toContain("properties.$app_build = '26'");
+    expect(eligibility).toContain('distinct_id NOT IN');
+    expect(eligibility).toContain("properties.$app_build IN ('27', '28')");
+    expect(query.series[13]).toMatchObject({ event: 'app_timing', math: 'median', properties: expect.arrayContaining([{ key: 'map_signal', type: 'event', operator: 'exact', value: ['map_ready_fallback'] }, { key: '$os_name', type: 'event', operator: 'exact', value: ['iOS'] }]) });
+    expect(query.series[15]).toMatchObject({ event: 'app_timing', math: 'median', properties: expect.arrayContaining([{ key: 'map_signal', type: 'event', operator: 'exact', value: ['map_loaded'] }, { key: '$os_name', type: 'event', operator: 'exact', value: ['Android'] }]) });
+  });
+  it('does not call a missing app timing sample a zero-millisecond load', () => {
+    const values = [0,0,0,0,0,0,0,0,null,0,null,0,0,null,0,null,0];
+    const result = normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) });
+    expect(result.reportReadyMedian).toBeNull();
+    expect(result.mapReadyMedian).toBeNull();
+    expect(result.visits).toBe(0);
+    expect(result.startup).toEqual({ ios: { medianMs: null, samples: 0 }, android: { medianMs: null, samples: 0 } });
+    values[9] = 1;
+    expect(() => normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) })).toThrow();
+  });
+  it('uses full-period platform timing medians and refuses a missing observed timing', () => {
+    const values = [12,8,0,0,0,0,0,0,800,4,5000,3,5,5500,2,1200,1];
+    expect(normalizeApp({ results: values.map(aggregated_value => ({ aggregated_value })) }).startup).toEqual({ ios: { medianMs: 5500, samples: 2 }, android: { medianMs: 1200, samples: 1 } });
+    expect(() => normalizeApp({ results: values.map((aggregated_value,index) => ({ aggregated_value: index === 15 ? null : aggregated_value })) })).toThrow('Missing timing');
+  });
+  it('uses full-period PostHog aggregates instead of summing daily unique values', () => {
+    const results = [108,36,11,4,1,0,1,0,0,0].map(aggregated_value => ({ aggregated_value, data: [999], count: 999 }));
+    expect(normalizeProduct({ results }).visits).toBe(108);
+    expect(normalizeProduct({ results }).cleanupSubmissions).toBe(0);
+    expect(() => normalizeProduct({ results: results.slice(0,9) })).toThrow();
+    expect(() => normalizeProduct({ results: results.map(() => ({ count: 0 })) })).toThrow();
+  });
+  it('uses the same production exclusions and units for map numerator and denominator', () => {
+    const query = productQuery(window);
+    expect(query.filterTestAccounts).toBe(true);
+    expect(query.properties).toContainEqual({ key: '$host', type: 'event', operator: 'exact', value: ['litterbugs.app'] });
+    expect(query.properties).toContainEqual({ key: 'test_run_id', type: 'event', operator: 'is_not_set' });
+    expect(query.series.slice(0,2).map(s => [s.event,s.math])).toEqual([['$pageview','unique_session'],['$pageview','unique_session']]);
+    expect(query.properties.at(-1)?.value).toBe('\\.invalid$');
+  });
+  it('keeps missing or unknown Clarity metric fields unknown', () => {
+    expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '29' }] }, { metricName: 'DeadClickCount', information: [{ sessionsCount: '29', sessionsWithMetricPercentage: 6.9 }] }, { metricName: 'RageClickCount', information: [{ sessionsCount: '29', sessionsWithMetricPercentage: 0 }] }])).toEqual({ sessions: 29, deadSessions: null, rageSessions: null, quickBackSessions: null, scriptErrorSessions: null, deadRate: 0.069, rageRate: 0, quickBackRate: null, scriptErrorRate: null });
+    expect(normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '21' }] }, { metricName: 'DeadClickCount', information: [{ clickCount: 2 }] }]).deadSessions).toBeNull();
+    expect(() => normalizeFriction([])).toThrow('Clarity traffic coverage unavailable');
+    expect(() => normalizeFriction([{ metricName: 'Traffic', information: [{ totalSessionCount: '29' }] }, { metricName: 'DeadClickCount', information: [{ sessionsWithMetricPercentage: 101 }] }])).toThrow();
+  });
+  it('refreshes the existing read-only Google grant on the server', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_LOCAL_CLI', 'false');
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_OAUTH', JSON.stringify({ client_id: 'id', client_secret: 'secret', refresh_token: 'refresh', scope: 'openid https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly' }));
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'access' }) }).mockResolvedValue({ ok: true, json: async () => ({ metricHeaders: [{}], rows: [] }) });
+    vi.stubGlobal('fetch', fetch);
+    expect((await fetchGoogle(window)).sessions).toBe(0);
+    expect(fetch.mock.calls[0][0]).toBe('https://oauth2.googleapis.com/token');
+    expect(fetch.mock.calls[0][1].body.get('grant_type')).toBe('refresh_token');
+    expect(fetch.mock.calls[1][1].headers.Authorization).toBe('Bearer access');
+    vi.stubEnv('ADMIN_ANALYTICS_GOOGLE_OAUTH', JSON.stringify({ client_id: 'id', client_secret: 'secret', refresh_token: 'refresh', scope: 'https://www.googleapis.com/auth/cloud-platform' }));
+    fetch.mockClear(); await expect(fetchGoogle(window)).rejects.toThrow('read-only'); expect(fetch).not.toHaveBeenCalled();
+  });
+  it('does not call a provider without a private credential', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', '');
+    const loader = vi.fn();
+    expect((await liveSource('posthog', window, loader, '')).status).toBe('unconfigured');
+    expect(loader).not.toHaveBeenCalled();
+  });
+  it('isolates failed sources and never returns provider errors or credentials', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', 'private-credential');
+    const result = await liveSource('posthog', window, async () => { throw new Error('token=private-credential and personal data'); }, '');
+    expect(result.status).toBe('error');
+    expect(result.data).toBeNull();
+    expect(JSON.stringify(result)).not.toContain('private-credential');
+    expect(JSON.stringify(result)).not.toContain('personal data');
+  });
+  it('recovers from a failed read rather than caching an error as empty data', async () => {
+    vi.stubEnv('ADMIN_ANALYTICS_POSTHOG_KEY', 'private-credential');
+    const data = normalizeProduct({ results: [108,36,11,4,1,0,1,0,0,0].map(aggregated_value => ({ aggregated_value })) });
+    const loader = vi.fn().mockRejectedValueOnce(new Error('Transient connection failure')).mockResolvedValue(data);
+    expect((await liveSource('posthog', window, loader, '')).status).toBe('error');
+    expect((await liveSource('posthog', window, loader, '')).data?.visits).toBe(108);
+    expect((await liveSource('posthog', window, loader, '')).status).toBe('live');
+    expect(loader).toHaveBeenCalledTimes(2);
+  });
+});

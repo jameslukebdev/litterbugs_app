@@ -25,7 +25,7 @@ export function saveBrowserMemory(value: BrowserMemory) { try { sessionStorage.s
 /** Explicit URL state wins over device memory, including an intentionally cleared filter. */
 export function readBrowserUrl(search: string): BrowserMemory | null {
   const p = new URLSearchParams(search);
-  if (!p.has('browse')) return null;
+  if (!p.has('browse') && !['status', 'funding', 'severity', 'scope', 'radius', 'q', 'sort'].some(key => p.has(key))) return null;
   const pick = <T extends string>(key: string, allowed: readonly T[], fallback: T): T => allowed.includes(p.get(key) as T) ? p.get(key) as T : fallback;
   return { filters: {
     status: pick('status', ['all', 'available', 'progress', 'completed'], 'all'),
@@ -48,17 +48,18 @@ export function browserUrl(url: URL, value: BrowserMemory) {
   return `${next.pathname}${next.search}${next.hash}`;
 }
 
-export function readMapUrl(search: string): Omit<DiscoveryMemory, 'place'> | null {
-  const params = new URLSearchParams(search);
+export function readMapUrl(search: string, hash = ''): Omit<DiscoveryMemory, 'place'> | null {
+  const fragment = /^#map=(-?[\d.]+),(-?[\d.]+),([\d.]+)$/.exec(hash);
+  const params = fragment ? new URLSearchParams({ lat: fragment[1], lng: fragment[2], zoom: fragment[3] }) : new URLSearchParams(search);
   if (!params.has('lat') || !params.has('lng') || !params.has('zoom')) return null;
   const latitude = Number(params.get('lat')), longitude = Number(params.get('lng')), zoom = Number(params.get('zoom'));
   return Number.isFinite(latitude) && Math.abs(latitude) <= 90 && Number.isFinite(longitude) && Math.abs(longitude) <= 180 && Number.isFinite(zoom) && zoom >= 3 && zoom <= 22 ? { latitude, longitude, zoom } : null;
 }
 export function mapUrl(url: URL, value: Omit<DiscoveryMemory, 'place'>) {
   const next = new URL(url);
-  next.searchParams.set('lat', value.latitude.toFixed(3));
-  next.searchParams.set('lng', value.longitude.toFixed(3));
-  next.searchParams.set('zoom', value.zoom.toFixed(1));
+  // Clarity treats query changes as pages, but ignores fragments. Keep legacy
+  // query coordinates readable and let the latest fragment take precedence.
+  next.hash = `map=${value.latitude.toFixed(3)},${value.longitude.toFixed(3)},${value.zoom.toFixed(1)}`;
   return `${next.pathname}${next.search}${next.hash}`;
 }
 

@@ -1,0 +1,94 @@
+{
+  "status": "Simplified second draft — not uploaded",
+  "created": "2026-10-30",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "gallery": [
+    {
+      "id": "gallery-1",
+      "file": "01-your-neighborhood.png",
+      "title": "Make money cleaning up.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-2",
+      "file": "02-report-litter.png",
+      "title": "See litter? Report it.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-3",
+      "file": "03-explore-the-map.png",
+      "title": "Find litter near you.",
+      "type": "current Android map capture + graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-4",
+      "file": "04-reporter-rewards.png",
+      "title": "Make money reporting litter.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-5",
+      "file": "05-fund-a-cleanup.png",
+      "title": "Donate to a cleanup.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-6",
+      "file": "06-cleanup-rewards.png",
+      "title": "Pick up litter. Get paid.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-7",
+      "file": "07-share-your-report.png",
+      "title": "Share a cleanup.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    },
+    {
+      "id": "gallery-8",
+      "file": "08-two-ways-to-earn.png",
+      "title": "Help clean up your community.",
+      "type": "editorial feature graphic",
+      "width": 1080,
+      "height": 1920,
+      "status": "design draft; final gallery needs additional current native UI captures"
+    }
+  ],
+  "featureGraphics": [
+    "feature-graphic-illustrated.png",
+    "feature-graphic-yellow.png"
+  ],
+  "revision": "Removed eyebrows, subheadings, percentages, eligibility text, process labels, numbering and footer labels. One plain headline per image.",
+  "provenance": {
+    "illustration": "Existing built-in ImageGen illustration from first draft; no new generation.",
+    "map": "Existing Oct 29 native Android verification capture, production identity build 20; not claimed as fresh build 21.",
+    "logo": "Exact original alpha logo."
+  },
+  "remaining": [
+    "Additional clean current native Android captures for final gallery.",
+    "Current app footage for final preview video."
+  ],
+  "notUploaded": true
+}

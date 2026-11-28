@@ -1,0 +1,193 @@
+/* Homepage map preview. Light, washed-out map; pins pair a bug with a short label; pastel UI only. */
+.preview { padding-block: var(--home-section-padding, 36px); }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.head h2 { margin: 0; color: var(--green-dark); font-size: var(--home-heading-size, clamp(28px, 3vw, 36px)); line-height: 1.2; letter-spacing: -.025em; text-wrap: balance; }
+
+/* The frame crops the 1600 × 1100 picture like object-fit: cover; both map layers share that geometry. */
+.frame { position: relative; overflow: hidden; border-radius: 24px; background: #f4f2fb; box-shadow: 0 0 0 2px #ece8f8, 0 5px 0 #e6e1f5; isolation: isolate; }
+.mapArea { position: relative; container-type: size; aspect-ratio: 2.6; }
+/* The picture is 1600 × 1100; wide screens crop it to the middle band (like object-fit: cover). */
+.stage { position: absolute; left: 50%; top: 50%; width: max(100cqw, 145.4545cqh); height: max(100cqh, 68.75cqw); translate: -50% -50%; }
+.backdrop { position: absolute; inset: 0; display: block; cursor: pointer; }
+.backdrop img { object-fit: cover; filter: saturate(.7) contrast(.97); }
+.backdrop::after { content: ''; position: absolute; inset: 0; background: #f5f2ff; opacity: .14; pointer-events: none; }
+.frame:has(.backdrop:hover) { box-shadow: 0 0 0 2px #d9d2f5, 0 5px 0 #ddd6f5; }
+
+
+/* Pins: a white pill with the bug for what it is (ladybug = litter, flower = cleaned up) and
+   the same short text as the map page ("$5", "Open", "Done"). A small tail points at the spot. */
+.pins { margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.pinSpot { position: absolute; left: var(--pin-x); top: var(--pin-y); width: 0; height: 0; z-index: 2; }
+.pinSpot[data-kind='done'] { z-index: 1; }
+.pinSpot:has(:is(.pin, .group):is(:hover, :focus-visible, [data-selected])) { z-index: 5; }
+.pin, .group { position: absolute; left: 0; top: 0; translate: -50% calc(-100% - 8px); pointer-events: auto; color: inherit; text-decoration: none; }
+.pill, .group { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px 0 7px; border: 2px solid #ece8f8; border-radius: 999px; background: #fff; color: #292932; font-family: 'Playful Nunito', sans-serif; font-size: 15px; font-weight: 900; line-height: 1; white-space: nowrap; box-shadow: 0 3px 0 #e6e1f5, 0 8px 16px #2a225a14; transition: translate 140ms ease, background-color 140ms ease, border-color 140ms ease; }
+.pill { position: relative; }
+.pill img, .group img { flex: none; }
+.pin[data-kind='done'] .pill { height: 30px; padding-right: 10px; font-size: 13px; color: #4a4857; }
+.group { padding: 0 11px 0 7px; }
+.pin:is(:hover, :focus-visible, [data-selected]) .pill { translate: 0 -2px; background: #fff0f1; border-color: #f7c4c9; }
+.pin[data-kind='done']:is(:hover, :focus-visible, [data-selected]) .pill { background: #e2f8f3; border-color: #8ed7c5; }
+.group:is(:hover, :focus-visible) { background: #fff0f1; border-color: #f7c4c9; }
+.pin:focus-visible, .group:focus-visible { outline: none; }
+.pin:focus-visible .pill, .group:focus-visible { outline: 3px solid #5146ed; outline-offset: 3px; }
+
+/* Hover card: photo, title and one pastel chip, in the same white card language as the report cards. */
+.card { position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 6px; display: flex; align-items: center; gap: 12px; width: 280px; padding: 8px 14px 8px 8px; border: 2px solid #ece8f8; border-radius: 18px; background: #fff; box-shadow: 0 4px 0 #ebe7f8, 0 16px 32px #2a225a1f; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 140ms ease, translate 140ms ease, visibility 0s 140ms; }
+.card[data-side='start'] { left: -12px; translate: 0 6px; }
+.card[data-side='end'] { left: auto; right: -12px; translate: 0 6px; }
+.card[data-below] { bottom: auto; top: calc(100% + 10px); }
+.thumb { flex: none; display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 12px; background: #f4f1ff; }
+.thumb img:not([width]) { width: 100%; height: 100%; object-fit: cover; }
+.cardText { display: grid; gap: 6px; min-width: 0; }
+.cardText strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-family: 'Playful Nunito', sans-serif; font-size: 15px; font-weight: 900; line-height: 1.25; color: #292932; }
+.chip { justify-self: start; padding: 3px 9px; border-radius: 8px; font-size: 13px; font-weight: 700; line-height: 1.3; }
+.chip[data-tone='paid'] { background: #fff0f1; color: #a8323b; }
+.chip[data-tone='volunteer'] { background: #fff0f1; color: #a8323b; }
+.chip[data-tone='done'] { background: #e2f8f3; color: #176350; }
+@media (hover: hover) and (pointer: fine) {
+  .pin:is(:hover, :focus-visible) .card { opacity: 1; visibility: visible; translate: -50% 0; transition: opacity 140ms ease, translate 140ms ease; }
+  .pin:is(:hover, :focus-visible) .card:is([data-side='start'], [data-side='end']) { translate: 0 0; }
+}
+
+.credit { position: absolute; right: 10px; bottom: 8px; z-index: 3; padding: 2px 8px; border-radius: 8px; background: #ffffffd9; color: #6b6878; font-size: 11px; text-decoration: none; }
+.credit:hover { text-decoration: underline; }
+
+/* Touch: the chosen report shows in a panel along the bottom of the map. */
+.panel { position: absolute; left: 10px; right: 10px; bottom: 30px; z-index: 6; display: flex; align-items: flex-start; gap: 4px; padding: 8px 6px 8px 8px; border: 2px solid #ece8f8; border-radius: 18px; background: #fff; box-shadow: 0 4px 0 #ebe7f8, 0 14px 30px #2a225a24; }
+.panelMain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.panelClose { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #6b6878; cursor: pointer; }
+.panelClose svg { width: 20px; height: 20px; }
+.panelClose:hover { background: #f4f1ff; }
+.panelClose:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+.panel .thumb { width: 56px; height: 56px; }
+.panel .cardText { flex: 1; }
+.panelGroup { flex: 1; min-width: 0; display: grid; gap: 4px; padding: 2px 0 0 4px; }
+.panelGo { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #efedff; color: #4438bb; }
+.panelGo svg { width: 18px; height: 18px; }
+.chip { white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .panel { display: none; } }
+
+@media (max-width: 700px) {
+  .head { margin-bottom: 18px; }
+  .frame { border-radius: 20px; }
+  .mapArea { aspect-ratio: var(--mobile-map-ratio); }
+  .stage { left: calc(var(--mobile-stage-offset) * 1cqw); top: 0; width: var(--mobile-stage-width); height: 100%; translate: none; }
+  .pinSpot {
+    --visible-left: calc(-1cqw * var(--mobile-stage-offset));
+    left: clamp(calc(var(--visible-left) + 32px), var(--pin-x), calc(var(--visible-left) + 100cqw - 32px));
+    top: clamp(42px, var(--pin-y), calc(100% - 4px));
+  }
+  .credit { position: static; display: block; width: fit-content; margin: 2px 8px 2px auto; background: transparent; }
+  .pill, .group { height: 30px; font-size: 13px; padding: 0 9px 0 5px; }
+  .pin[data-kind='done'] .pill { height: 28px; font-size: 12px; }
+  .panel .cardText strong { -webkit-line-clamp: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill, .group, .card { transition: none; }
+}
+.preview .pins .group, .preview .pins .pill { color: #292932; }
+.preview .pins .pin[data-kind='done'] .pill { color: #4a4857; }
+
+/* Only money gets words on the map: volunteer spots and cleanups are just their bug. */
+.pill:not(:has(span)) { justify-content: center; width: 34px; padding: 0; }
+.pin[data-kind='done'] .pill:not(:has(span)) { width: 30px; height: 30px; padding: 0; }
+@media (max-width: 700px) {
+  .pill:not(:has(span)) { width: 30px; }
+  .pin[data-kind='done'] .pill:not(:has(span)) { width: 28px; height: 28px; }
+}
+
+/* Groups: the bubble lists what's inside on hover (or in the phone panel), so nothing is hidden. */
+.groupCard { display: grid; gap: 4px; width: 340px; padding: 10px; }
+.groupCard::before { content: ''; position: absolute; left: 0; right: 0; height: 14px; top: 100%; }
+.groupCard[data-below]::before { top: auto; bottom: 100%; }
+@media (hover: hover) and (pointer: fine) {
+  .groupSpot:is(:hover, :focus-within) .groupCard { opacity: 1; visibility: visible; pointer-events: auto; translate: -50% 0; transition: opacity 140ms ease, translate 140ms ease; }
+  .groupSpot:is(:hover, :focus-within) .groupCard:is([data-side='start'], [data-side='end']) { translate: 0 0; }
+  .groupSpot:is(:hover, :focus-within) { z-index: 5; }
+  .groupSpot:is(:hover, :focus-within) .group { translate: -50% calc(-100% - 10px); background: #fff0f1; border-color: #f7c4c9; }
+}
+.group[data-selected] { background: #fff0f1; border-color: #f7c4c9; }
+.groupTitle { padding: 2px 6px 4px; color: #6b6878; font-size: 13px; font-weight: 700; }
+.groupRows { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.groupRow { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 8px; border-radius: 12px; color: #292932; text-decoration: none; }
+.groupRow img { flex: none; }
+.groupRow:hover { background: #f6f5f9; }
+.groupRow:focus-visible { outline: 3px solid #5146ed; outline-offset: -1px; }
+.rowTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Playful Nunito', sans-serif; font-size: 14px; font-weight: 900; }
+.groupRow .chip { flex: none; font-size: 12px; padding: 2px 8px; }
+.panel[data-group] .groupRow { min-height: 44px; }
+.preview .pins .groupRow, .preview .panel .groupRow { color: #292932; }
+
+/* Tails: a pointed tip under every pin marks the exact spot. Drawn as two clipped triangles
+   (edge colour behind, fill in front) so it joins circles and pills cleanly. */
+.pill, .group { --pin-edge: #ece8f8; position: relative; overflow: visible; border-color: var(--pin-edge); box-shadow: none; filter: drop-shadow(0 3px 3px #2a225a24); }
+.pill::before, .group::before, .pill::after, .group::after { content: ''; position: absolute; left: 50%; translate: -50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; }
+.pill::before, .group::before { top: calc(100% + 1px); width: 16px; height: 10px; background: var(--pin-edge); }
+.pill::after, .group::after { top: calc(100% - 1px); width: 12px; height: 8px; background: inherit; }
+.pin:is(:hover, :focus-visible, [data-selected]) .pill { --pin-edge: #f7c4c9; }
+.pin[data-kind='done']:is(:hover, :focus-visible, [data-selected]) .pill { --pin-edge: #8ed7c5; }
+.group:is(:hover, :focus-visible, [data-selected]), .groupSpot:is(:hover, :focus-within) .group { --pin-edge: #f7c4c9; }
+
+/* Group lists: keep long titles inside the card (grid children default to min-width: auto). */
+.groupCard, .groupRows, .panelGroup { grid-template-columns: minmax(0, 1fr); }
+.groupRows > li { min-width: 0; }
+.groupRow { min-width: 0; }
+.groupCard .groupRow { min-height: 40px; }
+/* Phones: a group's list can be taller than the map, so it fills the map and scrolls inside. */
+.panel[data-group] { top: 10px; bottom: 10px; overflow-y: auto; overscroll-behavior: contain; }
+.panel[data-group] .panelMain { align-self: stretch; }
+
+/* "17 more spots here": a quiet line under the first three rows, not a big button. */
+.preview .groupMore { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 4px 8px; border-radius: 10px; color: #4438bb; font-size: 14px; font-weight: 700; text-decoration: none; }
+.preview .groupMore svg { width: 15px; height: 15px; }
+.preview .groupMore:hover { background: #f4f1ff; }
+.preview .groupMore:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+
+
+/* Map key (replaces the plain count): each bug with its count. No town name, so the site reads as global. */
+.key { position: absolute; left: 14px; top: 14px; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: calc(100% - 28px); margin: 0; padding: 7px 14px 7px 12px; border-radius: 16px; background: #ffffffeb; color: #3d3a4a; font-size: 14px; font-weight: 600; list-style: none; box-shadow: 0 0 0 1px #ece8f8, 0 3px 0 #ebe7f8; pointer-events: none; }
+.key li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.key b { font-weight: 800; color: #292932; }
+.chip[data-tone='busy'] { background: #ecf6e3; color: #2f6b3a; }
+.pin[data-kind='busy']:is(:hover, :focus-visible, [data-selected]) .pill { background: #ecf6e3; --pin-edge: #9fd17a; }
+@media (max-width: 700px) {
+  .key { left: 10px; top: 10px; max-width: calc(100% - 20px); gap: 4px 10px; padding: 6px 10px; border-radius: 12px; font-size: 12px; }
+  .key img { width: 15px; height: auto; }
+}
+
+/* Groups follow the family of their lead spot: ladybug blush, caterpillar green, flower mint. */
+.groupSpot[data-kind='busy'] .group:is(:hover, :focus-visible, [data-selected]), .groupSpot[data-kind='busy']:is(:hover, :focus-within) .group { background: #ecf6e3; --pin-edge: #9fd17a; border-color: #9fd17a; }
+.groupSpot[data-kind='done'] .group:is(:hover, :focus-visible, [data-selected]), .groupSpot[data-kind='done']:is(:hover, :focus-within) .group { background: #e2f8f3; --pin-edge: #8ed7c5; border-color: #8ed7c5; }
+
+/* "Explore the full map": the picture is a doorway to the real map, not a map to drag.
+   Hovering anywhere on the picture lights this button, so the whole map reads as one click. */
+.preview .explore { position: absolute; left: 14px; bottom: 14px; z-index: 4; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px 8px 14px; border: 2px solid #ead89c; border-radius: 14px; background: #fffdf5; color: #775700; font-size: 16px; font-weight: 700; text-decoration: none; box-shadow: 0 3px 0 #f0e2b0; transition: background-color .14s ease, translate .14s ease, box-shadow .14s ease; }
+.preview .explore svg { width: 19px; height: 19px; flex: none; }
+.preview .explore svg:last-child { width: 16px; height: 16px; margin-left: -2px; transition: translate .14s ease; }
+.preview .explore:hover, .frame:has(.backdrop:hover) .explore { background: #fff4cc; translate: 0 -2px; box-shadow: 0 5px 0 #ead89c; }
+.preview .explore:hover svg:last-child, .frame:has(.backdrop:hover) .explore svg:last-child { translate: 3px 0; }
+
+/* Shown when someone tries to drag or pinch the picture. */
+.nudge { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 16px; pointer-events: none; background: #2a225a00; transition: background-color .2s ease; }
+.nudge[data-visible] { background: #2a225a40; }
+.nudge span { padding: 10px 16px; border-radius: 14px; background: #fff; color: #292932; font-size: 16px; font-weight: 700; text-align: center; box-shadow: 0 4px 0 #e6e1f5, 0 12px 28px #2a225a33; }
+
+@media (max-width: 700px) {
+  /* Phones: the map is short, so the button sits under it instead of covering pins. */
+  /* Phones: the map fills its frame; the key sits on top and the button and credit along the bottom. */
+  .preview .explore { left: 10px; right: 10px; bottom: 24px; justify-content: center; min-height: 44px; }
+  .preview .credit { position: absolute; right: 8px; bottom: 3px; margin: 0; padding: 0 4px; background: transparent; font-size: 10px; }
+  .pinSpot { top: clamp(44px, var(--pin-y), calc(100% - 74px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview .explore, .preview .explore svg, .nudge { transition: none; }
+}
+
+/* Nov 2026: the lightning bug lights the way. On hover it glows; the button itself stays put. */
+.preview .explore:hover, .frame:has(.backdrop:hover) .explore { translate: none; box-shadow: none; }
+.exploreBug { flex: none; width: 24px; height: 24px; object-fit: contain; transition: filter .2s ease; }
+/* Glows whenever you're over the map: the picture, its pins, the key or the button. */
+.preview .explore:is(:hover, :focus-visible) .exploreBug, .frame:hover .exploreBug { animation: bug-glow 800ms ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .preview .explore:is(:hover, :focus-visible) .exploreBug, .frame:hover .exploreBug { animation: none; filter: drop-shadow(0 0 6px rgba(255, 182, 0, .9)); } }
+@keyframes bug-glow { from { filter: drop-shadow(0 0 0 rgba(255, 182, 0, 0)); transform: scale(.94); } to { filter: drop-shadow(0 0 7px rgba(255, 182, 0, .95)); transform: scale(1.06); } }

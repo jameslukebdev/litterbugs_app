@@ -2,6 +2,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CleanupSubmissionUncertainError, submitCleanupEvidence } from './cleanup-submission';
 
+const failure = vi.hoisted(() => vi.fn());
+vi.mock('./website-analytics', () => ({ trackParticipationFailure: failure }));
+
 const { lookup, rpc, remove, upload, invoke } = vi.hoisted(() => ({
   lookup: vi.fn(), rpc: vi.fn(), remove: vi.fn(), upload: vi.fn(), invoke: vi.fn(),
 }));
@@ -29,6 +32,22 @@ beforeEach(() => {
 afterEach(() => { vi.resetAllMocks(); vi.useRealTimers(); });
 
 describe('cleanup commit recovery', () => {
+  it('saves duration and weight together without dropping either', async () => {
+    await submitCleanupEvidence({ ...input, bagsOrItems: 2, weightPounds: 12.5, durationMinutes: 90 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('submit_cleanup_with_details', expect.objectContaining({
+      cleanup_duration_minutes: 90, cleanup_weight_pounds: 12.5, cleanup_bags_or_items_removed: 2,
+    }));
+  });
+  it('preserves the existing submission path when time is omitted', async () => {
+    await submitCleanupEvidence(input);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('submit_cleanup_with_weight', expect.not.objectContaining({ cleanup_duration_minutes: expect.anything() }));
+  });
+  it('never falls back to saving without entered time if the duration endpoint fails', async () => {
+    rpc.mockResolvedValue({ error: { code: 'PGRST202' } });
+    await expect(submitCleanupEvidence({ ...input, durationMinutes: 90 })).rejects.toBeInstanceOf(CleanupSubmissionUncertainError);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
+  });
   it('recovers a committed submission after the response is lost without deleting its evidence', async () => {
     let saved = false;
     lookup.mockImplementation(async () => ({ data: saved ? { id: 'stable-id' } : null, error: null }));
@@ -38,18 +57,21 @@ describe('cleanup commit recovery', () => {
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(upload).toHaveBeenCalledTimes(3);
     expect(remove).not.toHaveBeenCalled();
+    expect(failure).not.toHaveBeenCalled();
     expect(rpc.mock.calls[0][1]).toMatchObject({ target_submission_id: 'stable-id', cleanup_photo_paths: ['photo-1', 'photo-2', 'photo-3'] });
   });
   it('preserves evidence and reports an uncertain outcome when reconciliation is unavailable', async () => {
     lookup.mockResolvedValueOnce({ data: null, error: null }).mockRejectedValue(new Error('offline'));
     rpc.mockRejectedValue(new Error('offline'));
     await expect(submitCleanupEvidence(input)).rejects.toBeInstanceOf(CleanupSubmissionUncertainError);
+    expect(failure).toHaveBeenCalledExactlyOnceWith('clean', 'evidence_form', 'evidence_submit_unconfirmed');
     expect(remove).not.toHaveBeenCalled();
   });
   it('does not upload when it cannot check a previous submission', async () => {
     lookup.mockRejectedValue(new Error('offline'));
     await expect(submitCleanupEvidence(input)).rejects.toThrow('offline');
     expect(upload).not.toHaveBeenCalled();
+    expect(failure).toHaveBeenCalledWith('clean', 'evidence_form', 'evidence_check_failed');
   });
   it('reuses durable uploaded paths when an uncertain save must be retried', async () => {
     let prepared: string[] = [];
@@ -68,12 +90,13 @@ describe('cleanup commit recovery', () => {
       ? Promise.reject(new Error('unsafe photo'))
       : new Promise<string>(resolve => { finishSecond = resolve; }));
     const submission = submitCleanupEvidence(input);
-    const failure = expect(submission).rejects.toThrow('unsafe photo');
+    const rejection = expect(submission).rejects.toThrow('unsafe photo');
     await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(2));
     expect(remove).not.toHaveBeenCalled();
     finishSecond('photo-2');
-    await failure;
+    await rejection;
     expect(remove).toHaveBeenCalledWith(['photo-2']);
+    expect(failure).toHaveBeenCalledWith('clean', 'evidence_form', 'photo_upload_failed');
     expect(rpc).not.toHaveBeenCalled();
     expect(upload).toHaveBeenCalledTimes(2);
   });

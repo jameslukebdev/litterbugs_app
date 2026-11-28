@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // Integration contract spans the extracted presentation and its owning screen.
-const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+const mapScreenSource = ['../MapScreen.js', './useCleanupFlow.js', './mapScreenHooks.js', '../components/MapControls.jsx', '../components/ReportWizardModal.jsx', './useReportWizardNavigation.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 
 describe('report review cleanup-fund choices', () => {
   it('offers no contribution now and explains that others can still fund it', () => {
@@ -28,19 +28,19 @@ describe('report review cleanup-fund choices', () => {
     expect(mapScreenSource).toContain("'Choose cleanup funding'");
   });
 
-  it('shows the current reward and separates cleanup from utility actions', () => {
-    expect(mapScreenSource).toContain('formatUsd(Number(selectedReport.funded_amount_cents))');
-    expect(mapScreenSource).toContain('Cleanup Reward`');
-    expect(mapScreenSource).toContain("'Volunteer Opportunity'");
-
-    const cleanupCard = mapScreenSource.indexOf('style={styles.cleanupEligibilityCard}');
-    const utilityBar = mapScreenSource.indexOf('styles.reportUtilityBar,');
-    const fundButton = mapScreenSource.indexOf('accessibilityLabel="Fund cleanup"', utilityBar);
-    const shareButton = mapScreenSource.indexOf("? 'Share completed cleanup'", fundButton);
-    expect(cleanupCard).toBeGreaterThan(-1);
-    expect(utilityBar).toBeGreaterThan(cleanupCard);
-    expect(fundButton).toBeGreaterThan(-1);
-    expect(shareButton).toBeGreaterThan(fundButton);
+  it('shows the fund with the bee and puts Fund before Clean in the footer, with Share in the top bar', () => {
+    // Website report sheet: "$6.00 in its cleanup fund" beside the bee.
+    expect(mapScreenSource).toContain('<FundAmount reportId={selectedReport.id} cents={Number(selectedReport.funded_amount_cents)}');
+    expect(readFileSync(new URL('../components/FundAmount.jsx', import.meta.url), 'utf8')).toContain("suffix = ' in its cleanup fund'");
+    const share = mapScreenSource.indexOf("? 'Share completed cleanup'");
+    // The website's sheet has no claim note; the report facts sit between Share and the footer.
+    const cleanupCard = mapScreenSource.indexOf('style={styles.websiteAbout}');
+    const fundButton = mapScreenSource.indexOf('accessibilityLabel="Fund cleanup"');
+    const cleanButton = mapScreenSource.indexOf('>Clean</Text>');
+    expect(share).toBeGreaterThan(-1);
+    expect(share).toBeLessThan(cleanupCard);
+    expect(cleanupCard).toBeLessThan(fundButton);
+    expect(fundButton).toBeLessThan(cleanButton);
   });
 
   it('keeps Fund available for active volunteer opportunities', () => {

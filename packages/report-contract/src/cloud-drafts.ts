@@ -21,6 +21,10 @@ export function createCloudDraftSync<D>(adapter: {
   download: (owner: string, key: string, record: CloudDraft) => Promise<D>;
   loadRemote: (owner: string, key: string) => Promise<CloudDraft | null>;
   writeRemote: (operation: DraftWrite) => Promise<CloudDraft>;
+  // Optional for clients that can verify the final record. Discard/expiry alone
+  // is not proof of submission: an unsent device copy must remain recoverable.
+  isSubmitted?: (owner: string, key: string, submissionId: string) => Promise<boolean>;
+  localSubmissionId?: (owner: string, key: string) => Promise<string | undefined>;
   id: () => string;
 }) {
   const queues = new Map<string, Promise<unknown>>();
@@ -56,6 +60,12 @@ export function createCloudDraftSync<D>(adapter: {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try { return await Promise.race([operation,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Draft photo transfer timed out. Retry when connected.')),35000);})]); }
     finally { clearTimeout(timer); }
+  }
+  async function completedLocal(owner: string, key: string, local: D | null | undefined, m: Meta, fingerprint: string | undefined,
+    submitted: (id: string) => Promise<boolean>) {
+    const checkpoint=await adapter.localSubmissionId?.(owner,key);
+    const id=checkpoint??m.record?.submission_id;
+    return Boolean(id && (checkpoint || (local && (fingerprint===m.fingerprint || fingerprint===m.pendingFingerprint))) && await submitted(id));
   }
   async function save(owner: string,key: string) {
     status(owner,key,'syncing');
@@ -96,6 +106,12 @@ export function createCloudDraftSync<D>(adapter: {
       return value==='synced' && confirmation && Date.parse(confirmation.expiresAt)<=Date.now() ? 'local' : value;
     },
     confirmation: (owner: string,key: string) => confirmations.get(identity(owner,key)),
+    // Location previews must not download/replace a different tab's editor.
+    isLocalSubmitted: async (owner: string,key: string) => {
+      const local=await adapter.readLocal(owner,key);
+      return completedLocal(owner,key,local,await meta(owner,key),local?await adapter.fingerprint(local):undefined,
+        id=>adapter.isSubmitted?.(owner,key,id)??Promise.resolve(false));
+    },
     schedule(owner: string,key: string) {
       if(retired.has(owner)) return;
       const id=identity(owner,key); clearTimeout(timers.get(id));
@@ -105,11 +121,29 @@ export function createCloudDraftSync<D>(adapter: {
     },
     save: (owner: string,key: string) => serialize(owner,key,()=>save(owner,key)),
     load: (owner: string,key: string) => serialize(owner,key,async()=>{
-      const local=await adapter.readLocal(owner,key);
+      let local=await adapter.readLocal(owner,key);
       try {
-        const m=await meta(owner,key); await dispatch(owner,key,m);
-        const remote=await adapter.loadRemote(owner,key);
-        const fingerprint=local ? await adapter.fingerprint(local) : undefined;
+        let m=await meta(owner,key);
+        let fingerprint=local ? await adapter.fingerprint(local) : undefined;
+        const checks=new Map<string,Promise<boolean>>();
+        const submitted=(id:string) => {
+          if(!checks.has(id)) checks.set(id,adapter.isSubmitted?.(owner,key,id)??Promise.resolve(false));
+          return checks.get(id)!;
+        };
+        // Check before replaying pending mutations: the final publish response
+        // or draft deletion may have been lost when this device went away.
+        const localCompleted=await completedLocal(owner,key,local,m,fingerprint,submitted);
+        if(!localCompleted) await dispatch(owner,key,m);
+        let remote=await adapter.loadRemote(owner,key);
+        if(remote?.payload && await submitted(remote.submission_id)) {
+          // Exact revision prevents retiring a newer draft from another device.
+          remote=await adapter.writeRemote({target_user_id:owner,target_key:key,expected_revision:remote.revision,operation_id:adapter.id(),action:'delete',draft_payload:null,draft_photos:[]});
+        }
+        if(localCompleted) {
+          clearTimeout(timers.get(identity(owner,key))); timers.delete(identity(owner,key));
+          await adapter.clearLocal(owner,key); local=undefined; fingerprint=undefined;
+          m={revision:remote?.revision??0,record:remote??undefined}; await persist(owner,key,m);
+        }
         if (local && fingerprint!==m.fingerprint) {
           if (remote && remote.revision!==m.revision && (m.revision!==undefined || remote.payload)) { status(owner,key,'conflict'); return local; }
           m.revision=remote?.revision??0; m.record=remote??undefined; await persist(owner,key,m); status(owner,key,'local'); return local;
@@ -157,7 +191,7 @@ export function createCloudDraftSync<D>(adapter: {
     }),
     // Correction retries reset the account submission while retaining local
     // evidence. Normal user-initiated discard still removes both copies.
-    discard: (owner: string,key: string,options?: { preserveLocal?: boolean })=>serialize(owner,key,async()=>{
+    discard: (owner: string,key: string,options?: { preserveLocal?: boolean; expectedRevision?: number })=>serialize(owner,key,async()=>{
       clearTimeout(timers.get(identity(owner,key))); timers.delete(identity(owner,key));
       try {
         const m=await meta(owner,key); await dispatch(owner,key,m);
@@ -165,13 +199,19 @@ export function createCloudDraftSync<D>(adapter: {
         if(!remote?.payload) {
           await persist(owner,key,{revision:remote?.revision??0});
           if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
-          status(owner,key,'local'); return;
+          status(owner,key,options?.preserveLocal?'local':'unsaved'); return;
+        }
+        // A draft list can confirm deletion without downloading/restoring its
+        // photos first. Only the exact revision the person saw may be removed.
+        if(options?.expectedRevision !== undefined) {
+          if(options.expectedRevision!==remote.revision) throw new DraftConflictError();
+          m.revision=remote.revision;
         }
         if(m.revision!==remote.revision) throw new DraftConflictError();
         m.pending={target_user_id:owner,target_key:key,expected_revision:remote.revision,operation_id:adapter.id(),action:'delete',draft_payload:null,draft_photos:[]};
         await persist(owner,key,m); await dispatch(owner,key,m);
         if(!options?.preserveLocal) await adapter.clearLocal(owner,key);
-        status(owner,key,'local');
+        status(owner,key,options?.preserveLocal?'local':'unsaved');
       } catch(error) { return failed(owner,key,error); }
     }),
   };

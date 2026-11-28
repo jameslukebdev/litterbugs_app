@@ -1,13 +1,23 @@
 'use client';
+import { contributionReturnPath } from '@/lib/report-links';
+
+import { rememberContributionAttempt, trackParticipation, trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
+import { useGuestParticipationEntry } from '@/lib/use-guest-participation-entry';
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+// Load Stripe.js only once a payment intent supplies its publishable key.
+import { loadStripe } from '@stripe/stripe-js/pure';
 import type { Report } from '@litterbugs/report-contract';
 import { useEffect, useMemo, useState } from 'react';
 
+import { observeContributionConfirmation } from '@/lib/observe-contribution';
 import { resumeOrCreatePayment } from '@/lib/payment-attempt';
 import { PaymentDetail } from '@/components/payment-detail';
 import { ModalShell } from '@/components/modal-shell';
+import { BrandBug } from '@/components/brand-bug';
+import { FlowDone } from '@/components/flow-done';
+import { FundingAmountPanel, FundingPayLayout, FundingUnavailablePanel } from '@/components/funding-panel';
+import { refreshContributionSupporters } from '@/components/contribution-supporters';
 import {
   loadContributionQuote,
   type ContributionQuote,
@@ -16,15 +26,21 @@ import {
   parseContributionAmount,
   type ContributionIntent,
 } from '@/lib/funding';
+import { clearFundBeforeCheckout, rememberFundBeforeCheckout } from '@/lib/bug-motion';
+import supporterStyles from './contribution-supporters.module.css';
 
 function ContributionPaymentForm({
   intent,
   reportId,
+  fundedCents,
+  reportTitle,
   onComplete,
   onBusyChange,
 }: {
   intent: ContributionIntent;
   reportId: string;
+  fundedCents: number;
+  reportTitle?: string | null;
   onComplete: () => void | Promise<void>;
   onBusyChange: (busy: boolean) => void;
 }) {
@@ -39,38 +55,60 @@ function ContributionPaymentForm({
     setBusy(true);
     setError('');
     onBusyChange(true);
+    rememberContributionAttempt(intent.contributionId);
+    rememberFundBeforeCheckout(reportId, fundedCents);
+    trackParticipation('fund', 'payment_submitted');
     try {
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/payment-return?report=${encodeURIComponent(reportId)}&contribution=${encodeURIComponent(intent.contributionId)}`,
+        return_url: `${window.location.origin}${contributionReturnPath(reportId, intent.contributionId)}`,
       },
       redirect: 'if_required',
     });
     if (result.error) {
+      clearFundBeforeCheckout(reportId);
+      trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
       setError(result.error.message || 'Payment was not completed.');
       setBusy(false);
       return;
     }
+    void Promise.resolve(observeContributionConfirmation(intent.contributionId)).then(() => refreshContributionSupporters(reportId));
     await onComplete();
-    } catch { setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
+    } catch { trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable'); setError('We couldn’t confirm this payment. Check Payments before trying again.'); }
     finally { setBusy(false); onBusyChange(false); }
   }
 
   return (
     <form className="funding-payment-form" onSubmit={submit}>
-      <dl className="funding-summary">
-        <div><dt>Cleanup contribution</dt><dd>{formatUsd(intent.principalAmountCents)}</dd></div>
-        <div><dt>Service fee</dt><dd>{formatUsd(intent.platformFeeCents)}</dd></div>
-        <div><dt>Total payment</dt><dd>{formatUsd(intent.totalAmountCents)}</dd></div>
-      </dl>
-      <PaymentElement options={{ layout: 'tabs' }} />
-      {error && <p className="form-message error-message" role="alert">{error}</p>}
-      <button className="primary-button" type="submit" disabled={!stripe || busy}>
-        {busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}
-      </button>
+      <FundingPayLayout reportTitle={reportTitle} principalCents={intent.principalAmountCents} feeCents={intent.platformFeeCents} error={error}
+        button={<button className="primary-button fund-pay" type="submit" disabled={!stripe || busy}>{busy ? 'Processing…' : `Pay ${formatUsd(intent.totalAmountCents)}`}</button>}>
+        {typeof intent.showContributorName === 'boolean' && <p>{intent.showContributorName ? 'Your name will be shown with this donation.' : 'You’ll be listed as Anonymous.'}</p>}
+        <PaymentElement options={{ layout: 'tabs' }} onReady={() => trackParticipation('fund', 'payment_ready')} onLoadError={() => trackParticipationFailure('fund', 'payment_form', 'payment_form_failed')} />
+      </FundingPayLayout>
     </form>
   );
+}
+
+type FundingContributionProps = {
+  report: Report;
+  userId: string | null;
+  onRequireSignIn?: () => void;
+  onChanged?: () => void | Promise<void>;
+  initialAmountCents?: number;
+  startOpen?: boolean;
+  autoOpen?: boolean;
+  onDismiss?: () => void;
+  onRefreshFunding?: () => Promise<void>;
+};
+
+function acceptsFunding(report: Report) {
+  return !(report as Report & {cleanup_issue_hold?:boolean}).cleanup_issue_hold && report.cleanup_state === 'available'
+    && report.funding_eligibility === 'eligible'
+    && report.renewal_status === 'active'
+    && !report.funding_frozen_at
+    && !report.cancelled_at
+    && !report.expired_at;
 }
 
 export function FundingContributionAction({
@@ -80,25 +118,22 @@ export function FundingContributionAction({
   onChanged,
   initialAmountCents,
   startOpen = false,
+  autoOpen = false,
   onDismiss,
   onRefreshFunding,
-}: {
-  report: Report;
-  userId: string | null;
-  onRequireSignIn?: () => void;
-  onChanged?: () => void | Promise<void>;
-  initialAmountCents?: number;
-  startOpen?: boolean;
-  onDismiss?: () => void;
-  onRefreshFunding?: () => Promise<void>;
-}) {
+}: FundingContributionProps) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [open, setOpen] = useState(startOpen);
+  const [manuallyOpen, setOpen] = useState(startOpen);
+  const [dismissed, setDismissed] = useState(false);
+  const eligible = acceptsFunding(report);
+  const open = manuallyOpen || (autoOpen && !dismissed && Boolean(userId) && enabled === true && eligible);
   const [amount, setAmount] = useState(() => initialAmountCents == null ? '25' : (initialAmountCents / 100).toFixed(2));
+  const [showContributorName, setShowContributorName] = useState(true);
   const [previousContribution, setPreviousContribution] = useState<string | null>(null);
   const [intent, setIntent] = useState<ContributionIntent | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [paid, setPaid] = useState(false);
   const [quote, setQuote] = useState<ContributionQuote | null>(null);
   const [quoteError, setQuoteError] = useState('');
   const [quoteRetry, setQuoteRetry] = useState(0);
@@ -106,17 +141,31 @@ export function FundingContributionAction({
   const currentQuote = quote?.principalAmountCents === principalAmountCents ? quote : null;
   const platformFeeCents = currentQuote?.platformFeeCents ?? null;
 
+  const markEntryPrompted = useGuestParticipationEntry({ action: 'fund', reportId: report.id, autoOpen, userId,
+    available: enabled === true && eligible && !dismissed, onRequireSignIn });
+
   useEffect(() => {
     if (!open || !userId || !principalAmountCents || intent) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      void loadContributionQuote(principalAmountCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); } });
+      void loadContributionQuote(principalAmountCents).then(value => { if (!cancelled) { setQuote(value); setQuoteError(''); } }).catch(error => { if (!cancelled) { setQuote(null); setQuoteError(error.message); trackParticipationFailure('fund', 'amount_review', 'payment_quote_failed'); } });
     }, 200);
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [open, userId, principalAmountCents, intent, quoteRetry]);
+  useEffect(() => {
+    if (open && enabled === true && eligible && userId && !previousContribution) {
+      trackParticipation('fund', intent ? 'payment_form' : 'amount_review');
+    }
+  }, [open, enabled, eligible, userId, intent, previousContribution]);
   const publishableKey = intent?.publishableKey;
   const stripe = useMemo(
-    () => publishableKey ? loadStripe(publishableKey) : null,
+    () => publishableKey ? loadStripe(publishableKey).then(client => {
+      if (!client) trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      return client;
+    }).catch(() => {
+      trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      return null;
+    }) : null,
     [publishableKey],
   );
 
@@ -132,15 +181,14 @@ export function FundingContributionAction({
     return () => { cancelled = true; };
   }, []);
 
-  const eligible = report.cleanup_state === 'available'
-    && report.funding_eligibility === 'eligible'
-    && report.renewal_status === 'active'
-    && !report.funding_frozen_at
-    && !report.cancelled_at
-    && !report.expired_at;
-  if (!startOpen && (!enabled || !eligible)) return null;
+  if (!startOpen && enabled === null && eligible) return <span className="primary-button compact-button report-action-fund funding-action-pending" role="status" aria-label="Checking funding availability"><BrandBug kind="bee" size={21} className="bug-hop" /><span aria-hidden="true">Fund</span></span>;
+  if (!startOpen && (!enabled || !eligible)) {
+    return autoOpen && userId ? <p role="status">This cleanup isn’t accepting contributions right now.</p> : null;
+  }
 
   function dismiss() {
+    trackParticipationExit('fund', intent ? 'payment_form' : previousContribution ? 'payment_submitted' : 'amount_review', 'cancelled');
+    setDismissed(true);
     setOpen(false);
     onDismiss?.();
   }
@@ -155,13 +203,17 @@ export function FundingContributionAction({
   }
 
   function begin() {
+    markEntryPrompted();
+    trackParticipation('fund', 'action_tapped');
     if (!userId) {
       onRequireSignIn?.();
       return;
     }
     setIntent(null);
     setPreviousContribution(null);
+    setShowContributorName(true);
     setMessage('');
+    setPaid(false);
     setOpen(true);
   }
 
@@ -170,11 +222,13 @@ export function FundingContributionAction({
     setBusy(true);
     setMessage('');
     try {
-      const result = await resumeOrCreatePayment(userId!, report.id, principalAmountCents, currentQuote?.pricingVersion);
+      if (!currentQuote?.supportsContributorVisibility) throw new Error('Payments are temporarily unavailable. No payment has been made. Please try again later.');
+      const result = await resumeOrCreatePayment(userId, report.id, principalAmountCents, currentQuote.pricingVersion, showContributorName);
       setAmount((result.amount / 100).toFixed(2));
       if (result.contributionId) setPreviousContribution(result.contributionId);
       else { setIntent(result.intent ?? null); if (result.amount !== principalAmountCents) setMessage('Resuming your previous unpaid contribution with its original amount.'); }
     } catch (error) {
+      trackParticipationFailure('fund', 'amount_review', 'payment_start_failed');
       setMessage(error instanceof Error ? error.message : 'Payment could not be started.');
       setQuote(null);
       setQuoteRetry(value => value + 1);
@@ -186,6 +240,7 @@ export function FundingContributionAction({
   async function complete() {
     setIntent(null);
     setOpen(false);
+    setPaid(true);
     setMessage('Payment submitted. Check Payments for confirmation before paying again.');
     await onChanged?.();
     onDismiss?.();
@@ -193,48 +248,52 @@ export function FundingContributionAction({
 
   return (
     <>
-      {message && <span className="cleanup-action-message" role="status">{message}</span>}
-      {!startOpen && <button className="primary-button compact-button" onClick={begin}>{userId ? 'Add funds' : 'Sign in to fund'}</button>}
+      {message && (paid
+        ? <FlowDone bug="bee" title="Thank you!">{message}</FlowDone>
+        : <span className="cleanup-action-message" role="status">{message}</span>)}
+      {!startOpen && <button className="primary-button compact-button report-action-fund" onClick={begin}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</button>}
       {open && (
-        <ModalShell onClose={dismiss} label="Add money to this cleanup reward" className="funding-dialog" closeDisabled={busy}>
-          <h2>{intent ? 'Secure payment' : 'Add to the cleanup reward'}</h2>
-          <p className="funding-dialog-report">{report.title || 'Litter cleanup'}</p>
-          {previousContribution ? <PaymentDetail contributionId={previousContribution} onOpenReport={() => dismiss()} /> : enabled !== true || !eligible ? <>
-            <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
-              ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
-              : report.funding_eligibility === 'pending'
-                ? 'Your report is saved. Its photos are being reviewed before funding opens. No payment has been made.'
-                : 'Your report is saved. Funding is not available yet. Open the report to see its review status. No payment has been made.'}</p>
-            <p>Your selected contribution is {formatUsd(initialAmountCents ?? 0)}. You can close this screen and add funds later.</p>
-            {message && <p className="form-message error-message" role="alert">{message}</p>}
-            {enabled && onRefreshFunding && <button className="secondary-button" disabled={busy} onClick={refreshFunding}>{busy ? 'Checking…' : 'Check funding status'}</button>}
-            <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
-          </> : !intent ? (
-            <>
-              <div className="funding-amount-presets" aria-label="Suggested contribution amounts">{['5', '25', '50'].map(preset => <button key={preset} className="secondary-button" aria-pressed={principalAmountCents === Number(preset) * 100} onClick={() => setAmount(preset)}>${preset}</button>)}</div>
-              <label className="funding-amount-label">Contribution amount
-                <span className="funding-amount-input"><b>$</b><input value={amount} onChange={(event) => { setAmount(event.target.value); setMessage(''); }} inputMode="decimal" aria-label="Cleanup fund contribution amount" /></span>
-                <small>Minimum $1 · Maximum $1,000</small>
-              </label>
-              {principalAmountCents != null && platformFeeCents != null && (
-                <dl className="funding-summary">
-                  <div><dt>Cleaner reward</dt><dd>{formatUsd(principalAmountCents)}</dd></div>
-                  <div><dt>Service fee</dt><dd>{formatUsd(platformFeeCents)}</dd></div>
-                  <div><dt>Total</dt><dd>{formatUsd(principalAmountCents + platformFeeCents)}</dd></div>
-                </dl>
-              )}
-              {principalAmountCents != null && !currentQuote && <p role="status">{quoteError || 'Checking the current service fee…'}</p>}
-              {quoteError && <button className="secondary-button" onClick={() => setQuoteRetry(value => value + 1)}>Retry pricing</button>}
-              <p className="funding-refund-note">If this report closes before payout, your full charge—including the fee—is refunded.</p>
+        <ModalShell onClose={dismiss} label="Add to this cleanup fund" className="funding-dialog flow-page fund-page" closeDisabled={busy}>
+          {previousContribution ? <div className="fund-flow"><PaymentDetail contributionId={previousContribution} onOpenReport={() => dismiss()} /></div> : enabled !== true || !eligible ? (
+            <FundingUnavailablePanel reportTitle={report.title || 'Litter cleanup'}>
+              <p role="status">{enabled === null ? 'Checking funding availability…' : !enabled
+                ? 'Your report is saved. Funding is temporarily unavailable. No payment has been made.'
+                : report.funding_eligibility === 'pending'
+                  ? 'Your report is saved. Its photos are being reviewed before funding opens. No payment has been made.'
+                  : 'Your report is saved. Funding is not available yet. Open the report to see its review status. No payment has been made.'}</p>
+              <p>Your selected contribution is {formatUsd(initialAmountCents ?? 0)}. You can close this screen and add funds later.</p>
               {message && <p className="form-message error-message" role="alert">{message}</p>}
-              <button className="primary-button funding-continue" onClick={continueToPayment} disabled={principalAmountCents == null || busy || !currentQuote}>{busy ? 'Opening payment…' : 'Continue'}</button>
-            </>
+              <div className="cleaner-buttons">
+                {enabled && onRefreshFunding && <button className="secondary-button" disabled={busy} onClick={refreshFunding}>{busy ? 'Checking…' : 'Check funding status'}</button>}
+                <button className="primary-button" disabled={busy} onClick={dismiss}>Done</button>
+              </div>
+            </FundingUnavailablePanel>
+          ) : !intent ? (
+            <FundingAmountPanel
+              reportTitle={report.title || 'Litter cleanup'}
+              presets={['5', '25', '50']}
+              amount={amount}
+              onAmount={value => { setAmount(value); setMessage(''); }}
+              principalCents={principalAmountCents}
+              feeCents={platformFeeCents}
+              quoteStatus={principalAmountCents != null && !currentQuote ? quoteError || 'Checking the current service fee…' : null}
+              quoteError={quoteError}
+              onRetryQuote={() => setQuoteRetry(value => value + 1)}
+              message={message}
+              busy={busy}
+              onContinue={() => void continueToPayment()}
+              supporterChoice={currentQuote && <fieldset className={supporterStyles.choice} disabled={busy}>
+                <legend>Donation privacy</legend>
+                <label><input type="checkbox" checked={!showContributorName} onChange={event => setShowContributorName(!event.target.checked)} />Donate anonymously</label>
+                <p>{showContributorName ? 'Your name will be shown.' : 'Your name will be hidden.'} You can change this later in Your contributions.</p>
+              </fieldset>}
+            />
           ) : stripe ? (
             <Elements stripe={stripe} options={{
               clientSecret: intent.paymentIntentClientSecret,
-              appearance: { variables: { colorPrimary: '#2f7d32', borderRadius: '12px' } },
+              appearance: { variables: { colorPrimary: '#5146ed', borderRadius: '14px', fontFamily: 'system-ui, sans-serif' } },
             }}>
-              <ContributionPaymentForm intent={intent} reportId={report.id} onComplete={complete} onBusyChange={setBusy} />
+              <ContributionPaymentForm intent={intent} reportId={report.id} fundedCents={report.funded_amount_cents} reportTitle={report.title || 'Litter cleanup'} onComplete={complete} onBusyChange={setBusy} />
             </Elements>
           ) : <p className="form-message error-message">Payment could not be loaded.</p>}
         </ModalShell>

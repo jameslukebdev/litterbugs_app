@@ -1,0 +1,102 @@
+{
+  "created": "2026-10-30",
+  "status": "Review draft; not published",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "gallery": [
+    {
+      "id": "native-v4-1",
+      "file": "01-make-money-reporting.png",
+      "title": "Make money reporting litter.",
+      "type": "existing illustration/graphic",
+      "source": "../v2/04-reporter-rewards.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-2",
+      "file": "02-make-money-cleaning.png",
+      "title": "Make money cleaning up.",
+      "type": "existing illustration/graphic",
+      "source": "../v2/01-your-neighborhood.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-3",
+      "file": "03-donate.png",
+      "title": "Donate to a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/donate-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-4",
+      "file": "04-map.png",
+      "title": "Find litter on the map.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/map-build20-oct29.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-5",
+      "file": "05-reports.png",
+      "title": "Find your next cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/reports-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-6",
+      "file": "06-cleanup-detail.png",
+      "title": "See what needs cleaning.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/cleanup-detail-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-7",
+      "file": "07-share.png",
+      "title": "Get others involved.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/sharing-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v4-8",
+      "file": "08-community.png",
+      "title": "Help clean up your community.",
+      "type": "existing illustration/graphic",
+      "source": "source/cleanup-illustration.png",
+      "width": 1080,
+      "height": 1920
+    }
+  ],
+  "realScreenshots": 5,
+  "graphics": 3,
+  "featureGraphics": [
+    "feature-graphic-illustrated.png",
+    "feature-graphic-yellow.png"
+  ],
+  "provenance": {
+    "app": "Four native build-21 screenshots captured October 30 via ADB. One real production-signed build-20 map captured October 29; grouped report markers show actual captured report counts. Map is not a fresh build-21 capture.",
+    "screens": "Original 1080x2340 captures retained; proportionally resized in full, with no UI edits. Real existing public reports. Public reporter profile removed. Donation screen is before payment with app default amount; no payment made.",
+    "illustrations": "Existing v2 artwork preserved; no new image generation.",
+    "excluded": "Blank map tiles under local signing, location-permission dialogs, test-payment screenshots, and public reporter profile excluded.",
+    "video": "Existing video remains in ../v3/video-app-preview.mp4; this revision changes the gallery only."
+  },
+  "hookPriority": [
+    "Make money reporting litter",
+    "Make money cleaning up",
+    "Donate to a cleanup"
+  ],
+  "remaining": [
+    "Review gallery before any upload.",
+    "Optional improvement: a closer local map capture of individual reports; current authentic capture shows a grouped report cluster."
+  ],
+  "notUploaded": true
+}

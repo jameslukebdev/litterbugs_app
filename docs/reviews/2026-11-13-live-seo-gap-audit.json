@@ -1,0 +1,303 @@
+{
+  "site": "https://litterbugs.app",
+  "reviewDate": "2026-11-13",
+  "reviewType": "Read-only live SEO gap audit",
+  "scope": {
+    "sitemapUrls": 49,
+    "sitemapHttp200": 49,
+    "linkedUrlsCrawled": 100,
+    "linkedCrawlCapped": true,
+    "discoveredUrls": 180,
+    "javascriptRendering": false,
+    "liveBodyChecks": [
+      "https://litterbugs.app/",
+      "https://litterbugs.app/about",
+      "https://litterbugs.app/communities/us/nc/boone",
+      "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019"
+    ]
+  },
+  "googleEvidence": {
+    "links": {
+      "source": "Google Search Console Links UI, observed November 13",
+      "url": "https://search.google.com/search-console/links?resource_id=sc-domain%3Alitterbugs.app",
+      "externalLinks": 9,
+      "topLinkingSites": [
+        {
+          "domain": "appagg.com",
+          "links": 5
+        },
+        {
+          "domain": "chrome-stats.com",
+          "links": 4
+        }
+      ],
+      "externalTargets": [
+        {
+          "url": "https://litterbugs.app/",
+          "links": 9
+        }
+      ],
+      "limitation": "Google reports a sample, not a complete backlink index; rows do not establish that every link still exists or passes ranking value.",
+      "referringPages": [
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=cs",
+          "languageCode": "cs"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=fr",
+          "languageCode": "fr"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=hu",
+          "languageCode": "hu"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=it",
+          "languageCode": "it"
+        },
+        {
+          "domain": "appagg.com",
+          "url": "https://appagg.com/android/tools/litterbugs-community-cleanup-44443109.html?hl=pl",
+          "languageCode": "pl"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/a/QnVycm93K0Jhc2U"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=fr",
+          "languageCode": "fr"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=ko",
+          "languageCode": "ko"
+        },
+        {
+          "domain": "chrome-stats.com",
+          "url": "https://chrome-stats.com/d/com.litterbugs.app?hl=zh-CN",
+          "languageCode": "zh-CN"
+        }
+      ],
+      "targetVariants": {
+        "appagg.com": "https://litterbugs.app/?from=AppAgg.com&utm_campaign=AppAgg.com&utm_medium=referral&utm_source=AppAgg.com",
+        "chrome-stats.com": "https://litterbugs.app/"
+      },
+      "referringPageVerification": "All nine URLs read directly from GSC drilldowns November 13. Two representative source-page opens were inaccessible through web reader; current presence of every link was not independently verified."
+    },
+    "indexSummary": {
+      "source": "Google Search Console Page indexing UI, observed November 13",
+      "reportLastUpdated": "2026-11-08",
+      "indexed": 59,
+      "notIndexed": 13,
+      "categories": {
+        "notFound": 5,
+        "redirect": 4,
+        "alternateCanonical": 1,
+        "crawledNotIndexed": 2,
+        "discoveredNotIndexed": 1
+      },
+      "crawledNotIndexedExamples": [
+        "https://litterbugs.app/reports/e08939ae-3404-4e43-81f6-f4a2e1c77c4d/opengraph-image?b7f827574fec8b64",
+        "https://litterbugs.app/reports/e08939ae-3404-4e43-81f6-f4a2e1c77c4d/photo/before"
+      ],
+      "discoveredNotIndexedExample": {
+        "url": "https://litterbugs.app/reports/c44d0dd4-77b4-4053-a2ab-4e1d2a8f72fc",
+        "inSitemap": false,
+        "currentResponse": 200,
+        "currentMetadata": "Report unavailable; noindex present",
+        "interpretation": "Historical unavailable report, not a current target page. Current 200 response alone is not proof the report is available."
+      }
+    },
+    "focusedInspections": [
+      {
+        "url": "https://litterbugs.app/",
+        "inspectedAt": "2026-11-13T22:03:08.665Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/",
+        "userCanonical": "https://litterbugs.app/",
+        "lastCrawlTime": "2026-11-13T05:59:21Z"
+      },
+      {
+        "url": "https://litterbugs.app/cleaner",
+        "inspectedAt": "2026-11-13T22:03:15.138Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/cleaner",
+        "userCanonical": "https://litterbugs.app/cleaner",
+        "lastCrawlTime": "2026-11-10T02:31:40Z"
+      },
+      {
+        "url": "https://litterbugs.app/report-litter",
+        "inspectedAt": "2026-11-13T22:03:21.425Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/report-litter",
+        "userCanonical": "https://litterbugs.app/report-litter",
+        "lastCrawlTime": "2026-10-30T11:18:21Z"
+      },
+      {
+        "url": "https://litterbugs.app/fund-a-cleanup",
+        "inspectedAt": "2026-11-13T22:03:27.660Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/fund-a-cleanup",
+        "userCanonical": "https://litterbugs.app/fund-a-cleanup",
+        "lastCrawlTime": "2026-10-30T11:43:09Z"
+      },
+      {
+        "url": "https://litterbugs.app/cleanups",
+        "inspectedAt": "2026-11-13T22:03:33.911Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/cleanups",
+        "userCanonical": null,
+        "lastCrawlTime": "2026-10-30T09:51:11Z"
+      },
+      {
+        "url": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "inspectedAt": "2026-11-13T22:03:40.382Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "userCanonical": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "lastCrawlTime": "2026-11-06T01:21:43Z"
+      },
+      {
+        "url": "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019",
+        "inspectedAt": "2026-11-13T22:03:46.605Z",
+        "indexStatus": "indexed",
+        "verdict": "PASS",
+        "googleCanonical": "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019",
+        "userCanonical": "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019",
+        "lastCrawlTime": "2026-11-03T20:53:17Z"
+      },
+      {
+        "url": "https://litterbugs.app/communities/us/nc/boone",
+        "verdict": "PASS",
+        "coverageState": "Submitted and indexed",
+        "robotsTxtState": "ALLOWED",
+        "indexingState": "INDEXING_ALLOWED",
+        "lastCrawlTime": "2026-10-31T21:13:10Z",
+        "pageFetchState": "SUCCESSFUL",
+        "googleCanonical": "https://litterbugs.app/communities/us/nc/boone",
+        "userCanonical": "https://litterbugs.app/communities/us/nc/boone",
+        "sitemap": [
+          "https://litterbugs.app/sitemap.xml"
+        ],
+        "crawledAs": "MOBILE"
+      }
+    ],
+    "coreWebVitals": {
+      "source": "Google Search Console UI",
+      "reportLastUpdated": "2026-11-08",
+      "mobile": "Not enough usage data in the last 90 days",
+      "desktop": "Not enough usage data in the last 90 days",
+      "interpretation": "Insufficient field evidence; neither a pass nor a demonstrated performance defect."
+    }
+  },
+  "confirmedGaps": [
+    {
+      "priority": 1,
+      "gap": "Limited external recognition in the Google Links sample",
+      "evidence": "Nine reported links from two app-listing domains, all targeting the homepage. Boone and cleanup pages have no reported external links in this sample.",
+      "action": "Seek genuine participant, community-group, business or local-publication references linking to the relevant existing Boone or cleanup URL. Do not fabricate partnerships or buy bulk links.",
+      "expectedBenefit": "Discovery and relevant third-party context; ranking impact is not established.",
+      "verification": "Verify each referring page and target URL live; monitor GSC links and nonbrand landing-page impressions over later 28-day periods."
+    },
+    {
+      "priority": 2,
+      "gap": "Locality labels are absent from report pages outside the sole approved Boone community",
+      "evidence": {
+        "sitemapReports": 31,
+        "withGeneratedBooneLocality": 20,
+        "withoutGeneratedLocality": 11,
+        "exampleUrl": "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019",
+        "exampleTitle": "Trash at Beacon Heights Trail Head — Completed cleanup | Litterbugs",
+        "bodyObservation": "No city/state location line on this live page.",
+        "sourceCause": "public-report-share.ts derives locality from the approved community; public-report-content.ts omits locality otherwise."
+      },
+      "action": "Add verified broad city/state or locality independently of whether a full community hub exists. Keep exact coordinates protected; never guess the locality.",
+      "expectedBenefit": "Clearer local relevance and geographic context; no traffic increase quantified.",
+      "verification": "Compare visible locality, title and description against verified report geography and re-fetch the updated page."
+    },
+    {
+      "priority": 3,
+      "gap": "Homepage does not directly link to the Boone community hub",
+      "evidence": {
+        "checkedAllHomepageAnchorHrefs": true,
+        "directBooneHubLinks": 0,
+        "presentInstead": "Generic Communities navigation, individual report links and Boone-centered map URLs.",
+        "hubAlreadyLinkedElsewhere": true
+      },
+      "action": "Add a descriptive Boone cleanup opportunities link beside the existing homepage map or cleanup content.",
+      "expectedBenefit": "A direct crawlable route to the local landing page, useful to visitors. This is not an orphan-page defect.",
+      "verification": "Inspect the homepage HTML for an anchor to /communities/us/nc/boone; verify the target stays indexed."
+    },
+    {
+      "priority": 4,
+      "gap": "Long generated report search titles can bury the place and cleanup purpose",
+      "evidence": {
+        "titleReviewCandidates": 22,
+        "example": "Trash all over woods behind New River Grill/New Market Center — Litter report near Boone, North Carolina | Litterbugs",
+        "metricCaveat": "Tool pixel-width thresholds are review heuristics, not Google limits or proven causes of poor rankings."
+      },
+      "action": "Use concise factual search titles, preserving original user report titles on the page. Example for the existing cemetery result: Winkler Cemetery cleanup in Boone, NC | Litterbugs.",
+      "expectedBenefit": "Clearer search-result text and less likelihood of truncating local context; ranking or CTR gains not quantified.",
+      "verification": "Re-fetch metadata after editing and later inspect Google search appearance; Google can rewrite displayed titles."
+    }
+  ],
+  "alreadyPresent": [
+    "Reporting, cleaner and funding guides",
+    "Boone hub with five local resources and guidance",
+    "Standalone completed cleanup pages with original photos, dates, public participants and recorded removal amounts",
+    "Internal links between directories, Boone and individual reports",
+    "Live sitemap with image entries",
+    "Self-canonical metadata and basic Organization/WebSite structured data; Boone breadcrumbs"
+  ],
+  "excludedFromFixList": [
+    {
+      "item": "Bulk missing-page, blocked-indexing or broken-sitemap diagnosis",
+      "reason": "All 49 sitemap URLs respond; eight focused URL Inspection snapshots pass. Do not extrapolate eight snapshots into all-URL indexing."
+    },
+    {
+      "item": "Canonical-outside-head warnings treated as blanket defects",
+      "reason": "Next.js streams dynamic metadata. Focused Google snapshots recognize report canonicals and indexed status; no indexing failure established from this warning.",
+      "source": "https://nextjs.org/docs/app/api-reference/functions/generate-metadata#streaming-metadata"
+    },
+    {
+      "item": "Thin-content classification from crawler word counts",
+      "reason": "Broad crawl extraction repeatedly retained the Please wait fallback. Independent live full-response parsing found actual page content. Its two-word counts are invalid evidence of thin pages."
+    },
+    {
+      "item": "Noindex and duplicate-metadata warnings on login/map/filter/app-link variants",
+      "reason": "These include intentional utility controls and canonical aliases; not all crawler warnings are product defects."
+    },
+    {
+      "item": "A second cemetery story page or mass town-page generation",
+      "reason": "Existing cleanup stories already provide the evidence. Verify locality and useful activity before proposing more pages."
+    }
+  ],
+  "limitations": [
+    "Linked crawl capped at 100 URLs; remaining discoveries not all reviewed.",
+    "No rendered production browser testing; HTTP requests do not execute visitor analytics.",
+    "All-sitemap index-monitor call exceeded the 300-second tool timeout; no claim of a complete 49-URL index audit. Separate eight focused inspections succeeded.",
+    "Semrush backlink lookup unavailable: insufficient API units. No retry or purchase.",
+    "SEO live SERP provider not connected; no keyword-volume, ranking-feasibility or competitor-ranking claim.",
+    "No confirmed ranking cause, guaranteed result or measured click forecast."
+  ],
+  "sources": [
+    "https://litterbugs.app/sitemap.xml",
+    "https://litterbugs.app/robots.txt",
+    "https://support.google.com/webmasters/answer/9049606?hl=en",
+    "https://developers.google.com/search/docs/appearance/title-link",
+    "https://nextjs.org/docs/app/api-reference/functions/generate-metadata#streaming-metadata"
+  ],
+  "changes": "Evidence/handoff documentation only. No product code, live content, settings, index submissions, outreach, deployment or store changes."
+}

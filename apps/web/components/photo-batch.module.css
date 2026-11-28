@@ -1,0 +1,6 @@
+.batch { position: relative; }
+.batch.batch :global(img[data-batch-photo]) { opacity: 0; transition: opacity 180ms ease-out; }
+.batch.batch :global(img[data-batch-photo][data-photo-ready]) { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .batch.batch :global(img[data-batch-photo]) { transition: none; }
+}

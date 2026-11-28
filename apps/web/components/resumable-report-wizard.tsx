@@ -1,14 +1,19 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- the report family's bug icon, like BrandBug. */
 
+import { trackParticipationFailure, trackParticipationExit } from '@/lib/website-analytics';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EMPTY_REPORT_DRAFT, type Coordinates, type ReportDraft } from '@litterbugs/report-contract';
+import { EMPTY_REPORT_DRAFT, REPORT_STEPS, type Coordinates, type ReportDraft } from '@litterbugs/report-contract';
 import { trackDeviceSave } from '@/lib/device-save-state';
 import { prepareBrowserPhotos } from '@/lib/prepare-browser-photo';
 import { cloudDrafts } from '@/lib/cloud-drafts';
+import { hasReportDraftContent } from '@/lib/report-draft-content';
 import { CloudDraftStatus } from '@/components/cloud-draft-status';
 import { useDraftEditorLock } from '@/lib/use-draft-editor-lock';
+import styles from './resumable-report-wizard.module.css';
 import { ModalShell } from '@/components/modal-shell';
 import { ReportWizard } from '@/components/report-wizard';
+import type { ReportSubmissionError } from '@/lib/report-location-error';
 import { clearReportDraft, loadReportDraft, loadReportPublication, saveReportDraft, type ReportPublicationJournal, type ReportWizardSnapshot, type SavedReportDraft } from '@/lib/saved-report-draft';
 
 export function ResumableReportWizard({ userId, submissionProgress, coordinates, selectingLocation, fundingEnabled, onCoordinatesChange, onRestorePublication, onChangeLocation, onClose, onSubmit }: {
@@ -21,7 +26,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   onRestorePublication: (journal: ReportPublicationJournal | undefined) => void;
   onChangeLocation?: () => void;
   onClose: () => void;
-  onSubmit: (draft: ReportDraft, amount: number | null) => Promise<string | null>;
+  onSubmit: (draft: ReportDraft, amount: number | null) => Promise<ReportSubmissionError | null>;
 }) {
   const editorLock = useDraftEditorLock(userId, 'report');
   const [locked, setLocked] = useState(cloudDrafts.status(userId, 'report') === 'submitting');
@@ -33,19 +38,27 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const snapshot = useRef<ReportWizardSnapshot | null>(null);
+  const submissionStarted = useRef(false);
   const active = useRef(true);
   useEffect(() => {
     if(editorLock !== 'ready') return;
     active.current = true;
-    void Promise.all([loadReportDraft(userId), loadReportPublication(userId)]).then(([draft, journal]) => {
+    void (async () => {
+      // Loading reconciles a completed submission and clears its checkpoint.
+      // Read the journal afterwards so a stale checkpoint cannot reopen it.
+      const draft = await loadReportDraft(userId);
+      const journal = await loadReportPublication(userId);
+      return { draft, journal };
+    })().then(({draft, journal}) => {
       if (!active.current) return;
       onRestorePublication(journal);
       setPending(Boolean(journal));
-      setSaved(draft);
+      const resumable = draft && (hasReportDraftContent(draft) || journal || ['submitting', 'conflict'].includes(cloudDrafts.status(userId, 'report')));
+      setSaved(resumable ? draft : undefined);
       if (journal && !draft) {
         setMessage('A previous submission needs checking. Your saved draft is unavailable; refresh your reports before creating another report.');
         setMode('error');
-      } else setMode(draft ? 'resume' : 'editing');
+      } else setMode(resumable ? 'resume' : 'editing');
     }).catch(() => {
       if (active.current) { setMessage('Your saved report could not be loaded. Close this window and try again.'); setMode('error'); }
     });
@@ -53,7 +66,10 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   }, [userId, onRestorePublication, editorLock]);
 
   const saveSnapshot = useCallback((next: ReportWizardSnapshot) => {
-    if(locked || mode !== 'editing') return;
+    if(submissionStarted.current || locked || mode !== 'editing') return;
+    // Do not create a saved report merely by opening a blank form. Continue
+    // saving explicit edits to an existing snapshot, including cleared fields.
+    if (!hasReportDraftContent(next) && !snapshot.current) return;
     snapshot.current = next;
     void saveReportDraft(userId, { ...next, coordinates }).then(() => {
       if (active.current) setMessage('');
@@ -62,17 +78,36 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
     });
   }, [userId, coordinates, locked, mode]);
 
+  async function submitReport(draft: ReportDraft, amount: number | null) {
+    // Cloud cleanup unlocks the editor before the parent unmounts it. Keep
+    // autosave paused through that transition so it cannot recreate the draft.
+    submissionStarted.current = true;
+    try {
+      const error = await onSubmit(draft, amount);
+      if (error) submissionStarted.current = false;
+      return error;
+    } catch (error) {
+      submissionStarted.current = false;
+      throw error;
+    }
+  }
+
   async function prepareAndSavePhotos(selected: File[], current: ReportWizardSnapshot, progress: (done: number, total: number) => void, onPrepared: (draft: ReportDraft) => void) {
     return trackDeviceSave(userId, 'report', async () => {
-      const photos = await prepareBrowserPhotos(selected, progress);
+      let photos: File[];
+      try { photos = await prepareBrowserPhotos(selected, progress); }
+      catch (error) { trackParticipationFailure('report', 'photos', 'photo_prepare_failed'); throw error; }
       const next = { ...current, draft: { ...current.draft, photos: [...current.draft.photos, ...photos] } };
       snapshot.current = next;
       onPrepared(next.draft);
-      await saveReportDraft(userId, { ...next, coordinates });
+      try { await saveReportDraft(userId, { ...next, coordinates }); }
+      catch (error) { trackParticipationFailure('report', 'photos', 'draft_save_failed'); throw error; }
       return next.draft;
     });
   }
 
+  function currentStage() { return (['photos', 'litter_type', 'severity', 'details', 'review'] as const)[snapshot.current?.step ?? saved?.step ?? 0] ?? 'photos'; }
+  function cancelDraft() { trackParticipationExit('report', currentStage(), 'cancelled'); onClose(); }
   async function closeDraft(discard: boolean) {
     setBusy(true);
     try {
@@ -80,6 +115,7 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
         await clearReportDraft(userId);
         onRestorePublication(undefined);
       } else if (snapshot.current) await saveReportDraft(userId, { ...snapshot.current, coordinates });
+      trackParticipationExit('report', currentStage(), discard ? 'draft_discarded' : snapshot.current ? 'saved_for_later' : 'cancelled');
       onClose();
     } catch { setMessage(discard ? 'Draft could not be discarded. It is still available; keep this screen open and try again.' : 'Draft could not be saved. Keep this screen open and try again.'); }
     finally { setBusy(false); }
@@ -88,36 +124,42 @@ export function ResumableReportWizard({ userId, submissionProgress, coordinates,
   const syncStatus = <CloudDraftStatus userId={userId} draftKey="report" onRestored={async () => {
     const restored = await loadReportDraft(userId); if(restored) {setSaved(restored);onCoordinatesChange(restored.coordinates);setGeneration(value=>value+1);}
   }} />;
-  if(editorLock === 'unavailable') return <ModalShell className="draft-dialog" label="Draft open in another tab" onClose={onClose}><h2>Draft open in another tab</h2><p>Close it there, then try again here.</p><div className="draft-recovery-actions"><button className="primary-button" onClick={onClose}>Close</button></div></ModalShell>;
+  if(editorLock === 'unavailable') return <ModalShell className="draft-dialog" label="Draft open in another tab" onClose={cancelDraft}><h2>Draft open in another tab</h2><p>Close it there, then try again here.</p><div className="draft-recovery-actions"><button className="primary-button" onClick={cancelDraft}>Close</button></div></ModalShell>;
   if (mode === 'loading') return null;
   if (mode === 'resume' || mode === 'error') return (
-    <ModalShell className="draft-dialog" label={mode === 'error' ? 'Draft unavailable' : 'Resume your report?'} onClose={onClose} closeDisabled={busy}>
+    <ModalShell className="draft-dialog" label={mode === 'error' ? 'Draft unavailable' : 'Resume your report?'} onClose={cancelDraft} closeDisabled={busy}>
       <div className="draft-dialog-content">
         <h2>{mode === 'error' ? 'Draft unavailable' : 'Resume your report?'}</h2>
-        {mode === 'resume' && <><p><strong>{saved?.draft.title || 'Untitled litter report'}</strong><br />Step {(saved?.step ?? 0) + 1} of 5{Boolean(saved?.draft.photos.length) && <> · {saved?.draft.photos.length} {saved?.draft.photos.length === 1 ? 'photo' : 'photos'}</>}</p>{pending && <p>Resume to check your previous submission.</p>}
-          <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => { onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
+        {mode === 'resume' && <><div className={styles.card}>
+            <img src="/brand/ranks/dragonfly.svg" alt="" aria-hidden="true" width={34} height={34} />
+            <div><strong>{saved?.draft.title || 'Untitled litter report'}</strong>
+              <span>Step {(saved?.step ?? 0) + 1} of {REPORT_STEPS.length} · {REPORT_STEPS[saved?.step ?? 0] ?? 'Photos'}{Boolean(saved?.draft.photos.length) && <> · {saved?.draft.photos.length} {saved?.draft.photos.length === 1 ? 'photo' : 'photos'}</>}</span></div>
+          </div>{pending && <p>Resume to check your previous submission.</p>}
+          <div className={`draft-recovery-actions ${styles.actions}`}><button className="primary-button" disabled={busy} onClick={() => { trackParticipationExit('report', currentStage(), 'draft_resumed'); onCoordinatesChange(saved!.coordinates); setMode('editing'); }}>Resume draft</button>
           {!pending && !locked && <button className="secondary-button" disabled={busy} onClick={async () => {
             setBusy(true);
-            try { await clearReportDraft(userId); setSaved(undefined); setMode('editing'); }
+            try { await clearReportDraft(userId); trackParticipationExit('report', currentStage(), 'started_new'); setSaved(undefined); setMode('editing'); }
             catch { setMessage('The saved draft could not be cleared. Please try again.'); }
             finally { setBusy(false); }
-          }}>Start new</button>}
-          </div>{!pending && !locked && <p className="draft-dialog-hint">Starting new replaces this draft.</p>}
+          }}>Start over</button>}
+          </div>
+          {!pending && !locked && <p className={styles.hint}>Starting over deletes this saved draft.</p>}
         </>}
         {syncStatus}
         {message && <p role="alert">{message}</p>}
-        {mode === 'error' && <div className="draft-recovery-actions"><button className="primary-button" onClick={onClose}>Close</button></div>}
+        {mode === 'error' && <div className="draft-recovery-actions"><button className="primary-button" onClick={cancelDraft}>Close</button></div>}
       </div>
     </ModalShell>
   );
 
   return <>
-    <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} onPreparePhotos={prepareAndSavePhotos} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={onSubmit} />
+    <ReportWizard key={generation} draftSync={syncStatus} draftLocked={locked} submissionProgress={submissionProgress} draftSaveMessage={message} initialDraft={{ ...EMPTY_REPORT_DRAFT }} initialState={saved} onStateChange={saveSnapshot} onPreparePhotos={prepareAndSavePhotos} isEditing={false} fundingEnabled={fundingEnabled} coordinates={coordinates} selectingLocation={selectingLocation || mode === 'close'} onChangeLocation={onChangeLocation} onClose={() => setMode('close')} onSubmit={submitReport} />
     {mode === 'close' && <ModalShell className="draft-dialog" label="Keep your report?" onClose={() => { if (!busy) setMode('editing'); }} closeDisabled={busy}>
-      <div className="draft-dialog-content"><h2>Keep your report?</h2><p>Save your photos and details to finish later.</p>
-        <div className="draft-recovery-actions"><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
+      <div className="draft-dialog-content"><h2>Keep your report?</h2>
+        <p>Save it and finish it later, right where you left off.</p>
+        <div className={`draft-recovery-actions ${styles.actions}`}><button className="primary-button" disabled={busy} onClick={() => void closeDraft(false)}>Save for later</button>
         <button className="secondary-button" disabled={busy} onClick={() => setMode('editing')}>Keep editing</button>
-        <button className="secondary-button draft-dialog-discard" disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
+        <button className={`secondary-button draft-dialog-discard ${styles.discard}`} disabled={busy} onClick={() => void closeDraft(true)}>Discard draft</button></div>
         {syncStatus}
         {message && <p role="alert">{message}</p>}
       </div>

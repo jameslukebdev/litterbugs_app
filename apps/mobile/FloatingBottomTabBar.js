@@ -13,6 +13,12 @@ import {
   BOTTOM_NAV_METRICS,
   getBottomNavBottom,
 } from './lib/navigationLayout';
+import { hapticSelect } from './lib/haptics';
+import ProfileAvatar from './ProfileAvatar';
+import { useProfile } from './lib/profile';
+import { useSession } from './lib/session';
+import { useUnreadUpdates } from './lib/unreadUpdates';
+import { colors } from './lib/theme';
 
 export const BOTTOM_NAV_SLOTS = Object.freeze([
   {
@@ -26,6 +32,12 @@ export const BOTTOM_NAV_SLOTS = Object.freeze([
     routeName: 'Map',
     iconName: 'map-outline',
     label: 'Map',
+  },
+  {
+    key: 'community',
+    routeName: 'Community',
+    iconName: 'people-outline',
+    label: 'Community',
   },
   {
     key: 'profile',
@@ -42,6 +54,11 @@ export default function FloatingBottomTabBar({
 }) {
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
+  // A signed-in member's own photo marks the Profile tab, like the website's header.
+  const { profile } = useProfile();
+  const { user } = useSession();
+  // A dot on the Profile tab says there are unopened updates.
+  const unreadUpdates = useUnreadUpdates(profile?.profile_completed_at ? user?.id : null);
   // Apply the existing compact-label cap explicitly: Android can retain stale
   // native text metrics when system scaling changes while this bar is mounted.
   const labelScale = Math.min(fontScale, 1.2);
@@ -77,9 +94,12 @@ export default function FloatingBottomTabBar({
     const routeIndex = state.routes.indexOf(route);
     const isFocused = state.index === routeIndex;
     const options = descriptors[route.key]?.options ?? {};
-    const accessibilityLabel = options.tabBarAccessibilityLabel
+    const baseLabel = options.tabBarAccessibilityLabel
       ?? options.title
       ?? route.name;
+    const accessibilityLabel = slot.key === 'profile' && unreadUpdates > 0
+      ? `${baseLabel}, ${unreadUpdates} unread ${unreadUpdates === 1 ? 'update' : 'updates'}`
+      : baseLabel;
 
     const onPress = () => {
       const event = navigation.emit({
@@ -89,6 +109,7 @@ export default function FloatingBottomTabBar({
       });
 
       if (!isFocused && !event.defaultPrevented) {
+        hapticSelect();
         navigation.navigate(route.name, route.params);
       }
     };
@@ -99,6 +120,8 @@ export default function FloatingBottomTabBar({
         target: route.key,
       });
     };
+
+    const showsAvatar = slot.key === 'profile' && Boolean(profile?.profile_completed_at);
 
     return (
       <TouchableOpacity
@@ -112,22 +135,34 @@ export default function FloatingBottomTabBar({
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ selected: isFocused }}
       >
-        <View style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
-          <View style={styles.iconBackdrop}>
-            <Ionicons
-              name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
-              size={23}
-              color={isFocused ? BOTTOM_NAV_COLORS.active : BOTTOM_NAV_COLORS.inactive}
-              accessible={false}
-              importantForAccessibility="no"
-            />
+        {/* Android loses the pill's rounded corners when its background changes in
+            place, so the pill is mounted afresh when the tab gains or loses focus. */}
+        <View key={isFocused ? 'selected' : 'idle'} style={[styles.tabContent, isFocused && styles.tabContentSelected]}>
+          <View style={[styles.iconBackdrop, showsAvatar && styles.avatarBackdrop]}>
+            {showsAvatar ? (
+              <View style={[styles.avatarRing, isFocused && { borderColor: BOTTOM_NAV_COLORS.active }]} accessible={false} importantForAccessibility="no-hide-descendants">
+                <ProfileAvatar profile={profile} size={44} />
+                {unreadUpdates > 0 ? <View style={styles.unreadDot} /> : null}
+              </View>
+            ) : (
+              <Ionicons
+                name={isFocused ? slot.iconName.replace('-outline', '') : slot.iconName}
+                size={23}
+                color={isFocused ? BOTTOM_NAV_COLORS.active : BOTTOM_NAV_COLORS.inactive}
+                accessible={false}
+                importantForAccessibility="no"
+              />
+            )}
           </View>
-          <Text
-            style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
-            allowFontScaling={false}
-          >
-            {slot.label}
-          </Text>
+          {/* The member's own photo fills the slot; it needs no caption. */}
+          {showsAvatar ? null : (
+            <Text
+              style={[styles.label, { fontSize: 10 * labelScale, lineHeight: 13 * labelScale }, isFocused && styles.labelSelected]}
+              allowFontScaling={false}
+            >
+              {slot.label}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -172,7 +207,7 @@ const styles = StyleSheet.create({
     borderRadius: BOTTOM_NAV_METRICS.radius,
     borderCurve: 'continuous',
     backgroundColor: BOTTOM_NAV_COLORS.surface,
-    boxShadow: '0 8px 24px rgba(31, 35, 40, 0.18)',
+    boxShadow: '0 8px 24px rgba(41, 41, 50, 0.18)',
   },
   slot: {
     flex: 1,
@@ -199,6 +234,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarBackdrop: { width: 50, height: 50 },
+  avatarRing: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primaryLight },
+  unreadDot: { position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: colors.white, backgroundColor: colors.severityHigh },
   label: {
     marginTop: 2,
     color: BOTTOM_NAV_COLORS.inactive,

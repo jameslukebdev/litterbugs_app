@@ -1,0 +1,9 @@
+/* "Good to know" notes under the amount picker: plain list, colour only in text. */
+.notes { margin: 8px 0 28px; padding-top: 24px; border-top: 1px solid #ece8f8; }
+.notes h2 { margin: 0 0 14px; color: #292932; font-size: 20px; font-weight: 800; }
+.notes ul { display: grid; gap: 12px; margin: 0; padding-left: 20px; }
+.notes li { color: #45434d; font-size: 16px; line-height: 1.55; }
+.notes strong { color: #292932; }
+.notes a,
+.legal a { color: #3f36c4; font-weight: 700; text-decoration: none; }
+.legal { color: #686477; }

@@ -1,9 +1,22 @@
-import { notificationViewQuery, type NotificationView } from './notification-view';
+import { nearbyAlertHref, notificationViewQuery, type NotificationView } from './notification-view';
 import type { Database } from '@litterbugs/report-contract';
 
 export type CleanupNotification = Database['public']['Tables']['cleanup_notifications']['Row'];
+type NotificationTarget = Pick<CleanupNotification, 'event_type' | 'contribution_id'> & { report_id: string | null; id?: string; issue_id?: string | null };
 
 const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: string }> = {
+  reporter_payout_waiting: {
+    title: 'A payout is waiting for you',
+    message: 'A spot you reported was cleaned up. Set up payouts to receive your reporter payout.',
+  },
+  tip_received: {
+    title: 'You got a tip',
+    message: 'Someone thanked you with a tip.',
+  },
+  cleanup_issue_requested:{title:'Cleanup issue reported',message:'The cleaner sent a private message about your report.'},
+  cleanup_issue_replied:{title:'New cleanup response',message:'There is a private response to your cleanup issue.'},
+  cleanup_issue_report_updated:{title:'Cleanup report updated',message:'The reporter updated the public report.'},
+  cleanup_issue_resolved:{title:'Cleanup issue resolved',message:'The cleanup issue has been resolved.'},
   admin_cleanup_needed: {
     title: 'Cleanup needs attention',
     message: 'A cleanup or payment issue needs your review. Open your admin inbox.',
@@ -29,8 +42,8 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
     message: 'Your cleanup claim expired and is available to other volunteers again.',
   },
   completion_submitted: {
-    title: 'Cleanup ready for review',
-    message: 'A cleanup was submitted for your review.',
+    title: 'Your spot was cleaned up',
+    message: 'Check the before and after photos, then approve the cleanup or ask for changes.',
   },
   changes_requested: {
     title: 'Changes requested',
@@ -96,13 +109,31 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
     title: 'Cleanup funding unavailable',
     message: 'Your report was reviewed and cannot accept cleanup funding.',
   },
+  nearby_reports_daily: {
+    title: 'New litter near you',
+    message: 'See the reports that prompted this alert.',
+  },
 };
 
-export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'>) {
+/** The tip behind a tip_received notification, readable by the person tipped. */
+export type TipNotice = { tip_amount_cents: number; tipper_name: string | null; note: string | null };
+
+export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'> & { tip?: TipNotice | null }) {
+  if (notice.event_type === 'tip_received' && notice.tip) {
+    const from = notice.tip.tipper_name?.trim() || 'Someone';
+    const note = notice.tip.note?.trim();
+    return {
+      title: `${from} tipped you $${(notice.tip.tip_amount_cents / 100).toFixed(2)}`,
+      message: note ? `\u201c${note}\u201d` : 'Thank you for helping keep your community clean.',
+    };
+  }
   return CLEANUP_NOTIFICATION_CONTENT[notice.event_type] ?? { title: 'Cleanup update', message: 'There is an update to one of your cleanups.' };
 }
-export function notificationHref(notice: Pick<CleanupNotification, 'event_type' | 'report_id' | 'contribution_id'> & { id?: string }, view?: NotificationView) {
+export function notificationHref(notice: NotificationTarget, view?: NotificationView) {
+  if(notice.event_type.startsWith('cleanup_issue_') && notice.issue_id)return `/account/cleanup-issues/${encodeURIComponent(notice.issue_id)}`;
+  if (notice.event_type === 'tip_received' || notice.event_type === 'reporter_payout_waiting') return '/account/payments';
   if (notice.event_type.startsWith('admin_')) return '/admin';
+  if (notice.event_type === 'nearby_reports_daily') return notice.id ? nearbyAlertHref(notice.id, view) : '/account/notifications';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';
   if (notice.event_type === 'cleanup_payout_failed' || notice.event_type === 'cleanup_reward_sent') return '/account/connect';
   if (notice.event_type === 'report_renewal_due') return '/account/reports';

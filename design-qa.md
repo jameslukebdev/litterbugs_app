@@ -869,3 +869,33 @@ The focused comparison places the broken browser-default button, the later style
 ## Result
 
 final result: passed
+
+# Homepage preview — October 28, 2026
+
+Implemented the selected simplified, reporter-first homepage at `/home-preview`. This is a local review route; the current `/` map, sitemap, mobile apps, and deployed site were not changed by this work. Preview metadata is `noindex, nofollow`.
+
+## Visual target and assets
+
+- Target: `/Users/grantgibson/.codex/generated_images/01a179e1-e9d2-75e2-b9b6-36f1c4a7cd68/exec-966abd53-7212-4151-a277-ec663f9f361d.png`.
+- Preserved the authentic logo, green reporter headline, split photo hero, search, three report cards, cleanup comparison, restrained reward explanation, and plain footer links.
+- Hero is an illustrative generated photograph, optimized to a 268 KB WebP. The report and cleanup images use existing public photo routes and current publication/visibility checks; no fabricated report data or earnings proof.
+- Used “Litter reports near Boone” instead of “Recent reports” because these are selected local reports rather than a dynamically sorted recent feed. The search opens the chosen location on the map; it does not change the featured Boone cards.
+- Desktop screenshot: `/Users/grantgibson/.codex/visualizations/2026/10/26/01a179e1-e9d2-75e2-b9b6-36f1c4a7cd68/homepage-mockup/built-homepage-desktop.jpg`.
+- Phone screenshot: `/Users/grantgibson/.codex/visualizations/2026/10/26/01a179e1-e9d2-75e2-b9b6-36f1c4a7cd68/homepage-mockup/built-homepage-mobile.jpg`.
+
+## Verification
+
+- Passed web typecheck, scoped ESLint, and web boundary checks.
+- Browser-tested desktop and phone layouts. Browser overrides 1366×900 and 390×844 produced measured CSS widths of 1242 and 355 under the existing browser zoom. No horizontal page overflow. All eight homepage images loaded.
+- City search (Boone, NC) and ZIP search (28607) returned locations. Selected city opened the functioning map at Boone with report markers.
+- Repeated searches returned fresh results. Search providers load only on submission; errors/timeouts have a visible retry/map path, and changing input cancels stale results.
+- Report litter opened `/sign-in?next=%2Freport`; no report was submitted. Completed cleanup link loaded the actual Castle Ford public report and before/after evidence.
+- Phone menu expands/collapses; reward anchor reaches readable answers. Navigation, native form validation, accessible labels, semantic headings, focus outlines, and reduced-motion handling checked.
+- Corrected duplicate map-view parameters and mobile heading whitespace during QA. Map navigation uses full document transitions to preserve the existing map loader/URL lifecycle.
+- No observed P0/P1/P2 visual or functional issue remains in the preview. This is not a production rollout or a new end-to-end audit of existing account, payment, and reporting workflows.
+
+## Local review
+
+`npm run dev --workspace @litterbugs/web -- --hostname 127.0.0.1 --port 3000`
+
+Open `http://127.0.0.1:3000/home-preview`. Public reports are read from the configured backend; no database writes, new migrations, commits, pushes, or deployments were performed for this preview.

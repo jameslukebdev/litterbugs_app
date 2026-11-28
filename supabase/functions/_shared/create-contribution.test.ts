@@ -14,7 +14,7 @@ function fixture() {
     authenticatedUser: async () => ({ id: userId, email: 'fixture@example.com', is_anonymous: false }),
     requiredEnv: () => 'pk_test_fixture',
     serviceClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: { pricing_version: activeVersion }, error: null }) }) }) }), rpc: async (name: string, args: Record<string, any>) => {
-      if (name === 'reserve_cleanup_contribution') {
+      if (name === 'reserve_cleanup_contribution' || name === 'reserve_named_cleanup_contribution') {
         if (row) {
           if (row.report_id !== args.target_report_id || row.principal_amount_cents !== args.principal_cents) return { error: new Error('cleanup_contribution_idempotency_mismatch') };
           return { data: row };
@@ -23,7 +23,8 @@ function fixture() {
         const fee = activeVersion === 2 ? Math.floor((args.principal_cents + 2) / 5) + (args.principal_cents < 500 ? 50 : 0) : Math.floor((args.principal_cents + 5) / 10);
         row = { id: requestId, report_id: reportId, principal_amount_cents: args.principal_cents, platform_fee_cents: fee,
           total_amount_cents: args.principal_cents + fee, pricing_version: activeVersion, stripe_receipt_email: args.receipt_email,
-          stripe_payment_intent_id: null, created_at: new Date().toISOString() };
+          stripe_payment_intent_id: null, created_at: new Date().toISOString(),
+          show_contributor_name: name === 'reserve_named_cleanup_contribution' ? args.show_name : null };
         return { data: row };
       }
       if (attachFailures-- > 0) return { error: new Error('interrupted attachment') };
@@ -56,6 +57,27 @@ Deno.test('new $1 charge uses server quote, repeated and concurrent calls reuse 
     assert(data.principalAmountCents === 100 && data.platformFeeCents === 70 && data.totalAmountCents === 170 && data.pricingVersion === 2);
   }
   assert(f.createCount === 1);
+});
+
+Deno.test('checkout saves public and anonymous choices without changing the charge or retrying as a second donation', async () => {
+  for (const shown of [true, false]) {
+    const f = fixture();
+    const result = await f.call({ showContributorName: shown });
+    const initial = await result.json();
+    assert(result.status === 200 && initial.showContributorName === shown);
+    assert(initial.totalAmountCents === 170 && initial.principalAmountCents === 100);
+    const retry = await (await f.call({ showContributorName: !shown })).json();
+    assert(retry.showContributorName === shown && retry.contributionId === initial.contributionId);
+    assert(f.createCount === 1, 'privacy retries must reuse the existing charge');
+  }
+});
+
+Deno.test('invalid anonymity values never create a reservation or charge', async () => {
+  for (const showContributorName of [null, 'false', 0, {}, []]) {
+    const f = fixture();
+    assert((await f.call({ showContributorName })).status === 400);
+    assert(!f.row && f.createCount === 0);
+  }
 });
 Deno.test('legacy clients are rejected before Stripe and receive an update message', async () => {
   const f = fixture(); const response = await f.call({ pricingVersion: undefined });

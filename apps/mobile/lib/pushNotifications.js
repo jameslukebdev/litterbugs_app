@@ -6,16 +6,19 @@ import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 
 import { supabase } from './supabase';
+import { colors } from './theme';
 
 const INSTALLATION_ID_KEY = 'litterbugs.push.installation-id';
 const CLEANUP_NOTIFICATION_CHANNEL = 'cleanup-updates';
+const NEARBY_REPORTS_CHANNEL = 'nearby-reports';
 let installationIdPromise = null;
 let pushRegistrationQueue = Promise.resolve();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    // A push carries the member's unread count for the app icon (send-cleanup-notifications).
+    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
@@ -47,9 +50,15 @@ const configureAndroidChannel = async () => {
       name: 'Cleanup updates',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#2F7D32',
+      lightColor: colors.primary,
     }
   );
+  // The opt-in "near you" alerts, on their own channel so they can be muted by themselves.
+  await Notifications.setNotificationChannelAsync(NEARBY_REPORTS_CHANNEL, {
+    name: 'Near you',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    lightColor: colors.primary,
+  });
 };
 
 const expoProjectId = () => (
@@ -76,7 +85,7 @@ const performPushRegistration = async (devicePushToken) => {
   await configureAndroidChannel();
   const existingPermission = await Notifications.getPermissionsAsync();
   const permission = existingPermission.status === 'undetermined'
-    ? await Notifications.requestPermissionsAsync()
+    ? await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowBadge: true, allowSound: true } })
     : existingPermission;
   if (!permission.granted) return { status: 'denied' };
 

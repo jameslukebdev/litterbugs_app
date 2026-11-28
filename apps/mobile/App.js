@@ -1,10 +1,14 @@
-import { loadDiscoveryMemory, markWelcomeSeen } from './lib/discoveryMemory';
+import { loadDiscoveryMemory } from './lib/discoveryMemory';
 import { retryDeletedAccountDataCleanup } from './lib/deletedAccountData';
 import { authenticatedActionDestination } from './lib/authIntent';
 import { watchNativeProviderAuthorization } from './lib/nativeSocialAuth';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { beginAppOpen, finishAppOpen, isSharedReportLink, notificationDestinationKey, startAnalytics, trackScreen, trackSignIn } from './lib/analytics';
+
+startAnalytics();
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -12,21 +16,26 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   Alert,
-  Image,
   Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
 import AppTabs from './AppTabs';
+import WelcomeScreen from './WelcomeScreen';
+import { PrimaryButton, TextLink } from './components/ui';
 import BrandedLoadingState from './BrandedLoadingState';
 import AuthScreen from './AuthScreen';
 import SignInMethodsScreen from './SignInMethodsScreen';
 import SettingsInfoScreen from './SettingsInfoScreen';
+import UpdatesScreen from './UpdatesScreen';
+import CleanupIssueScreen from './CleanupIssueScreen';
+import ReportContentEditScreen from './ReportContentEditScreen';
+import NotificationSettingsScreen from './NotificationSettingsScreen';
+import EmailPreferencesScreen from './EmailPreferencesScreen';
 import BlockedAccountsScreen from './BlockedAccountsScreen';
 import CompleteProfileScreen from './CompleteProfileScreen';
 import CleanupFeedbackScreen from './CleanupFeedbackScreen';
@@ -40,7 +49,9 @@ import ExpiredReportsScreen from './ExpiredReportsScreen';
 import FundingContributionScreen from './FundingContributionScreen';
 import PayoutSetupScreen from './PayoutSetupScreen';
 import PublicProfileScreen from './PublicProfileScreen';
+import TipScreen from './TipScreen';
 import RankCelebrationManager from './RankCelebrationManager';
+import { FlowDoneHost } from './components/FlowDone';
 import ReportUserScreen from './ReportUserScreen';
 import ResetPasswordScreen from './ResetPasswordScreen';
 import { handleAuthCallbackUrl, isBrowserAuthInProgress, AUTH_CALLBACK_PATH, PASSWORD_RECOVERY_PATH, signOut } from './lib/auth';
@@ -58,6 +69,7 @@ import { isPermanentUser } from './lib/reportAccess';
 import { ReportsProvider } from './lib/reports';
 import { SessionProvider } from './lib/session';
 import { supabase } from './lib/supabase';
+import { colors, fonts } from './lib/theme';
 
 const Stack = createNativeStackNavigator();
 
@@ -78,47 +90,6 @@ const navigationLinking = {
   },
 };
 
-function HomeScreen({ navigation }) {
-  const { width, height } = useWindowDimensions();
-  const logoSize = Math.min(width * 0.5, height * 0.45, 360);
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.homeContent, { minHeight: height }]}
-      alwaysBounceVertical={false}
-      showsVerticalScrollIndicator={false}
-    >
-      <Image
-        source={require('./assets/LB_Logo_PNG.png')}
-        style={[styles.logo, { width: logoSize, height: logoSize }]}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>A cleaner community starts here.</Text>
-      <Text style={styles.subtitle}>Report litter, help clean it up, or fund a local cleanup.</Text>
-
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={async () => { await markWelcomeSeen(); navigation.replace('App', { screen: 'Map' }); }}
-        accessibilityRole="button"
-        accessibilityLabel="Explore the Map"
-      >
-        <Text style={styles.primaryButtonText}>Explore the Map</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={async () => { await markWelcomeSeen(); navigation.navigate('Auth'); }}
-        accessibilityRole="button"
-        accessibilityLabel="Sign in or create account"
-      >
-        <Text style={styles.secondaryButtonText}>Sign in or create account</Text>
-      </TouchableOpacity>
-      <StatusBar hidden={false} style="dark" backgroundColor="#FFFFFF" />
-    </ScrollView>
-  );
-}
-
 function LoadingScreen({ onLogoReady }) {
   return <BrandedLoadingState logoOnly onLogoReady={onLogoReady} />;
 }
@@ -134,12 +105,8 @@ function ProfileLoadError() {
     >
       <Text style={styles.errorTitle}>We couldn’t load your profile</Text>
       <Text style={styles.errorText}>Check your connection and try again.</Text>
-      <TouchableOpacity style={styles.primaryButton} onPress={refreshProfile}>
-        <Text style={styles.primaryButtonText}>Try again</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.textButton} onPress={signOut}>
-        <Text style={styles.textButtonText}>Sign out</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Try again" style={styles.primaryButton} onPress={refreshProfile} />
+      <TextLink label="Sign out" style={styles.textButton} onPress={signOut} />
     </ScrollView>
   );
 }
@@ -188,10 +155,19 @@ function AppNavigation({
 
     handledNotificationId.current = notificationId ?? null;
     pendingNotificationData.current = null;
+    const destinationKey = notificationDestinationKey(destination);
+    if (destinationKey) beginAppOpen('notification', destinationKey);
     if (destination.url) {
-      Linking.openURL(destination.url).catch(() => Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.'));
+      Linking.openURL(destination.url)
+        .then(() => finishAppOpen('handed_off', 'admin_web'))
+        .catch(() => {
+          finishAppOpen('failed', 'admin_web');
+          Alert.alert('Couldn’t open the inbox', 'Visit litterbugs.app/admin to review community reports.');
+        });
     } else {
       navigationRef.navigate(destination.name, destination.params);
+      // Already on the destination screen (e.g. the map): no screen change will report it.
+      trackScreen(navigationRef.getCurrentRoute()?.name);
     }
     if (notificationId) {
       acknowledgeCleanupNotifications([notificationId]).catch((error) => {
@@ -233,6 +209,7 @@ function AppNavigation({
   }, [openNotificationData, permanent]);
 
   if (passwordRecovery && permanent) {
+    trackScreen('ResetPassword'); // not a route; keeps replay off on this screen
     return (
       <ResetPasswordScreen
         onCancel={onRecoveryComplete}
@@ -254,11 +231,15 @@ function AppNavigation({
   const headerOptions = {
     headerShown: true,
     headerShadowVisible: false,
-    headerTintColor: '#2F7D32',
-    headerStyle: { backgroundColor: '#FFFFFF' },
+    headerTintColor: colors.primary,
+    // Website page titles: dark Nunito Black; the back arrow stays purple.
+    headerTitleStyle: { color: colors.ink, fontFamily: fonts.heading, fontSize: 20 },
+    headerStyle: { backgroundColor: colors.white },
     headerBackTitle: 'Back',
     headerBackTitleVisible: false,
     headerBackButtonDisplayMode: 'minimal',
+    // iOS 26 lets content show through the header while scrolling; keep a solid edge.
+    scrollEdgeEffects: { top: 'hard' },
   };
 
   return (
@@ -267,18 +248,21 @@ function AppNavigation({
       ref={navigationRef}
       linking={navigationLinking}
       onReady={() => {
+        trackScreen(navigationRef.getCurrentRoute()?.name);
         resumePendingAction();
         if (pendingNotificationData.current) {
           openNotificationData(pendingNotificationData.current);
         }
       }}
+      onStateChange={() => trackScreen(navigationRef.getCurrentRoute()?.name)}
     >
       <Stack.Navigator
         key={permanent ? 'permanent' : 'signed-out'}
         initialRouteName={initialRouteName}
-        screenOptions={{ headerShown: false }}
+        // Android pushes slide in from the right like iOS, instead of the system default.
+        screenOptions={{ headerShown: false, animation: Platform.OS === 'android' ? 'slide_from_right' : 'default' }}
       >
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={WelcomeScreen} />
         <Stack.Screen name="App">
           {(screenProps) => (
             <AppTabs {...screenProps} onLaunchReady={onLaunchReady} />
@@ -317,7 +301,7 @@ function AppNavigation({
         <Stack.Screen
           name="FundingContribution"
           component={FundingContributionScreen}
-          options={{ ...headerOptions, title: 'Cleanup fund' }}
+          options={{ ...headerOptions, title: '' }} // the bee heading below names this screen
         />
         <Stack.Screen
           name="PayoutSetup"
@@ -328,12 +312,17 @@ function AppNavigation({
         <Stack.Screen name="MyActivity" component={ProfileScreen} initialParams={{ section: 'activity' }} options={{ ...headerOptions, title: 'My activity' }} />
         <Stack.Screen name="Payments" component={ProfileScreen} initialParams={{ section: 'payments' }} options={{ ...headerOptions, title: 'Payments' }} />
         <Stack.Screen name="SignInMethods" component={SignInMethodsScreen} options={{ ...headerOptions, title: 'Sign-in methods' }} />
+        <Stack.Screen name="Updates" component={UpdatesScreen} options={{ ...headerOptions, title: 'Updates' }} />
+        <Stack.Screen name="CleanupIssue" component={CleanupIssueScreen} options={{ ...headerOptions, title: 'Cleanup issue' }} />
+        <Stack.Screen name="ReportContentEdit" component={ReportContentEditScreen} options={{ ...headerOptions, title: 'Edit report' }} />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ ...headerOptions, title: 'Notifications' }} />
+        <Stack.Screen name="EmailPreferences" component={EmailPreferencesScreen} options={{ ...headerOptions, title: 'Email preferences' }} />
         <Stack.Screen name="SettingsInfo" component={SettingsInfoScreen} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen name="Settings" component={ProfileScreen} initialParams={{ section: 'settings' }} options={{ ...headerOptions, title: 'Settings' }} />
         <Stack.Screen
           name="ContributionHistory"
           component={ContributionHistoryScreen}
-          options={{ ...headerOptions, title: 'Payment activity' }}
+          options={{ ...headerOptions, title: 'Donations' }}
         />
         <Stack.Screen
           name="ExpiredReports"
@@ -346,6 +335,11 @@ function AppNavigation({
           options={{ ...headerOptions, title: 'Profile' }}
         />
         <Stack.Screen
+          name="Tip"
+          component={TipScreen}
+          options={{ ...headerOptions, title: 'Leave a tip' }}
+        />
+        <Stack.Screen
           name="BlockedAccounts"
           component={BlockedAccountsScreen}
           options={{ ...headerOptions, title: 'Blocked accounts' }}
@@ -353,7 +347,7 @@ function AppNavigation({
         <Stack.Screen
           name="ReportUser"
           component={ReportUserScreen}
-          options={{ ...headerOptions, title: 'Report user', presentation: 'modal' }}
+          options={{ ...headerOptions, title: 'Report user', presentation: 'modal', animation: Platform.OS === 'android' ? 'slide_from_bottom' : 'default' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -368,6 +362,12 @@ export default function App() {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [launchReady, setLaunchReady] = useState(false);
   const nativeSplashHidden = useRef(false);
+  // Screens wait (behind the launch logo) for Nunito: Android keeps the system font on
+  // any heading drawn before the font finished loading. Never wait more than 3 seconds.
+  const [fontsLoaded, fontError] = useFonts({ [fonts.heading]: require('./assets/fonts/Nunito-Black.ttf') });
+  const [fontWaitOver, setFontWaitOver] = useState(false);
+  useEffect(() => { const timer = setTimeout(() => setFontWaitOver(true), 3000); return () => clearTimeout(timer); }, []);
+  const fontsReady = fontsLoaded || Boolean(fontError) || fontWaitOver;
 
   useEffect(() => {
     if (!session?.access_token) return;
@@ -413,11 +413,14 @@ export default function App() {
         if (!mounted) return;
         normalizeSession(nextSession);
         if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+        if (event === 'SIGNED_IN') trackSignIn('succeeded');
       }
     );
 
     const processAuthUrl = async (url) => {
       if (!url) return;
+      // A shared report link: whether the report then actually appears is recorded by the map.
+      if (isSharedReportLink(url)) beginAppOpen('report_link', 'report');
       // The active browser flow owns its callback and user feedback. Cold-start
       // and password-recovery links still use the global listener.
       if (isBrowserAuthInProgress() && url.startsWith(`litterbugs://${AUTH_CALLBACK_PATH}`)) return;
@@ -485,8 +488,8 @@ export default function App() {
 
   return (
     <View style={styles.appRoot}>
-      <StatusBar style="dark" backgroundColor="#FFFFFF" />
-      {!authLoading && discoveryMemory ? (
+      <StatusBar style="dark" backgroundColor={colors.white} />
+      {!authLoading && discoveryMemory && fontsReady ? (
         <SessionProvider session={session}>
           <ProfileProvider>
             <ReportsProvider initialDiscovery={discoveryMemory.lastMap}>
@@ -498,6 +501,7 @@ export default function App() {
                 onRecoveryComplete={() => setPasswordRecovery(false)}
               />
               <RankCelebrationManager />
+              <FlowDoneHost />
             </ReportsProvider>
           </ProfileProvider>
         </SessionProvider>
@@ -514,75 +518,32 @@ export default function App() {
 const styles = StyleSheet.create({
   appRoot: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   launchOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10000,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     elevation: 10000,
   },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  homeContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    backgroundColor: '#FFFFFF',
-  },
-  logo: { marginBottom: 12 },
-  title: { maxWidth: 330, color: '#252A2E', fontSize: 30, lineHeight: 36, fontWeight: '800', textAlign: 'center' },
-  subtitle: {
-    maxWidth: 330,
-    marginTop: 10,
-    marginBottom: 34,
-    color: '#667078',
-    fontSize: 16,
-    lineHeight: 23,
-    textAlign: 'center',
-  },
-  primaryButton: {
-    width: '100%',
-    maxWidth: 390,
-    minHeight: 54,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#2E7D32',
-  },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
-  secondaryButton: {
-    width: '100%',
-    maxWidth: 390,
-    minHeight: 52,
-    marginTop: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-  },
-  secondaryButtonText: { color: '#496351', fontSize: 16, fontWeight: '600' },
+  primaryButton: { width: '100%', maxWidth: 390 },
   errorState: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 32,
     paddingHorizontal: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   errorStateScroll: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  errorTitle: { color: '#252A2E', fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  errorText: { marginVertical: 10, color: '#667078', fontSize: 15, textAlign: 'center' },
-  textButton: { minHeight: 48, justifyContent: 'center', marginTop: 8 },
-  textButtonText: { color: '#2E7D32', fontSize: 15, fontWeight: '800' },
+  errorTitle: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading, textAlign: 'center' },
+  errorText: { marginVertical: 10, color: colors.muted, fontSize: 15, textAlign: 'center' },
+  textButton: { marginTop: 8 },
 });

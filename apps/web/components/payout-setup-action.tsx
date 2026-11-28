@@ -1,26 +1,96 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { trackPayoutSetup } from '@/lib/website-analytics';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import type { StripeConnectInstance } from '@stripe/connect-js';
 
-import { useDataRefresh } from '@/lib/use-data-refresh';
+import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 import { ModalShell } from '@/components/modal-shell';
+import { PayoutPanel, payoutNeedsConfirmation } from '@/components/payout-panel';
+import { PayoutPreparing, PayoutProgress } from '@/components/payout-preparing';
+
+const PayoutEmbedded = dynamic(() => import('@/components/payout-embedded'), {
+  loading: () => <PayoutPreparing />,
+});
+
+let warming: Promise<unknown> | null = null;
+function warmPayoutSetup() {
+  // Loading code on intent starts Stripe's SDK early, without creating an account/session.
+  warming ??= Promise.all([import('@/lib/payout-connect'), import('@/components/payout-embedded')])
+    .catch(() => { warming = null; });
+  return warming;
+}
+
+/** Celebrate an observed completion once per device. */
+const CELEBRATED_KEY = 'litterbugs.payouts-ready-celebrated.v1';
+function firstPayoutsReady() {
+  try {
+    if (localStorage.getItem(CELEBRATED_KEY)) return false;
+    localStorage.setItem(CELEBRATED_KEY, '1');
+    return true;
+  } catch { return false; }
+}
 import {
   createPayoutLink,
+  createPayoutSession,
   loadCleanupFeatureFlags,
   loadPayoutStatus,
+  type PayoutSessionMode,
   type PayoutStatus,
 } from '@/lib/funding';
 
-export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
+export function PayoutSetupAction({ compact = false, autoOpen = false, onReady, onDismiss, buttonLabel = 'Payout settings', inlineClassName, primary = false, confirmed = false, disabled = false }: {
+  compact?: boolean; autoOpen?: boolean; onReady?: () => void; onDismiss?: (reason: 'closed' | 'session_ended') => void;
+  buttonLabel?: string;
+  inlineClassName?: string;
+  primary?: boolean;
+  /** The caller already collected the 18+/eligibility confirmation, so open Stripe's form directly. */
+  confirmed?: boolean;
+  disabled?: boolean;
+}) {
+  const inlinePanelId = useId();
   const refresh = useDataRefresh();
-  const [available, setAvailable] = useState(false);
+  // Cleanup entry has just checked the server's status endpoint, including its payments flag.
+  // Opening still rechecks status; normal account/settings buttons retain their flag check.
+  const [available, setAvailable] = useState(autoOpen);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PayoutStatus | null>(null);
   const [eligibleConfirmed, setEligibleConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<'prepare' | 'check' | 'redirect' | null>(null);
+  const busy = pending !== null;
   const [message, setMessage] = useState('');
+  const [celebrate, setCelebrate] = useState(false);
+  const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null);
+  const requestBusy = useRef(false);
+  const opening = useRef(0);
+  const lastRefresh = useRef(refresh);
+  const observedReady = useRef<boolean | null>(null);
+  const observeStatus = useCallback((next: PayoutStatus) => {
+    const becameReady = next.payoutsEnabled && observedReady.current === false;
+    if (next.payoutsEnabled && observedReady.current !== true) trackPayoutSetup(becameReady ? 'ready' : 'already_ready');
+    observedReady.current = next.payoutsEnabled;
+    return becameReady;
+  }, []);
+
+  const close = useCallback((reason: 'closed' | 'session_ended' | null = 'closed') => {
+    opening.current += 1;
+    requestBusy.current = false;
+    setOpen(false);
+    setPending(null);
+    setConnectInstance(null);
+    if (reason) onDismiss?.(reason);
+  }, [onDismiss]);
+
+  const resumeCleanup = useCallback((next: PayoutStatus) => {
+    if (!onReady || !next.payoutsEnabled || next.onboardingStatus !== 'enabled') return false;
+    close(null);
+    onReady();
+    return true;
+  }, [close, onReady]);
 
   useEffect(() => {
+    if (autoOpen) return;
     let cancelled = false;
     void loadCleanupFeatureFlags()
       .then((flags) => {
@@ -28,62 +98,247 @@ export function PayoutSetupAction({ compact = false }: { compact?: boolean }) {
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
-  }, []);
+  }, [autoOpen]);
+
+  useEffect(() => () => { opening.current += 1; }, []);
 
   useEffect(() => {
+    if (!autoOpen) return;
+    let cancelled = false;
+    queueMicrotask(() => { if (!cancelled) void show(); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one opening per mounted cleanup entry
+  }, [autoOpen]);
+
+  useEffect(() => {
+    if (!available || window.location.pathname !== '/account/payments') return;
+    // Prepare code while this dedicated screen is idle; never create a payout account/session here.
+    if (window.requestIdleCallback) {
+      const task = window.requestIdleCallback(() => void warmPayoutSetup(), { timeout: 1500 });
+      return () => window.cancelIdleCallback(task);
+    }
+    const task = window.setTimeout(() => void warmPayoutSetup(), 500);
+    return () => window.clearTimeout(task);
+  }, [available]);
+
+  useEffect(() => {
+    if (lastRefresh.current === refresh) return;
+    if (busy || connectInstance) return;
+    lastRefresh.current = refresh;
     if (!open) return;
     let cancelled = false;
-    void loadPayoutStatus().then(value => { if (!cancelled) setStatus(value); }).catch(() => { if (!cancelled) setMessage('Payout status could not be refreshed. Reopen this window to retry.'); });
+    const version = opening.current;
+    void loadPayoutStatus().then(value => {
+      if (cancelled || requestBusy.current || version !== opening.current) return;
+      const becameReady = observeStatus(value);
+      if (resumeCleanup(value)) return;
+      setStatus(value);
+      if (becameReady) {
+        setMessage('');
+        setCelebrate(firstPayoutsReady());
+      } else if (!value.payoutsEnabled) {
+        setCelebrate(false);
+      }
+    }).catch(() => {
+      if (cancelled || requestBusy.current || version !== opening.current) return;
+      trackPayoutSetup('status_failed');
+      setMessage('We couldn’t check your payout status. Close this window and open it again to retry.');
+    });
     return () => { cancelled = true; };
-  }, [open, refresh]);
+  }, [open, refresh, busy, connectInstance, observeStatus, resumeCleanup]);
+
+  useEffect(() => {
+    if (pending !== 'redirect') return;
+    function restoreAfterStripe(event: PageTransitionEvent) {
+      if (!event.persisted) return;
+      requestBusy.current = false;
+      setPending(null);
+      setCelebrate(false);
+      notifyDataChanged();
+    }
+    window.addEventListener('pageshow', restoreAfterStripe);
+    return () => window.removeEventListener('pageshow', restoreAfterStripe);
+  }, [pending]);
+
+  // Arriving from the "Finish payout setup" reminder opens the payout screen straight away.
+  useEffect(() => {
+    if (autoOpen || !available || open) return;
+    if (new URLSearchParams(window.location.search).get('payout') !== 'finish') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('payout');
+    window.history.replaceState(window.history.state, '', url);
+    queueMicrotask(() => void show());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when payouts become available
+  }, [available]);
 
   if (!available) return null;
 
   async function show() {
+    void warmPayoutSetup();
+    const version = ++opening.current;
+    requestBusy.current = true;
+    observedReady.current = null;
+    trackPayoutSetup('opened');
+    setConnectInstance(null);
+    setStatus(null);
+    // Confirmed beside the button already: never ask again on a later or fallback screen.
+    setEligibleConfirmed(confirmed);
     setOpen(true);
-    setBusy(true);
+    setPending('prepare');
     setMessage('');
+    setCelebrate(false);
+    let startingForm = false;
     try {
-      setStatus(await loadPayoutStatus());
+      const next = await loadPayoutStatus();
+      if (version !== opening.current) return;
+      setStatus(next);
+      observeStatus(next);
+      if (resumeCleanup(next)) return;
+      if (!next.payoutsEnabled && (confirmed || !payoutNeedsConfirmation(next))) {
+        startingForm = true;
+        await openEmbedded(version);
+      } else if (next.payoutsEnabled && inlineClassName) {
+        startingForm = true;
+        await openEmbedded(version, 'manage');
+      }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Payout status could not be loaded.');
+      if (version !== opening.current) return;
+      trackPayoutSetup(startingForm ? 'start_failed' : 'status_failed');
+      setMessage(error instanceof Error ? error.message : 'We couldn’t load your payout status. Check your connection and try again.');
     } finally {
-      setBusy(false);
+      if (version === opening.current) { requestBusy.current = false; setPending(null); }
     }
   }
 
-  async function continueToStripe() {
-    if (!status || busy || (!status.payoutsEnabled && !eligibleConfirmed)) return;
-    setBusy(true);
-    setMessage('');
+  async function openEmbedded(version: number, mode: PayoutSessionMode = 'session') {
+    const { createPayoutConnect, reusePayoutConnect } = await import('@/lib/payout-connect');
+    const onInvalidated = () => {
+      if (version !== opening.current) return;
+      trackPayoutSetup('session_ended'); close('session_ended');
+    };
+    if (version !== opening.current) return;
+    let instance = await reusePayoutConnect(onInvalidated, mode);
+    if (version !== opening.current) return;
+    if (!instance) {
+      const session = await createPayoutSession(mode);
+      if (version !== opening.current) return;
+      instance = await createPayoutConnect(session, onInvalidated, mode);
+    }
+    if (version !== opening.current) return;
+    setConnectInstance(instance);
+    trackPayoutSetup('form_opened');
+  }
+
+  async function continueToStripe(hosted = false) {
+    if (!status || busy || requestBusy.current || (payoutNeedsConfirmation(status) && !eligibleConfirmed)) return;
+    if (status.payoutsEnabled && !hosted) {
+      // Payouts are managed on the Litterbugs Payouts page, never in a separate Stripe dashboard.
+      // A full load closes this dialog and its Stripe session cleanly from any page.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign('/account/payments');
+      return;
+    }
+    const redirect = hosted;
+    requestBusy.current = true;
+    setPending(redirect ? 'redirect' : 'prepare');
+    // A hosted fallback may be visible because of this message. Keep it mounted until navigation.
+    if (!redirect) setMessage('');
+    const version = opening.current;
     try {
-      const link = await createPayoutLink(status.payoutsEnabled ? 'dashboard' : 'link');
-      window.location.assign(link.url);
+      if (redirect) {
+        trackPayoutSetup('hosted_requested');
+        const link = await createPayoutLink(status.payoutsEnabled ? 'dashboard' : 'link');
+        if (version !== opening.current) return;
+        window.location.assign(link.url);
+        // Keep the same screen locked while the browser loads Stripe.
+        return;
+      } else {
+        await openEmbedded(version);
+      }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Payout setup could not be opened.');
-      setBusy(false);
+      if (version !== opening.current) return;
+      trackPayoutSetup('start_failed');
+      setMessage(error instanceof Error ? error.message : 'Stripe didn’t open. Check your connection and try again.');
+    }
+    if (version === opening.current) { requestBusy.current = false; setPending(null); }
+  }
+
+  async function finishEmbedded() {
+    if (requestBusy.current) return;
+    requestBusy.current = true;
+    setPending('check');
+    setMessage('');
+    const version = opening.current;
+    try {
+      // Exiting the form is not proof of verification. Reconcile the server's Stripe capabilities.
+      const next = await loadPayoutStatus();
+      if (version !== opening.current) return;
+      setStatus(next);
+      const becameReady = observeStatus(next);
+      if (resumeCleanup(next)) { notifyDataChanged(); return; }
+      if (becameReady) setCelebrate(firstPayoutsReady());
+      setConnectInstance(null);
+      notifyDataChanged();
+    } catch {
+      if (version !== opening.current) return;
+      trackPayoutSetup('status_failed');
+      setMessage('Your details may already be saved with Stripe. We just couldn’t refresh your payout status, so please try again.');
+    } finally {
+      if (version === opening.current) { requestBusy.current = false; setPending(null); }
     }
   }
+
+  function closeFromButton() {
+    trackPayoutSetup('closed');
+    close();
+  }
+
+  const panel = !open ? null : (
+    pending === 'prepare' && !connectInstance ? (inlineClassName ? <PayoutProgress /> : <PayoutPreparing />) : connectInstance ? <PayoutEmbedded
+      key="embedded"
+      instance={connectInstance}
+      inline={Boolean(inlineClassName)}
+      manage={Boolean(inlineClassName && status?.payoutsEnabled)}
+      busy={busy}
+      openingStripe={pending === 'redirect'}
+      message={message}
+      onExit={() => void finishEmbedded()}
+      onFallback={() => void continueToStripe(true)}
+      onBack={() => {
+        if (inlineClassName && status?.payoutsEnabled) { closeFromButton(); return; }
+        trackPayoutSetup('back'); setConnectInstance(null); setMessage('');
+      }}
+    /> : <PayoutPanel
+      status={status}
+      eligibleConfirmed={eligibleConfirmed}
+      confirmed={confirmed}
+      onEligible={setEligibleConfirmed}
+      busy={busy}
+      openingStripe={pending === 'redirect'}
+      message={message}
+      onContinue={() => void (status ? continueToStripe() : show())}
+      onFallback={status?.payoutsEnabled ? undefined : () => void continueToStripe(true)}
+      celebrate={celebrate}
+      inline={Boolean(inlineClassName)}
+    />
+  );
 
   return (
     <>
-      <button className={`secondary-button${compact ? ' compact-button' : ''}`} onClick={show}>Payout settings</button>
-      {open && (
-        <ModalShell onClose={() => setOpen(false)} label="Payout setup" className="payout-dialog" closeDisabled={busy}>
-          <h2>{status?.payoutsEnabled ? 'Payouts are ready' : 'Set up payouts'}</h2>
-          <p>{status?.payoutsEnabled ? 'Review your payout details securely with Stripe.' : 'Use one Stripe account for cleanup and reporter rewards. Stripe securely verifies your identity and bank details.'}</p>
-          {!status?.payoutsEnabled && status && (
-            <label className="payout-confirmation">
-              <input type="checkbox" checked={eligibleConfirmed} onChange={(event) => setEligibleConfirmed(event.target.checked)} />
-              <span>I confirm that I am at least 18 and eligible to receive payouts in the United States.</span>
-            </label>
-          )}
-          {message && <p className="form-message error-message" role="alert">{message}</p>}
-          <button className="primary-button" onClick={continueToStripe} disabled={busy || !status || (!status.payoutsEnabled && !eligibleConfirmed)}>
-            {busy ? 'Loading…' : status?.payoutsEnabled ? 'Review with Stripe' : 'Continue to Stripe'}
-          </button>
-        </ModalShell>
-      )}
+      {!autoOpen && <button type="button" className={`${primary && !open ? 'primary-button' : 'secondary-button'}${compact ? ' compact-button' : ''}`}
+        aria-expanded={inlineClassName ? open : undefined}
+        aria-controls={inlineClassName && open ? inlinePanelId : undefined}
+        onPointerEnter={() => void warmPayoutSetup()} onFocus={() => void warmPayoutSetup()}
+        onPointerDown={() => void warmPayoutSetup()}
+        disabled={disabled && !open}
+        onClick={() => { if (inlineClassName && open) closeFromButton(); else void show(); }}>
+        {inlineClassName && open ? 'Cancel' : buttonLabel}
+      </button>}
+      {panel && (inlineClassName
+        ? <div id={inlinePanelId} className={inlineClassName}>{panel}</div>
+        : <ModalShell onClose={closeFromButton} label="Payout setup" className="payout-dialog flow-page payout-page">
+          {panel}
+        </ModalShell>)}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { trackParticipationFailure } from './website-analytics';
 import { uploadConcurrently } from '@/lib/concurrent-upload';
 import { uploadSecureBrowserMedia } from '@/lib/secure-media-upload';
 import { createClient } from '@/lib/supabase/client';
@@ -23,12 +24,12 @@ async function startReview(cleanupId: string) {
 }
 
 export async function submitCleanupEvidence({
-  cleanupId, userId, submissionId, photos, description, bagsOrItems, weightPounds,
+  cleanupId, userId, submissionId, photos, description, bagsOrItems, weightPounds, durationMinutes,
   isPaid, onProgress = () => {},
   uploadedPaths = [], onPrepared = async () => {},
 }: {
   cleanupId: string; userId: string; submissionId: string; photos: File[];
-  description: string; bagsOrItems?: number; weightPounds?: number; isPaid: boolean;
+  description: string; bagsOrItems?: number; weightPounds?: number; durationMinutes?: number; isPaid: boolean;
   onProgress?: (message: string) => void;
   uploadedPaths?: string[];
   onPrepared?: (paths: string[]) => Promise<void>;
@@ -41,13 +42,17 @@ export async function submitCleanupEvidence({
     return data;
   };
   onProgress('Checking for a saved submission…');
-  if (await findSaved()) {
+  let saved;
+  try { saved = await findSaved(); }
+  catch (error) { trackParticipationFailure('clean', 'evidence_form', 'evidence_check_failed'); throw error; }
+  if (saved) {
     if (isPaid) await startReview(cleanupId);
     return;
   }
   let dispatched = false;
   const paths: string[] = [...uploadedPaths];
   let uploaded = 0;
+  let failureReason: 'photo_upload_failed' | 'draft_save_failed' = 'photo_upload_failed';
   try {
     if (!paths.length) {
       onProgress(`Uploading and checking photos… 0/${photos.length}`);
@@ -63,24 +68,29 @@ export async function submitCleanupEvidence({
       onProgress(`Uploading and checking photos… ${++uploaded}/${photos.length}`);
       });
     }
+    failureReason = 'draft_save_failed';
     await onPrepared(paths);
     onProgress('Saving cleanup…');
     dispatched = true;
-    const { error } = await supabase.rpc('submit_cleanup_with_weight', {
+    const args = {
       target_cleanup_id: cleanupId,
       target_submission_id: submissionId,
       cleanup_description: description.trim(),
       cleanup_photo_paths: paths,
       cleanup_bags_or_items_removed: bagsOrItems,
       cleanup_weight_pounds: weightPounds,
-    });
+    };
+    const { error } = durationMinutes === undefined
+      ? await supabase.rpc('submit_cleanup_with_weight', args)
+      : await supabase.rpc('submit_cleanup_with_details', { ...args, cleanup_duration_minutes: durationMinutes });
     if (error) throw error;
   } catch (error) {
     if (dispatched) {
       const saved = await findSaved().catch(() => null);
       // A missing response is not proof of rollback. Never remove potentially committed evidence.
-      if (!saved) throw new CleanupSubmissionUncertainError();
+      if (!saved) { trackParticipationFailure('clean', 'evidence_form', 'evidence_submit_unconfirmed'); throw new CleanupSubmissionUncertainError(); }
     } else {
+      trackParticipationFailure('clean', 'evidence_form', failureReason);
       if (paths.length && !uploadedPaths.length) await supabase.storage.from('cleanup_photos').remove(paths.filter(Boolean)).catch(() => undefined);
       throw error;
     }

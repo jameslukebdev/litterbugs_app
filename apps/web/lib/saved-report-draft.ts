@@ -1,5 +1,7 @@
 import { trackDeviceSave, forgetDeviceSave } from './device-save-state';
+import { hasReportDraftContent } from './report-draft-content';
 import { cloudDrafts } from './cloud-drafts';
+import { isReportPublished } from './report-submission-state';
 import type { Coordinates, ReportDraft } from '@litterbugs/report-contract';
 
 export type ReportWizardSnapshot = {
@@ -56,7 +58,6 @@ export async function loadLocalReportDraft(userId: string): Promise<SavedReportD
   }
   return value;
 }
-export const clearLocalReportDraft = async (userId: string) => { await transaction('drafts', userId, store => store.delete(userId)); forgetDeviceSave(userId, 'report'); };
 export const saveReportPublication = (journal: ReportPublicationJournal) => transaction('publications', journal.userId, store => store.put(journal, journal.userId));
 export async function loadReportPublication(userId: string): Promise<ReportPublicationJournal | undefined> {
   const value = await transaction<ReportPublicationJournal | undefined>('publications', userId, store => store.get(userId));
@@ -68,6 +69,31 @@ export async function loadReportPublication(userId: string): Promise<ReportPubli
   return value;
 }
 export const clearReportPublication = (userId: string) => transaction('publications', userId, store => store.delete(userId));
+
+// Recurrence journals have their own keys and retain File bytes. Ordinary report
+// publication records keep their stricter, already-uploaded path contract.
+export type SiteReportPublication = ReportPublicationJournal & {
+  sourceId: string;
+  draft: ReportDraft;
+  fingerprint: string;
+};
+const sitePublicationKey = (sourceId: string, userId: string) => `site:${sourceId}:${userId}`;
+export const saveSiteReportPublication = (journal: SiteReportPublication) => transaction('publications', journal.userId, store => store.put(journal, sitePublicationKey(journal.sourceId, journal.userId)));
+export const clearSiteReportPublication = (sourceId: string, userId: string) => transaction('publications', userId, store => store.delete(sitePublicationKey(sourceId, userId)));
+export async function loadSiteReportPublication(sourceId: string, userId: string): Promise<SiteReportPublication | undefined> {
+  const value = await transaction<SiteReportPublication | undefined>('publications', userId, store => store.get(sitePublicationKey(sourceId, userId)));
+  if (!value) return undefined;
+  const draft = value.draft;
+  if (value.userId !== userId || value.sourceId !== sourceId || !value.reportId || typeof value.fingerprint !== 'string'
+    || !draft || !['title', 'types', 'severity', 'notes'].every(key => typeof draft[key as keyof ReportDraft] === 'string')
+    || ![draft.selectedTypes, draft.selectedNotes].every(list => Array.isArray(list) && list.every(item => typeof item === 'string'))
+    || !Array.isArray(draft.photos) || draft.photos.length < 1 || draft.photos.length > 3 || !draft.photos.every(photo => photo instanceof File)
+    || !Array.isArray(value.paths) || value.paths.length > draft.photos.length
+    || !value.paths.every(path => typeof path === 'string' && path.startsWith(`${userId}/${value.reportId}/`))) {
+    throw new Error('The previous site report could not be read.');
+  }
+  return value;
+}
 
 export const clearPublishedReport = async (userId: string) => { await transaction('drafts', userId, (store, tx) => {
   tx.objectStore('publications').delete(userId);
@@ -81,17 +107,19 @@ export async function saveReportDraft(userId: string, draft: SavedReportDraft) {
   });
 }
 export async function loadReportDraft(userId: string) { return (await cloudDrafts.load(userId, 'report')) as SavedReportDraft | undefined; }
-export async function clearReportDraft(userId: string) { await cloudDrafts.discard(userId, 'report'); await clearReportPublication(userId); }
+export async function clearReportDraft(userId: string, options?: { expectedRevision?: number }) { await cloudDrafts.discard(userId, 'report', options); await clearReportPublication(userId); }
 
 /** Inspect a remote draft's location without replacing another tab's local editor. */
 export async function reportDraftLocation(userId: string): Promise<Coordinates | undefined> {
   const local = await loadLocalReportDraft(userId);
-  if(local) return local.coordinates;
+  if(local && !await cloudDrafts.isLocalSubmitted(userId, 'report').catch(() => false) && (hasReportDraftContent(local) || await loadReportPublication(userId)
+    || ['submitting', 'conflict'].includes(cloudDrafts.status(userId, 'report')))) return local.coordinates;
   const { createClient } = await import('./supabase/client');
   const { accountDraftPayload } = await import('@litterbugs/report-contract');
-  const {data,error} = await createClient().from('customer_drafts').select('payload,expires_at').eq('user_id',userId).eq('draft_key','report').abortSignal(AbortSignal.timeout(8000)).maybeSingle();
+  const {data,error} = await createClient().from('customer_drafts').select('payload,expires_at,photo_paths,state,submission_id').eq('user_id',userId).eq('draft_key','report').abortSignal(AbortSignal.timeout(8000)).maybeSingle();
   if(error) throw error;
   if(!data?.payload || Date.parse(data.expires_at)<=Date.now()) return undefined;
+  if(await isReportPublished(userId,data.submission_id)) return undefined;
   const parsed = accountDraftPayload(data.payload,'report');
-  return parsed.kind==='report' ? parsed.coordinates : undefined;
+  return parsed.kind==='report' && (data.state === 'submitting' || hasReportDraftContent(parsed, data.photo_paths.length)) ? parsed.coordinates : undefined;
 }

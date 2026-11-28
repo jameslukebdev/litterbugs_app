@@ -1,29 +1,31 @@
 import ReportCardDetails from './components/ReportCardDetails';
 import ReportCardMenu from './components/ReportCardMenu';
 import ReportPreviewHero from './components/ReportPreviewHero';
+import { PhotoBatchGroup, PhotoBatchProvider, usePhotoBatch } from './components/PhotoBatch';
 import { isReportShareable, shareReportWithSystemSheet } from './lib/reportSharing';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import {
   FlatList,
   Alert,
   Platform,
   Share,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { getDistanceMiles, useReports } from './lib/reports';
-import BrandedLoadingState from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, PullRefresh } from './components/ui';
+import { colors } from './lib/theme';
 
 export function ReportListItem({ report, origin, onPress, selected = false }) {
   const distance = getDistanceMiles(origin, report);
   const { favoriteIds, toggleFavorite, favoritesReady, hiddenIds, toggleHidden, getReportPhotoUrl } = useReports();
   const isFavorite = favoriteIds.includes(report.id);
   const actions = [
-    ...(favoritesReady ? [{ text: hiddenIds.includes(report.id) ? 'Restore report' : 'Hide report', icon: 'eye-off-outline', onPress: () => toggleHidden(report.id) }] : []),
+    // Existing hidden reports can still be restored; new reports can no longer be hidden.
+    ...(favoritesReady && hiddenIds.includes(report.id) ? [{ text: 'Restore report', icon: 'eye-outline', onPress: () => toggleHidden(report.id) }] : []),
     ...(isReportShareable(report) ? [{ text: 'Share report', icon: 'share-outline', onPress: async () => {
       try { await shareReportWithSystemSheet({ report, platform: Platform.OS, share: Share.share }); }
       catch { Alert.alert('Sharing unavailable', 'We couldn’t open the share menu. Please try again.'); }
@@ -71,6 +73,8 @@ export default function ReportList({
   style,
 }) {
   const listRef = useRef(null);
+  // Tapping the current tab again returns the list to the top.
+  useScrollToTop(listRef);
   const lastSelected = useRef(null);
   useEffect(() => {
     if (!selectedId) { lastSelected.current = null; return; }
@@ -80,8 +84,14 @@ export default function ReportList({
     listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
   }, [selectedId, reports]);
   const data = useMemo(() => reports ?? [], [reports]);
+  // The cards on screen show their photos together; cards below the fold never hold them back.
+  const photoBatch = usePhotoBatch();
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    photoBatch.setVisibleGroups(viewableItems.map(({ item }) => item?.id));
+  }, [photoBatch]);
 
   return (
+    <PhotoBatchProvider batch={photoBatch}>
     <FlatList
       ref={listRef}
       extraData={selectedId}
@@ -91,90 +101,54 @@ export default function ReportList({
       data={data}
       keyExtractor={(report) => String(report.id)}
       renderItem={({ item }) => (
-        <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
+        <PhotoBatchGroup id={item.id}>
+          <ReportListItem report={item} origin={origin} onPress={onReportPress} selected={item.id === selectedId} />
+        </PhotoBatchGroup>
       )}
+      onViewableItemsChanged={onViewableItemsChanged}
       ListEmptyComponent={initialLoading ? (
-        <BrandedLoadingState compact title="Loading nearby reports…" message="Finding active cleanups around you." />
+        <LoadingBee label="Loading nearby reports" message="Finding cleanups around you…" />
       ) : (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Ionicons
-              name="map-outline"
-              size={30}
-              color="#647078"
-              accessible={false}
-              importantForAccessibility="no"
-            />
-          </View>
-          <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
-          {emptyAction ? <TouchableOpacity accessibilityRole="button" onPress={emptyAction.onPress} style={{ minHeight: 48, marginTop: 12, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700', fontSize: 16 }}>{emptyAction.label}</Text></TouchableOpacity> : null}
-        </View>
+        <EmptyState bug="ladybug" title={emptyTitle} text={emptyMessage} action={emptyAction} style={styles.emptyState} />
       )}
       contentContainerStyle={[
         data.length === 0 && styles.emptyContent,
         contentContainerStyle,
       ]}
       style={style}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshControl={onRefresh ? <PullRefresh refreshing={refreshing} onRefresh={onRefresh} /> : undefined}
       scrollEnabled={scrollEnabled}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     />
+    </PhotoBatchProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  // Website card: white, thin lilac line and a soft 3-point drop edge.
   rowShadow: {
-    marginVertical: 10,
+    marginVertical: 9,
     marginHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#29402D',
-    shadowOpacity: 0.1,
-    shadowRadius: 9,
+    borderRadius: 18,
+    backgroundColor: colors.white,
+    shadowColor: colors.edge,
+    shadowOpacity: 1,
+    shadowRadius: 0,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    elevation: 2,
   },
   row: {
     borderWidth: 1,
-    borderColor: '#DDEBDD',
-    borderRadius: 20,
+    borderColor: colors.line,
+    borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  completedRow: { backgroundColor: '#F0F7F1', borderColor: '#66BB6A' },
-  selectedRow: { borderColor: '#66BB6A' },
+  completedRow: {},
+  selectedRow: { borderColor: colors.primary },
   emptyContent: {
     flexGrow: 1,
   },
-  emptyState: {
-    flex: 1,
-    minHeight: 250,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 34,
-  },
-  emptyIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E9EFE9',
-  },
-  emptyTitle: {
-    marginTop: 16,
-    color: '#24292D',
-    fontSize: 19,
-    fontWeight: '800',
-  },
-  emptyText: {
-    marginTop: 7,
-    color: '#707980',
-    fontSize: 15,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
+  emptyState: { flex: 1, minHeight: 250 },
 });

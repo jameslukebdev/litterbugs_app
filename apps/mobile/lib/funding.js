@@ -27,13 +27,16 @@ export async function loadContributionQuote(principalAmountCents) {
   return data;
 }
 
-export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId, pricingVersion }) {
+export async function createCleanupContribution({ reportId, principalAmountCents, clientRequestId, pricingVersion, showContributorName = true }) {
   const version = pricingVersion ?? (await loadContributionQuote(principalAmountCents)).pricingVersion;
   const { data, error } = await supabase.functions.invoke('create-cleanup-contribution', {
-    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: version },
+    body: { reportId, principalAmountCents, clientRequestId, pricingVersion: version, showContributorName },
   });
   if (error) throw new Error(await edgeFunctionErrorMessage(data, error, 'Payment could not be started. Please try again.'));
   if (data?.error) throw new Error(data.error);
+  if (data?.showContributorName !== showContributorName) {
+    throw new Error('Your donation privacy choice could not be verified. Check Payment activity before paying again.');
+  }
   return data;
 }
 
@@ -58,6 +61,26 @@ export async function createPayoutOnboardingLink() {
   return data;
 }
 
+// A short-lived session for Stripe's embedded payout setup, shown inside the app.
+// Returns null when the server does not offer it to the app, so the caller can fall
+// back to Stripe's hosted page.
+export async function createPayoutSession() {
+  const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
+    body: { mode: 'session', returnTarget: 'mobile', confirmAge18: true },
+  });
+  if (error || !data?.clientSecret || !data?.publishableKey) return null;
+  return data;
+}
+
+/** A short session for Stripe's payouts view (balance, payouts, bank or card) inside the app. */
+export async function createPayoutManageSession() {
+  const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
+    body: { mode: 'manage' },
+  });
+  if (error || !data?.clientSecret || !data?.publishableKey) return null;
+  return data;
+}
+
 export async function createPayoutDashboardLink() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'dashboard' },
@@ -74,7 +97,7 @@ export async function createPayoutDashboardLink() {
 export async function loadMyContribution(id, userId, { verify = true } = {}) {
   if (!id || !userId) return null;
   const { data, error } = await supabase.from('cleanup_contributions')
-    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, report:reports(id,title,cleanup_state,funding_eligibility)')
+    .select('id, report_id, principal_amount_cents, platform_fee_cents, total_amount_cents, status, created_at, refunded_at, show_contributor_name, report:reports(id,title,cleanup_state,funding_eligibility)')
     .eq('id', id).eq('contributor_id', userId).maybeSingle();
   if (error) throw error;
   if (data?.status === 'payment_pending' && verify) {
@@ -116,7 +139,7 @@ export async function loadReportFundingFeedback(reportId) {
 export async function loadMyExpiredReports(userId) {
   const { data, error } = await supabase
     .from('reports')
-    .select('id, title, funded_amount_cents, expires_at, renewal_decision_due_at, renewal_status')
+    .select('id, title, photo_paths, funded_amount_cents, expires_at, renewal_decision_due_at, renewal_status')
     .eq('user_id', userId)
     .eq('renewal_status', 'decision_required')
     .order('renewal_decision_due_at');
@@ -142,6 +165,19 @@ export async function requestGeminiReview(target) {
   });
   if (error) throw new Error(data?.error || error.message);
   return data;
+}
+
+// Every contribution's status and charged amount, for the "Donated" total on Payments.
+export async function loadMyContributionAmounts(userId) {
+  const amounts = [];
+  if (!userId) return amounts;
+  for (let start = 0; ; start += 500) {
+    const { data, error } = await supabase.from('cleanup_contributions')
+      .select('id, status, total_amount_cents').eq('contributor_id', userId).order('id').range(start, start + 499);
+    if (error) throw error;
+    amounts.push(...(data ?? []));
+    if (!data || data.length < 500) return amounts;
+  }
 }
 
 export async function loadReporterRewards(userId) {

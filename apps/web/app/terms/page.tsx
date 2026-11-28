@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/terms' },
   title: 'Terms | Litterbugs',
   description: 'Terms for Litterbugs reports, funded cleanups, contributions, and rewards.',
-};
+});
 
 export default function TermsPage() {
   return (
@@ -15,7 +16,7 @@ export default function TermsPage() {
       eyebrow="LITTERBUGS TERMS"
       title="Terms of use"
       summary="These terms govern Litterbugs accounts, community reports, cleanup funding, cleaner rewards, safety, reviews, disputes, and refunds."
-      effectiveDate="October 21, 2026"
+      effectiveDate="November 13, 2026"
       sections={[
         {
           title: 'Agreement and who may use Litterbugs',
@@ -45,6 +46,14 @@ export default function TermsPage() {
             <p>The displayed cleaner reward is the total contribution principal, not the total charged. If an eligible cleanup is approved, the cleaner receives that exact frozen principal. The service fee is 20% of the contribution, plus $0.50 for contributions below $5. Litterbugs pays 5% of eligible contributed principal to the reporter from that fee, retains the remainder, and covers standard processing costs. Existing payments and pending payment attempts keep their original fee and total. Selecting “No contribution now” creates no fee. Contributions are not charitable donations and are not represented as tax deductible.</p>
             <p>By confirming a contribution, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. A contribution is successful only after the payment is confirmed and reconciled. A pending, failed, canceled, reversed, duplicated, or mismatched payment may be blocked or sent to administrator review.</p>
             <p>A successful contribution remains assigned to the report until paid to an approved cleaner or refunded under the published rules. A contributor cannot cancel, withdraw, or opt out merely because they changed their mind. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
+          </>,
+        },
+        {
+          title: 'Tips',
+          content: <>
+            <p>Anyone can tip a cleaner or reporter who has finished Stripe payout setup, including people without a Litterbugs account. Tips are between <strong>$3 and $1,000</strong>. The person you tip receives the whole tip directly in their Stripe account. Litterbugs adds a service fee on top of the tip, currently $0.50 plus 5% of the tip, keeps that fee, and covers standard processing costs. The tip, the fee and the total are shown before you pay.</p>
+            <p>By confirming a tip, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. Tips are voluntary gifts to the person you tip. They are not payments for a service, not charitable donations, and not represented as tax deductible. Tips are not refunded because you changed your mind, but Litterbugs may refund a tip that was unauthorized, duplicated, or fraudulent, which also takes the tip back from the person who received it. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
+            <p>Cleaners and reporters are responsible for determining and reporting taxes on tips they receive.</p>
           </>,
         },
         {
@@ -115,7 +124,7 @@ export default function TermsPage() {
         {
           title: 'Prohibited conduct and enforcement',
           content: <>
-            <p>You may not misuse the service, trespass, submit false or infringing content, manipulate evidence, impersonate another person, create duplicate or coordinated accounts to evade rules, interfere with security, scrape protected data, exploit payment flows, harass another member, or use Litterbugs for unlawful activity.</p>
+            <p>Do not post pornography, sexual content involving minors, graphic violence, hateful or threatening content, harassment, or content that violates another person’s privacy. You may not misuse the service, trespass, submit false or infringing content, manipulate evidence, impersonate another person, create duplicate or coordinated accounts to evade rules, interfere with security, scrape protected data, exploit payment flows, harass another member, or use Litterbugs for unlawful activity.</p>
             <p>Litterbugs may remove content; restrict reports, contributions, claims, disputes, rewards, or accounts; preserve evidence; and cooperate with providers or authorities when reasonably needed to enforce these terms, investigate fraud or safety issues, comply with law, or protect the service and its users.</p>
           </>,
         },

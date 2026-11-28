@@ -1,3 +1,4 @@
+import { colors } from './theme';
 export const BOTTOM_NAV_METRICS = Object.freeze({
   height: 64,
   radius: 28,
@@ -11,11 +12,11 @@ export const BOTTOM_NAV_METRICS = Object.freeze({
 });
 
 export const BOTTOM_NAV_COLORS = Object.freeze({
-  active: '#2F7D32',
-  inactive: '#4B5563',
-  surface: '#FFFFFF',
-  activeSurface: '#EAF5EA',
-  border: 'rgba(47,125,50,0.16)',
+  active: colors.primary,
+  inactive: colors.body,
+  surface: colors.white,
+  activeSurface: colors.primarySoft,
+  border: 'rgba(81, 70, 237, 0.16)',
 });
 
 export function getBottomNavBottom(safeAreaBottom = 0) {

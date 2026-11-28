@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
-import { PublicSiteHeader } from '@/components/public-site-header';
+import { Website } from '@/components/public-website';
 import styles from '../about/about-simple.module.css';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/cleanup-safety' },
   title: 'Cleanup Safety | Litterbugs',
   description: 'Simple precautions for choosing a site, handling litter, and cleaning safely with Litterbugs.',
-};
+});
 
 export default function CleanupSafetyPage() {
-  return <div className={styles.surface}>
-    <PublicSiteHeader activePath="/cleanup-safety" />
-    <main className={styles.page}>
+  return <Website activePath="/cleanup-safety">
+    <main id="main-content" tabIndex={-1} className={styles.page}>
       <h1>Cleanup safety</h1>
       <p>Helping your community should never mean putting yourself at risk. A report on the map does not mean a site is safe. Choose only work you can do safely and legally.</p>
       <p><strong>Check the site first.</strong> Look for traffic, uneven ground, weather hazards, animals, and anything beyond your ability. Work in daylight and good weather. Stop or leave if conditions become unsafe.</p>
@@ -35,5 +35,5 @@ export default function CleanupSafetyPage() {
       </nav>
       <p><strong>Questions?</strong> Email <a href="mailto:admin@litterbugs.app">admin@litterbugs.app</a>.</p>
     </main>
-  </div>;
+  </Website>;
 }

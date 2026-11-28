@@ -1,41 +1,467 @@
 # Current Mobile Release Candidates
 
-## October 2 — quiet draft saving release
+## Multi-size audit — local only, November13
 
-Routine draft-sync messages and the changing “Sync now” button are removed from
-the native report and cleanup forms. Autosaving continues; explicit conflict
-choices and recovery for an existing submission remain available. GitHub
-[PR #123](https://github.com/jameslukebdev/litterbugs_app/pull/123) is merged.
-Release source: `15f4d9c6a66ab9313ac2f7dd550620fd8756a465`.
+Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` fixes compact-screen tutorial overlap, exactly150%
+text truncation of Report Litter, and selected pins obscured by search/card.
+Short/large-text map previews reserve the pin and fixed grabber/X; content
+scrolls inside. Dragging the fixed header dismisses even after content has
+scrolled. Existing normal/larger styling and platform motion timings remain.
 
-This candidate also includes the map viewport/clustering and cleanup-draft photo
-preservation fixes merged after build 17. Validation on the release source:
-483 mobile tests passed, 34 shared-contract tests passed, shared-contract type
-checking passed, and all 168 mobile source modules validated. One opt-in native
-integration test was skipped. Rendered component tests confirm normal autosave
-cycles produce no layout elements and account/device conflict choices still
-work. iOS and Android Hermes exports passed after a clean locked dependency
-installation. No new physical-device acceptance is claimed for this candidate.
+Native checks: physical iPhone6s375×667; existing iPhone17Pro simulator402×874
+(default and accessibility-medium text); physical Pixel5 with temporary logical
+displays320×568 (default/150% text),360×640 and412×915. These Android sizes
+are virtual-display configurations on one Pixel, not separate phone models.
+iPhone6s used current local JS/assets in the existing isolated27 native shell,
+not a new store binary. Map/cards, tutorial, reports/details and profile/navigation
+were inspected. Both physical phones passed scrolled-content→grabber dismissal;
+X also closes. Pixel1080×2340/density440/font1.0 and simulator large text restored.
 
-iOS 2.0.0/build 18 finished in EAS job
-`ef1c92ce-67bd-4e47-a0b5-ad30265220a3`, using the existing production identity
-`com.litterbugs.app` and Luke's existing signing credentials without credential
-changes. The downloaded IPA passed strict code-signature verification, identifies
-version 2.0.0/build 18, and uses the existing production push entitlement. Its
-bundled code omits routine draft-sync copy and retains conflict recovery copy.
-IPA SHA-256: `8de35770ab578cc2917e9b58ac395087924b51f7184186b1d0b3e4078331f94d`.
-EAS submission `94d3d063-c3ae-4643-9176-d6c57cb142e7` completed. Apple confirms
-**VALID / IN_BETA_TESTING**, uploaded October 2 at 6:04 p.m. EDT. Build 18 is
-available in the existing internal [TestFlight setup](https://appstoreconnect.apple.com/apps/6757313862/testflight/ios).
-No tester groups, external beta review, or public App Store release were changed.
+658 mobile tests pass/1 existing skip; scoped ESLint and225-module source check
+pass. Evidence: `artifacts/mobile-2.1.0/device-evidence/screen-size-audit/audit.json`
+and selected native screenshots. Existing Pixel draft preserved; no publication,
+payment/funding/cleanup transaction or new authentication-integration claim.
+Existing Apple-revocation/Facebook exclusions retained.
 
-Coordination with the active “Align website with TestFlight app” chat was checked
-against website PR #124, merged as `25fa3dbf13d7717b994a6fa83844429f2c374bd2`.
-The complete mobile, shared-contract, patch and dependency trees match build 18's
-source exactly. That website release changes presentation only, including saved
-draft summaries; draft selection and sync behavior are unchanged. The native
-release used an isolated checkout so concurrent website edits were not bundled.
-Public App Store review/submission remains Luke's separate release step.
+Owner explicitly held rebuild/replacement work to inspect sizes. No prior review
+was canceled; no new build/upload/submission, OTA, deployment or push started.
+Submitted iOS28/Android25 still lack the local follow-ups. Both refreshed store
+binaries and their final artifact checks remain pending. Public release stays
+manual; simulator remains open.
+
+## Welcome replay test link removed — local only, November13
+
+Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile welcome-replay test row from both
+platforms. Previously __DEV__-only, so it was already absent from store builds;
+now test screens also omit it. “How Litterbugs works” and normal first-launch
+welcome remain.8 existing onboarding/discovery-memory checks, Profile lint and
+225-module source check pass. No map/animation changes, native build, upload,
+resubmission, OTA, deploy or push; existing manual public-release holds retained.
+
+## Android report-card motion — local only, November13
+
+Source `00e95d84d295d38964da02072cf149a22aa12cce` smooths Android map preview opening and closing. Waits for
+native card layout; travel is the measured card height plus bottom/shadow
+clearance, with native eased360ms entry/280ms exit. Card stays mounted through
+exit, content updates do not restart entry, quick reopen reverses from current
+position, and old exits cannot clear a newer selection. iPhone's original
+240/180ms motion and full-screen distance remain unchanged; explicit regression
+passes. No pin/camera behavior changes in this follow-up.
+
+648 mobile tests pass/1 existing skip; scoped production lint and225-module
+source check pass. Physical Pixel QA recordings show continuous up/down travel.
+Owner confirmed “Yes, both directions feel smooth.” Local evidence:
+`device-evidence/android-card-smooth.json`, `android-card-smooth-open.mp4` and
+`android-card-smooth-close.mp4` under artifacts/mobile-2.1.0. No native build,
+store upload/review change, OTA, deploy or push. Manual public release holds
+retained; submitted iOS28/Android25 remain unchanged and lack local follow-ups.
+
+## November13 — Android camera and prompt drop start, local only
+
+Source `419f6377c1f912e27098df37948882ada3c59f6e` scopes camera corrections to Android's own map adapter.
+Native gestures no longer echo camera positions back through a controlled region;
+search/location requests still move the map. Android pins hide offscreen and
+replay on return, starting during camera movement instead of waiting for the
+map to settle. This shortens the delay before dropping; native fall520ms,
+stagger60ms and first-image readiness100ms are unchanged. iPhone behavior stays
+approved, with its original map component and all iPhone branches preserved.
+
+642 mobile tests pass/1 existing skip; scoped lint and225-module source check
+pass. Physical Pixel search, cluster zoom, panning/reentry and idle stability
+checked. Owner confirmed “Yes, both feel right.” iPhone artwork/animation/card/
+framing file hashes match the saved approved baseline; existing iPhone hook
+regressions pass. Evidence: local device-evidence/android-map-rediscovery.json/mp4.
+
+No native build, upload, review change, OTA, deploy or push. iPhone simulator stays
+open. Existing submitted iOS28/Android25 remain unchanged, with manual public
+release holds retained. Refreshed candidates are still needed to include local
+follow-ups; no iOS rebuild/resubmission during this Android-only pass.
+
+## November13 — report card follow-up on both phones, local only
+
+Latest local source `f37328aee983c15e165d8456bb22eef8b23fe980` additionally
+makes detail-toolbar favorite/share icons32 points (was20), touch targets52,
+and removes Hide from the toolbar/list menu on both platforms. Old hidden items
+can still be restored.9 focused tests, scoped lint and source check pass;
+iPhone simulator appearance verified. Both refreshed builds still pending.
+
+Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac` adds bottom-up report previews,
+swipe-down dismissal at the top of content, a fixed44-point close target and
+short-screen scrolling on iPhone and Android. Header polished to one continuous
+card/photo edge,36-point rail,3-point gray grabber and vertically centered18-point
+plain X (no gray circle). iPhone normal pin drop shortened520→280ms with25ms
+stagger; Android native pin timing unchanged. Prior iPhone re-entry fix225a0be retained.
+
+634 mobile tests passed/1 existing skip;22 focused checks and scoped component
+lint pass.224-module source check0 errors. Simulator X dismissal verified;
+owner confirmed swipe-down closes cleanly. Both submitted iOS28 and Android25
+lack these newer shared card changes, so refreshed builds for **both platforms**
+are needed before public release. Existing reviews/manual release unchanged;
+no build/upload/OTA/deploy/push started. Privacy details remain complete.
+
+## November13 — iPhone map follow-up, local only
+
+Owner requested an iPhone-only correction after submission. Source
+`225a0bec528424fa241b81624961b77a9ea96db5` hides already-landed pins when they
+leave view, then starts the full drop into an empty spot on return. Android's
+in-place marker behavior remains unchanged. Also guards an old animation cleanup
+from cutting short a fresh drop. Owner manually verified the simulator behavior;
+6 hook regressions/12 focused tests pass, hook lint and224-module source check pass.
+
+This local correction is **not included in submitted iOS2.1.0(28)**. A refreshed
+iOS candidate is needed to include it before public release. Android25 and both
+existing review submissions are unchanged; no new native build/OTA/upload was
+started. Apple privacy remains complete and public release remains manual.
+
+## November13 — full2.1.0 app submitted; public release manual
+
+Owner found missing artwork and a selected pin partly hidden by the report card.
+The simulator's stopped Metro server caused missing newly loaded images; restarting
+it with analytics disabled restored the existing artwork. Source eaa461a changes
+only selected-pin vertical framing from30% to22%; repeated selection of both
+reported cards verified the bug and tail visible above the preview. Two targeted
+map-framing tests pass. Screenshot: artifacts/mobile-2.1.0/device-evidence/selected-pin-fixed.png.
+
+Frozen release source is now7e4275b598cb37c1932294d451f3e110e171f7ff (c34f569 plus
+that one helper change). Both refreshed production builds finished: iOS28 / Android25. Previous iOS27 /
+Android24 originals remain historical evidence and do not contain this fix. Do
+not upload them as the latest candidate. Owner subsequently authorized upload
+and store review submission, with public release held manual. See the latest
+readiness addendum for exact submission state. Apple28 is Waiting for Review;
+Google25 and Data safety are in review; quick checks completed at the3:08PM
+follow-up. Luke was added to Burrow Bros;28 shows internal Testing for that group.
+Apple manual release and Google managed publishing ON hold public release.
+At the owner’s follow-up request, Apple2.1 privacy details are now complete and
+published:19 categories, no unfinished setup, reload verified at3:18PM ET.
+Remaining: store approvals/actual feedback and explicit owner release instruction.
+
+
+## November 13 — original27/24 verification (superseded)
+
+The latest unreleased candidate is local source `c34f5698b7c880e3392512206d8f588f0b846d8e`.
+Both production EAS builds finished: iOS **2.1.0 (27)** / `14f76fb5-40d9-4f3d-8c95-13489935ec7f`, Android **2.1.0 (24)** / `e6a72070-4f04-4626-afec-29e9956874be`.
+Original signed IPA/AAB are under `artifacts/mobile-2.1.0`; hashes, symbol matches,
+physical-device evidence and store handoff are in
+[the November13 readiness record](reviews/2026-11-13-mobile-release-readiness.md).
+Analytics stays ON by default; test-device exclusions persist. No store upload/submission,
+GitHub push or mobile OTA publication. Submission remains withheld; apply the prepared
+Apple privacy entries in coordination with release. Luke accepted the updated agreement;
+App Store Connect now has2.1.0 in **Prepare for Submission**, with release notes,
+review instructions and support/marketing URLs saved. The policy URL for the next
+version is https://litterbugs.app/privacy. Manual release remains selected; no build
+is attached/uploaded. Dedicated standard reviewer credentials are now saved in
+Apple’s private fields; password sign-in/profile access verified, no admin rights.
+Privacy data-type answers still require immediate Publish, so no privacy-label
+draft is claimed. Pixel remote Expo/FCM delivery and tap/helper handling passed in
+a disposable copy after the owner made it available again. Original phone data
+was preserved. See the latest store handoff in the readiness record.
+
+Public status checked November13: Apple **2.0.1**, released October31;
+Google Play **2.0.1 (21)**, released October29. The historical October30 Apple
+status below is superseded by this public readback.
+
+## October 30 — current store status checked
+
+Google Play Console production Releases shows **21 (2.0.1)** as **Available on
+Google Play**, released October 29. This supersedes the submission-only status
+below. Apple’s public US listing still shows **2.0.0**, dated October 6.
+App Store Connect redirected to sign-in, so the private submission/review status
+of iOS **2.0.1 (24)** could not be verified. The public listing does not establish
+whether Luke has submitted a pending update. No new submission or account change
+was made during this read-only check.
+
+## October 29 — Google Play build 21 submitted; Apple handoff prepared
+
+At the owner's explicit request, Android **21 (2.0.1)** was uploaded and submitted
+for production review. Play Console confirmed **“1 change sent for review”** and
+listed only **Production → 21 (2.0.1) → Start full rollout** under **Changes in review**.
+Automated quick checks were still running at confirmation (up to 14 minutes).
+This is a submission confirmation, not Google approval or a live-release claim.
+Existing country targeting and 100% rollout were preserved. Managed publishing
+remains off, so approval automatically releases the update.
+
+Current policy status showed no policy issues; App content had no declarations
+needing attention. The existing reviewer username/password entry and instructions
+were present and preserved; reviewer authentication was not retested here.
+Bundle validation had no blocking errors and one nonblocking deobfuscation-file
+warning. Supported-device counts showed zero devices lost from release 18.
+The older DEX optimization notice for release 18 remains due February 2027;
+it was not a blocking validation error for build 21.
+
+Two browser file-chooser uploads failed generically; selecting the identical AAB
+through Chrome's native file picker succeeded. The uploaded local SHA-256 was
+`7991df183117ccd70ae32cb9afb8680f5996c9b7f4c2c8c050c452b5a8f83b94`.
+Memory available was 37% during submission.
+
+Apple **2.0.1 (24)** remains unsubmitted. The signed existing-team IPA and
+Transporter/App Store Connect instructions are packaged in
+`artifacts/mobile-2.0.1/submission-2026-10-29/luke-ios-handoff.txt` for Grant to send
+Luke. The handoff email was subsequently sent at the owner’s explicit request from
+`gegibson@icloud.com` to `jameslukeb.evj@gmail.com`; Apple Mail confirmed it in
+Sent. The connected Resend key could not send from `admin@litterbugs.app`, so the
+owner-authorized iCloud alternative was used. No admin-domain email configuration
+or Apple account/credential was changed. Receipt: `luke-ios-email-sent.png` in the
+submission evidence folder.
+No production OTA was published.
+
+Submission evidence:
+`artifacts/mobile-2.0.1/submission-2026-10-29/google-play-build-21-submitted.png`
+and `google-play-submission.json` in the same folder.
+
+## October 29 — final release candidates verified
+
+Version **2.0.1** has fresh release artifacts containing the final payout UI
+changes and native OTA support. These supersede Android 20 and iOS 23 below.
+At verification time, no store submission or production OTA publication had been performed. See the Google Play submission record above for the subsequent authorized submission.
+
+| Platform | EAS build | Build | Artifact |
+| --- | --- | --- | --- |
+| Android | `431906ac-098d-4a0c-be84-e4fbeac29dda` | 21 | `artifacts/mobile-2.0.1/litterbugs-2.0.1-android-21.aab` |
+| iOS | `0b2601ba-c68d-4568-936d-8301fc6db5d7` | 24 | `artifacts/mobile-2.0.1/litterbugs-2.0.1-ios-24.ipa` |
+
+Both archives passed integrity, embedded final payout-copy, version/package,
+production backend, runtime `2.0.1`, enabled-update and production-channel checks.
+The Android bundle validated and its signature matched the existing production
+certificate. The iOS IPA passed strict code-signature and existing-team
+provisioning checks. Existing credentials were frozen and reused.
+
+The mobile suite passed 515 tests with one opt-in skip; 171 source modules had
+zero validation errors. An APK generated from the exact new Android AAB, with
+identical JavaScript payload, passed fresh install, embedded launch, guest
+profile/help, back navigation and background/resume assertions. The freshly
+built iOS simulator app passed map, profile/help, embedded launch, back and
+background/resume checks; its installed executable matched the downloaded
+artifact. Simulator job `d4c9f21f-d3f5-4af9-a441-2185a2fd00ec` reports remote
+build 24, while its simulator-only Xcode bundle number is 1; the actual store
+IPA independently verifies build 24. The preceding native payout-state and real
+sandbox browser acceptance remains recorded below. Fresh-binary smoke did not
+impersonate a member or complete live payout onboarding.
+
+The locally signed Android test APK produced a Maps authorization warning.
+A separate production-identity check confirmed rendered Maps and zero
+authorization warnings in the production-signed version 20 test app. The new
+AAB 21 has the exact same Maps API key, package and signing certificate.
+[Google documents package/certificate restrictions for Android Maps keys](https://developers.google.com/maps/documentation/android-sdk/get-api-key).
+This establishes authorization for that release identity; it is distinct from
+claiming a direct production-signed APK 21 installation. The exact build-21
+payload was tested separately. A supplemental signed-APK job
+`28b87874-bcea-4584-8c96-0b020fe5d0bd` was canceled once no longer needed.
+The added `production-acceptance-android` profile supports future full signed
+APK checks without incrementing the remote version or changing other profiles.
+
+The Android release fingerprint matches APK 20, which passed actual remote
+OTA delivery. A separate fresh iOS OTA pass on the new simulator binary
+downloaded and launched update `01a188cc-1c77-7b33-8044-62c51a4ac6dd`, group
+`a55111bf-b56e-4d72-9007-fad8ba881883`, from `production-preview`. The Help screen
+displayed `App update: 01a188cc`; the native executable remained unchanged,
+with one successful remote launch and zero failures. No reinstall occurred. Source UI/runtime inputs
+remained unchanged through the builds; afterward, only the acceptance profile
+and its README instructions were added. All differences are documented in the
+verification results. Minimum observed available memory was 30%, above the 15%
+guard. Test devices are shut down and the disposable Android copy was removed.
+
+Evidence: `artifacts/mobile-2.0.1/verification/final-release-2026-10-29/result.json`.
+Real carrier SMS, final Stripe agreement/identity/bank submission and live funds
+movement were not tested. Store ownership, disclosures and submission remain
+separate release work. Android 21 satisfies the requirement to exceed the
+owner's preview APK version code 20.
+
+## October 29 — simulator/emulator payout usability pass
+
+Nevan confirmed his current app now works. The additional native-device pass
+used one device at a time: Android API 36 and iPhone 17 Pro / iOS 26.5.
+Missing-information, pending-review, ready, and first-time eligibility states
+were checked using the production payout screen with isolated status fixtures.
+The Android native assertions passed; iOS accessibility/screenshot inspection
+confirmed the same states and eligibility enabling/disabling.
+
+The pass exposed three usability problems that are now corrected: the next
+setup action preceded by a long information card, first-time instructions on
+already-ready accounts, and “Set up payouts” wording during pending review.
+The action now precedes explanatory content, ready accounts have a concise
+review action, and pending accounts offer “Review payout setup” without a
+duplicate introduction. These are JavaScript changes. The refreshed Android 21 and iOS 24 candidates
+above now include them; the older 20/23 artifacts below predate this pass.
+Android 21 exceeds the owner's preview version code 20.
+
+Preview OTA group `0f08afb1-75b8-403e-a69c-27d4e8451dba` carries these changes.
+Both actual native test apps downloaded and launched it without reinstalling:
+Android `01a1886b-31ad-7732-b393-aafaab49c1eb` and iOS
+`01a1886b-31ad-704a-bbb1-3d5a22d09883`. Android's installed APK retained its
+verified SHA-256; iOS retained its native executable SHA-256 and recorded one
+successful latest-update launch with zero failures. Neither production OTA nor
+store submission occurred.
+
+Real sandbox browser checks preserved Stripe verification across switching to
+Messages and returning on both platforms. iOS used the actual Expo auth-session
+call in the isolated screen and continued with Stripe's test code to the saved
+review screen. Android used a small native host with the same corrected Custom
+Tab flags; screenshots confirmed Messages foreground and the preserved Stripe
+screen afterward. Android web accessibility assertions timed out, so that
+browser result is based on visual evidence; advancement through its sandbox
+code to final review was not confirmed. No final agreement, real identity/bank
+submission, carrier SMS delivery, transfer, or payout was tested. Synthetic
+screen states are distinct from an authenticated live-account end-to-end test.
+
+The mobile suite passed 515 tests with one opt-in skip. Memory was sampled every
+10 seconds; the minimum observed available percentage was 30%, above the 15%
+guard. Both devices were shut down and the disposable Android copy removed;
+existing emulator data was preserved. Evidence and exact limitations are in
+`artifacts/mobile-2.0.1/verification/device-retest-2026-10-29/result.json`.
+
+## October 28 — 2.0.1 payout guidance and verified OTA delivery
+
+The final store artifacts are built and downloaded, including the full payout
+flow follow-up below. Builds 19 (Android) and 22 (iOS) are superseded. Neither store submission nor
+a production OTA deployment occurred. Existing 2.0.0 users need to install this
+native release once before they can receive future compatible OTA fixes.
+
+| Platform | EAS build | Version/build | Local artifact |
+| --- | --- | --- | --- |
+| Android | `43098872-35f2-422b-a683-01206e3c486c` | 2.0.1 / 20 | `artifacts/mobile-2.0.1/litterbugs-2.0.1-android-20.aab` |
+| iOS | `96ec9ca1-9c95-4d16-b38e-4a34b9e599bd` | 2.0.1 / 23 | `artifacts/mobile-2.0.1/litterbugs-2.0.1-ios-23.ipa` |
+
+### Owner's Android phone testing build
+
+Installable APK: EAS `689f7bff-3413-40a6-a54b-7e21007c1203`, 2.0.1/code 20,
+`production-internal`, package `com.litterbugs.app`, update channel
+`production-preview`. It connects to the live Litterbugs backend and uses the
+member's normal account. APK download:
+https://expo.dev/artifacts/eas/EJLyAf1kZrTnjZVj6uHnjUGzXRwxEN4fykh7B7oKy2Q.apk .
+The downloaded APK passed signature verification against the existing production
+certificate, manifest/package/version/runtime checks, archive integrity, and
+checks that the latest payout guidance is embedded. SHA-256 and native settings
+are recorded in `artifacts/mobile-2.0.1/litterbugs-2.0.1-android-20.apk.json`.
+It has not yet been installed on the owner's physical phone by this agent.
+
+Before the eventual Google Play submission, create the final production Android
+build with a version code **greater than 20**, so Play can replace this installed
+testing-channel APK. The AAB 20 above remains a review artifact; no publication
+is authorized or performed in this pass. iOS build 23 is unaffected by this
+Android testing-distribution requirement.
+
+Artifact SHA-256 values are recorded beside each file. Packaged native update
+settings were inspected in the actual IPA and AAB: updates enabled, runtime
+2.0.1, production channel, and the existing Litterbugs EAS update URL.
+Both embedded bundles also contain the new saved-eligibility handling,
+“Update payout details” action, and “What to expect” guidance.
+
+Real OTA acceptance passed on an iOS simulator and Android API 36 emulator.
+Each installed a native production-test build, downloaded the update, restarted,
+and displayed the new Help screen's downloaded update ID. Native executable/APK
+hashes stayed unchanged. The iOS update database recorded a successful remote
+launch with zero failed launches. Test update group
+`a5c25e67-8706-43c5-b9d3-066beaaab31b` was published only to
+`production-preview`; the production branch remained empty. Test native builds
+were iOS `55a6d576-1b85-4970-bf51-6d364d6ea890` and Android
+`834732e4-59b2-4125-ac52-13a4e3d0c0fb`. Their channel differs from the store
+artifacts intentionally. After these native builds, the packaging configuration
+was limited to iOS/Android and Metro to two workers; the successful OTA export
+uses those final settings.
+
+The refreshed payout-flow OTA group
+`959b6617-e2f6-4719-b550-f6db42027a61` was also published only to
+`production-preview`. Its iOS update
+`01a1857a-d3bf-7b32-82de-e5755db04401` was downloaded and launched successfully
+on the same installed native binary without reinstalling; the Help screen
+displayed `App update: 01a1857a`. Expo recorded one successful launch and zero
+failed launches. Android delivery was verified with the preceding test group;
+the refreshed Android bundle was exported and published, without another
+emulator delivery run.
+
+The full-flow review corrected the earlier diagnosis of Nevan's account. Live
+Stripe showed **Enabled**, with active **Payouts** and **Transfers**. His SSN
+last-four requirement was due only if volume reaches $3,000. The app's server
+incorrectly treated every user-action requirement, including `eventually_due`,
+as blocking. Readiness now follows Stripe's active capabilities, and future-only
+requirements are excluded from the current missing-information list. Current
+requirements remain actionable even while Stripe permits payouts. Restricted
+or missing capabilities still block payouts.
+
+Owner-requested account-specific confirmation also inspected Nevan's live v2
+account data in Stripe: both recipient capabilities were active and the only
+SSN requirement had `minimum_deadline.status = eventually_due`. Running the
+downloaded deployed classifier on those exact non-identity fields returned
+`enabled`, `payoutsEnabled: true`, and an empty current-requirements list. His
+saved app record still held the old pending result, so the existing status-sync
+RPC corrected that cache under a guarded transaction matching the user, Stripe
+account, country, saved age confirmation and exact old SSN-only requirement.
+The RPC only writes account status and has no table triggers. An independent
+read after commit confirmed enabled/true, no current requirements, and saved
+age confirmation. No Stripe requirement, identity, bank details or funds changed.
+This verifies server readiness; his physical screen was not accessed.
+
+Payout setup distinguishes missing information from pending review and shows
+readable labels for legal name, agreement confirmation, identity, bank, and
+reward-activity requirements. Existing saved age confirmation avoids another
+checkbox when members resume. Enabled accounts needing current remediation
+open the secure onboarding form through “Update payout details”; ready accounts
+open payout details directly. The app explains that Stripe's “product
+description” means the member's Litterbugs reward activity.
+
+Android browser options now avoid the default NO_HISTORY task behavior. A native
+regression test using the same corrected Custom Tab flags retained a synthetic
+verification form and entered code after switching to Messages and returning via
+the launcher. This is not a complete real Stripe SMS/identity/bank test.
+
+Production `create-cleaner-onboarding-link` version 29 and `stripe-webhook`
+version 27 contain the readiness correction. The webhook deployment preserved
+the deployed handler and other dependencies; only its shared recipient-state
+logic changed. Both deployed sources were downloaded again and matched their
+reviewed staging copies. Authentication and webhook-signature guards still
+reject unauthenticated/unsigned requests.
+
+New individual recipients receive this activity description, without a platform
+website: “Individual participation in litter reporting and community cleanups
+coordinated through Litterbugs. Litterbugs pays rewards for eligible, verified
+activity.” Existing member-provided profiles and entity types are preserved.
+Exact legacy platform values are corrected where readable; a redacted profile
+is updated only when Stripe explicitly reports a missing activity-description
+requirement. Real sandbox migration verified the old platform URL was removed
+and the website requirement satisfied by the activity description.
+
+Hosted onboarding was exercised with synthetic data through contact/SMS,
+personal details, bank selection, manual test-bank entry, optional Link saving,
+and final review. Returning to the configured test callback and opening a fresh
+link resumed directly at review with name and bank intact. The final agreement
+was left unsubmitted; actual API requirements correctly kept the account
+restricted for the missing agreement and omitted future DOB/SSN thresholds.
+No real bank, identity, charge, transfer, or payout was submitted. Native
+physical-device completion remains unverified.
+
+Stripe still displays “Product description” and business-oriented wording in
+its hosted form, even with the field prefilled. The alternate recipient service
+agreement was tested only in sandbox and explicitly rejected for US-platform →
+US-recipient accounts. Financial Connections remains available with manual
+entry as fallback; saving with Link is optional. Live and sandbox collection
+settings request no optional balances, ownership or transaction data. No bank
+collection settings, service agreements, fees or payout timing were changed.
+
+Both the ladybug icon and full wordmark were saved in the live Stripe platform
+and separate Connect onboarding branding settings, then reopened to verify
+persistence. The same icon and wordmark were saved and reopened in sandbox
+Connect branding. Both Connect previews use the ladybug in place of the generic
+icon; Stripe chooses which saved asset appears in each hosted layout.
+
+Source verification: 514 mobile tests passed, one opt-in test skipped; 171 native
+modules validated. Four rendered-component tests cover first eligibility,
+resuming a confirmed member, enabled-account remediation, and direct dashboard
+access. Vitest now supports the app's JSX-in-JS screens and uses two workers by
+default. Backend checks: 48 tests passed and affected functions typechecked.
+Logs, screenshots, native
+hashes and acceptance metadata are under
+`artifacts/mobile-2.0.1/verification/`, with the full flow follow-up in
+`artifacts/mobile-2.0.1/verification/connect-flow/`.
+
+Memory was sampled throughout native acceptance; minimum available memory was
+30% across the two passes, with no guard shutdown. iOS and Android ran sequentially. Both are now
+stopped, and the disposable Android AVD was deleted to recover about 4.5 GiB.
+Available memory rose to 48% afterward. Existing Apple/Facebook access exclusions
+remain excluded, not passed. No Apple account settings were changed.
+
+The later iOS OTA follow-up also shut its simulator down after verification.
+The step-by-step audit notes, evidence limits, provider checks and screenshot
+index are in `artifacts/mobile-2.0.1/verification/connect-flow/flow-audit.json`.
 
 ## October 2 — connected iPhone draft and map verification
 

@@ -1,12 +1,13 @@
 import { cleanupMapTone } from './cleanupEligibility';
+import { colors } from './theme';
 
 export const REPORT_MARKER_COLORS = Object.freeze({
   available: '#FDE8E8',
   availableAccent: '#E13B3B',
   active: '#FFF2C7',
   activeAccent: '#C78B00',
-  completed: '#E3F3E5',
-  completedAccent: '#2F7D32',
+  completed: colors.primarySoft,
+  completedAccent: colors.primary,
 });
 
 export function reportMarkerPresentation(report) {

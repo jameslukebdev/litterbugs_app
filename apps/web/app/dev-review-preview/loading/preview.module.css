@@ -1,0 +1,13 @@
+.page { width: min(100%, 760px); margin: 40px auto; padding: 20px; color: #292932; }
+.page h1 { margin: 8px 0 14px; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; }
+.page p { color: #686477; line-height: 1.6; }
+.page .eyebrow { color: #4438bb; font-size: 13px; font-weight: 800; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
+.buttons button { min-height: 44px; padding: 10px 14px; border: 1px solid #d8d1f0; border-radius: 12px; background: #fff; color: #4438bb; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.buttons button:hover { background: #efedff; }
+.buttons button:focus-visible { outline: 3px solid #a89ae0; outline-offset: 2px; }
+.preview { position: relative; display: grid; place-items: center; min-height: 320px; padding: 24px; border: 1px solid #e3dff0; border-radius: 20px; background: #fff; }
+.ready { text-align: center; }
+.ready > span { color: #5146ed; font-size: 28px; }
+.ready h2 { margin: 12px 0 4px; font-size: 22px; }
+.ready p { margin: 0; font-size: 14px; }

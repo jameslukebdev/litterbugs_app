@@ -5,6 +5,8 @@ vi.mock('server-only', () => ({}));
 
 import {
   CLOUDMERSIVE_SCAN_ENDPOINT,
+  CLOUDMERSIVE_CONTENT_ENDPOINT,
+  requireAppropriatePhoto,
   MEDIA_SCANNER_MAX_SOURCE_BYTES,
   MediaSecurityError,
   detectImageMimeType,
@@ -86,6 +88,7 @@ describe('malware scan gate', () => {
     const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(url).toBe(CLOUDMERSIVE_SCAN_ENDPOINT);
       expect(init?.method).toBe('POST');
+      expect(init?.redirect).toBe('manual');
       expect(init?.cache).toBe('no-store');
       expect(init?.headers).toEqual(expect.objectContaining({ apikey: 'server-only-test-key' }));
       expect(init?.headers).not.toHaveProperty('authorization');
@@ -100,6 +103,18 @@ describe('malware scan gate', () => {
       'image/jpeg',
       { env: enabledEnv, fetchImpl: fetchImpl as typeof fetch },
     )).resolves.toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects scanner redirects without requesting the new destination', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.redirect('https://example.invalid/other-scanner', 307),
+    );
+    await expect(requireCleanMalwareScan(
+      new Uint8Array([0xff, 0xd8, 0xff, 0xd9]),
+      'image/jpeg',
+      { env: enabledEnv, fetchImpl },
+    )).rejects.toMatchObject({ code: 'MEDIA_SCAN_UNAVAILABLE', status: 503 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
@@ -195,5 +210,38 @@ describe('image content disarm', () => {
     }).png().toBuffer();
     await expect(sanitizeImage(new Uint8Array(tooWide), 'image/png'))
       .rejects.toMatchObject({ code: 'MEDIA_INVALID_IMAGE', status: 415 });
+  });
+});
+
+
+describe('inappropriate-photo publication gate', () => {
+  it('sends only the reconstructed image to the fixed content endpoint', async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => jsonResponse({ Successful: true, Score: 0.05, ClassificationOutcome: 'SafeContent_HighProbability' }));
+    await requireAppropriatePhoto(new Uint8Array([1, 2, 3]), { env: enabledEnv, fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledWith(CLOUDMERSIVE_CONTENT_ENDPOINT, expect.objectContaining({ redirect: 'manual' }));
+    const form = fetchImpl.mock.calls[0][1]!.body as FormData;
+    expect([...form.keys()]).toEqual(['imageFile']);
+    expect((form.get('imageFile') as File).name).toBe('litterbugs-photo.jpg');
+  });
+  it.each([
+    { Successful: true, Score: 0.9, ClassificationOutcome: 'UnsafeContent_HighProbability' },
+    { Successful: true, Score: 0.4, ClassificationOutcome: 'RacyContent' },
+    { Successful: true, Score: 0.2, ClassificationOutcome: 'SafeContent_ModerateProbability' },
+  ])('rejects unsafe or uncertain content before publication', async result => {
+    await expect(requireAppropriatePhoto(new Uint8Array([1]), { env: enabledEnv, fetchImpl: async () => jsonResponse(result) })).rejects.toMatchObject({ code: 'MEDIA_CONTENT_REJECTED', status: 422 });
+  });
+  it.each([
+    { Successful: false, Score: 0, ClassificationOutcome: 'SafeContent_HighProbability' },
+    { Successful: true, Score: -1, ClassificationOutcome: 'SafeContent_HighProbability' },
+    { Successful: true, Score: 0, ClassificationOutcome: 'unknown' },
+    { Successful: true },
+  ])('fails closed on an incomplete or invalid result', async result => {
+    await expect(requireAppropriatePhoto(new Uint8Array([1]), { env: enabledEnv, fetchImpl: async () => jsonResponse(result) })).rejects.toMatchObject({ code: 'MEDIA_CONTENT_UNAVAILABLE', status: 503 });
+  });
+  it('fails closed on missing configuration, quota errors and timeouts', async () => {
+    for (const fetchImpl of [async () => jsonResponse({}, 429), async () => { throw new Error('timeout'); }]) {
+      await expect(requireAppropriatePhoto(new Uint8Array([1]), { env: enabledEnv, fetchImpl })).rejects.toMatchObject({ code: 'MEDIA_CONTENT_UNAVAILABLE' });
+    }
+    await expect(requireAppropriatePhoto(new Uint8Array([1]), { env: {} })).rejects.toMatchObject({ code: 'MEDIA_CONTENT_UNAVAILABLE' });
   });
 });

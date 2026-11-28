@@ -3,17 +3,18 @@ import Page from './page';
 const state = vi.hoisted(() => ({ userId: 'owner' as string | null, report: {} as Record<string, unknown>, participant: false, error: null as unknown }));
 vi.mock('next/navigation', () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`); }, notFound: () => { throw new Error('not-found'); } }));
 vi.mock('./report-page', () => ({ AccountReport: () => null }));
+vi.mock('@/lib/server-contributor-credits', () => ({ withServerContributorCredits: async (reports: unknown[]) => reports }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({
   auth: { getClaims: async () => ({ data: { claims: state.userId ? { sub: state.userId } : null } }) },
   from: () => {
-    const query = { select: () => query, eq: () => query,
+    const query = { select: () => query, eq: () => query, order: () => query,
       maybeSingle: async () => ({ data: state.report, error: state.error }),
       limit: async () => ({ data: state.participant ? [{ id: 'participation' }] : [], error: state.error }),
     }; return query;
   },
 }) }));
 const id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-const open = (from = 'reports') => Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from }) });
+const open = (from = 'reports') => Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from, task: 'cleanup' }) });
 beforeEach(() => {
   state.userId = 'owner'; state.participant = false; state.error = null;
   state.report = { id, user_id: 'owner', is_published: true, is_sample: false, cancelled_at: null, expired_at: '2020-01-01', cleanup_state: 'available', expires_at: '2020-01-01' };
@@ -48,11 +49,16 @@ describe('authenticated report history', () => {
 });
 
 it('restores the inbox filter, page and originating notification after opening a report', async () => {
-  const result = await Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) });
+  const result = await Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ task: 'review', from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) });
   expect(result.props.back).toBe('/account/notifications?filter=unread&page=3#notification-notice-id');
 });
 it('preserves inbox context through sign-in without accepting an external return URL', async () => {
   state.userId = null;
-  await expect(Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) }))
+  await expect(Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ task: 'review', from: 'notifications', filter: 'unread', page: '3', notice: 'notice-id' }) }))
     .rejects.toThrow(encodeURIComponent(`from=notifications&filter=unread&page=3&notice=notice-id`));
+});
+
+it.each(['reports', 'current', 'history', 'payments', 'notifications'])('redirects the former %s summary to the one existing report page', async from => {
+  state.userId = null;
+  await expect(Page({ params: Promise.resolve({ id }), searchParams: Promise.resolve({ from }) })).rejects.toThrow(`redirect:/reports/${id}`);
 });

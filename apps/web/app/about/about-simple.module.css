@@ -8,3 +8,7 @@
 
 .page nav ul { padding-left: 20px; margin: 0 0 24px; }
 .page nav li { margin-bottom: 12px; font-size: 16px; line-height: 1.6; }
+
+/* Each role on About carries the bug of its header menu: Report (dragonfly), Donate (bee), Earn (caterpillar). */
+.role { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.role img { width: 26px; height: 26px; margin-top: 2px; object-fit: contain; }

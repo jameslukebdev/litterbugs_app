@@ -7,14 +7,14 @@ const get = (kind = 'before') => GET(new Request('https://litterbugs.app/reports
 });
 beforeEach(() => { loadPhoto.mockReset(); });
 describe('public report photo response', () => {
-  it('returns JPEG bytes without allowing stale public caches', async () => {
+  it('returns JPEG bytes that only the requesting browser may briefly reuse', async () => {
     loadPhoto.mockResolvedValue(Buffer.from([1, 2, 3]));
     const response = await get();
     expect(response.status).toBe(200);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
     expect(response.headers.get('content-type')).toBe('image/jpeg');
     expect(response.headers.get('content-length')).toBe('3');
-    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('cache-control')).toBe('private, max-age=300');
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
   it('rejects arbitrary photo selectors before loading', async () => {
@@ -29,4 +29,16 @@ describe('public report photo response', () => {
     expect(response.status).toBe(503);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
   });
+});
+
+it.each([['640',640],['100000',1080],['-1',1080]])('bounds requested photo width %s', async (width, expected) => {
+  loadPhoto.mockResolvedValue(Buffer.from([1]));
+  await GET(new Request(`https://litterbugs.app/reports/id/photo/before?width=${width}`), {params: Promise.resolve({id:'report-id',kind:'before'})});
+  expect(loadPhoto).toHaveBeenCalledWith('report-id', 'before', expected, 0);
+});
+
+it('passes the requested photo number so cards can page through report photos', async () => {
+  loadPhoto.mockResolvedValue(Buffer.from([1]));
+  await GET(new Request('https://litterbugs.app/reports/id/photo/before?photo=2&width=640'), {params: Promise.resolve({id:'report-id',kind:'before'})});
+  expect(loadPhoto).toHaveBeenCalledWith('report-id', 'before', 640, 2);
 });

@@ -4,6 +4,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { setHeaderProfile } from '@/lib/header-profile-cache';
 import { PublicAccountAction } from './public-account-action';
 
 const { currentUser, authListener, push } = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/components/auth-dialog', () => ({
-  AuthDialog: ({ onClose }: { onClose: () => void }) => <div role="dialog" aria-label="Sign in"><button onClick={onClose}>Close sign in</button></div>,
+  AuthDialog: ({ onClose, initialMode, returnPath }: { onClose: () => void; initialMode: string; returnPath?: string }) => <div role="dialog" aria-label="Sign in" data-mode={initialMode} data-return-path={returnPath}><button onClick={onClose}>Close sign in</button></div>,
 }));
 
 vi.mock('@/components/account-dialog', () => ({
@@ -38,7 +39,7 @@ function profileQuery() {
         display_name: 'Sam Cleaner',
         username: 'sam.cleaner',
         avatar_path: null,
-        provider_avatar_url: null,
+        provider_avatar_url: 'https://example.com/avatar.jpg',
         profile_completed_at: '2026-08-01T00:00:00.000Z',
         updated_at: '2026-08-01T00:00:00.000Z',
       } : null,
@@ -67,6 +68,7 @@ vi.mock('@/lib/supabase/client', () => ({
 
 afterEach(() => {
   cleanup();
+  setHeaderProfile(null);
   currentUser.value = null;
   currentUser.fail = false;
   authListener.value = null;
@@ -76,7 +78,7 @@ describe('PublicAccountAction', () => {
   it('opens sign in for signed-out visitors', async () => {
     render(<PublicAccountAction />);
     const signInButton = await screen.findByRole('button', { name: 'Sign in' });
-    expect(signInButton.classList.contains('public-account-control-signed-out')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Get startedLog in / Sign up' }).classList.contains('public-account-control-signed-out')).toBe(true);
     fireEvent.click(signInButton);
     expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
   });
@@ -85,11 +87,10 @@ describe('PublicAccountAction', () => {
     currentUser.value = { id: 'member-id', email: 'member@example.com' };
     render(<PublicAccountAction />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Profile' })).toBeTruthy());
-    const accountButton = screen.getByRole('button', { name: 'Profile' });
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Profile' })).toBeTruthy());
+    const accountButton = screen.getByRole('link', { name: 'Profile' });
     expect(accountButton.classList.contains('public-account-control-signed-out')).toBe(false);
-    fireEvent.click(accountButton);
-    expect(push).toHaveBeenCalledWith('/account');
+    expect(accountButton.getAttribute('href')).toBe('/account');
   });
 });
 
@@ -100,20 +101,53 @@ it('keeps sign in available if the initial session check fails', async () => {
   expect(screen.queryByLabelText('Loading profile')).toBeNull();
 });
 
-it('keeps signed-out mobile profile accessible in the three-item discovery dock', async () => {
-  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
-  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
-  expect(dock.queryByRole('link', { name: /Updates|Notifications/ })).toBeNull();
-  expect(dock.getAllByRole('button')).toHaveLength(3);
-  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
-  expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy();
+it('omits the compact map profile button for signed-out visitors', async () => {
+  const { container } = render(<PublicAccountAction compactOnMobile />);
+  await screen.findByRole('button', { name: 'Sign in' });
+  const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
+  expect(mobile.queryByRole('link', { name: 'Your profile' })).toBeNull();
+  expect(mobile.getByRole('link', { name: 'Updates' }).getAttribute('href')).toBe('/account/notifications');
 });
 
-it('keeps signed-in mobile profile in the dock and unread updates outside it', async () => {
+it('opens the account from the compact map header for a signed-in member', async () => {
   currentUser.value = { id: 'member-id', email: 'member@example.com' };
-  render(<PublicAccountAction mobileTabs={<><button>Reports</button><button>Map</button></>} />);
-  const dock = within(screen.getByRole('navigation', { name: 'Main app navigation' }));
-  await waitFor(() => expect(screen.getByRole('link', { name: 'Notifications, 3 unread' })).toBeTruthy());
-  fireEvent.click(dock.getByRole('button', { name: 'Profile' }));
-  expect(push).toHaveBeenCalledWith('/account');
+  const { container } = render(<PublicAccountAction compactOnMobile />);
+  const mobile = within(container.querySelector<HTMLElement>('.mobile-map-account')!);
+  await mobile.findByRole('link', { name: 'Notifications, 3 unread' });
+  expect(mobile.getByRole('link', { name: 'Your profile' }).getAttribute('href')).toBe('/account');
+});
+
+
+it('keeps the known photo across a header remount while auth refreshes', async () => {
+  currentUser.value = { id: 'member-id', email: 'member@example.com' };
+  const first = render(<PublicAccountAction />);
+  await waitFor(() => expect(first.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg'));
+  first.unmount();
+  currentUser.fail = true;
+  const second = render(<PublicAccountAction />);
+  expect(second.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
+  expect(second.container.querySelector('.public-account-initials')?.textContent).toBe('');
+  await waitFor(() => expect(screen.getByRole('link', { name: 'Profile' })).toBeTruthy());
+});
+
+
+it('clears the cached photo after sign out', async () => {
+  currentUser.value = { id: 'member-id', email: 'member@example.com' };
+  const view = render(<PublicAccountAction />);
+  await waitFor(() => expect(view.container.querySelector('img')).toBeTruthy());
+  currentUser.value = null;
+  authListener.value?.('SIGNED_OUT', null);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy());
+  expect(view.container.querySelector('.public-account-avatar')).toBeNull();
+  view.unmount();
+  const next = render(<PublicAccountAction />);
+  expect(next.container.querySelector('.public-account-avatar')).toBeNull();
+});
+
+it('opens account creation directly from Get started and returns to the profile', async () => {
+  render(<PublicAccountAction />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Get startedLog in / Sign up' }));
+  const dialog = screen.getByRole('dialog', { name: 'Sign in' });
+  expect(dialog.getAttribute('data-mode')).toBe('signup');
+  expect(dialog.getAttribute('data-return-path')).toBe('/account');
 });

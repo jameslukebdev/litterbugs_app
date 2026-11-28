@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-30",
+  "googlePlay": {
+    "shortDescriptionSaved": true,
+    "fullDescriptionSaved": true,
+    "submission": "Submitted October 31, 2026. Publishing overview shows Changes in review; automated quick checks running. Only short and full descriptions submitted.",
+    "savedScreenshotOrder": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      8,
+      5,
+      7
+    ],
+    "screenshotMonitoring": {
+      "checkedAt": "2026-10-31T23:47:03Z",
+      "submission": "8 Published",
+      "publicVerified": true,
+      "order": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        5,
+        7
+      ],
+      "firstHeading": "See Litter? Get paid to report it.",
+      "notification": "Google approved and public live verified; Apple waiting for review"
+    }
+  },
+  "apple": {
+    "pendingVersion": "2.0.1",
+    "descriptionVerified": true,
+    "promotionalTextVerified": true,
+    "releaseNotesVerified": true,
+    "review": "Released 2.0.1 October 31 with user authorization. App Store Connect confirms Ready for Distribution.",
+    "subtitle": "Report litter, earn real money",
+    "categories": [
+      "Lifestyle",
+      "Utilities"
+    ],
+    "livePromotionalTextSaved": true,
+    "liveFullDescription": "New description included in released 2.0.1.",
+    "currentCheck": "Verified signed-in App Store Connect on October 31, 2026.",
+    "screenshotsUploaded": true,
+    "pendingReviewChanged": false,
+    "screenshotUploadStatus": "All eight screenshots fully uploaded and processed. Submitted through Product Page Optimization October 31, 2026 at 3:40 PM. Apple confirmed 1 Item Submitted. Large Dynamic Island set scales automatically to other iPhone sizes.",
+    "ppo": {
+      "name": "Real money reporting \u2014 screenshots October 2026",
+      "id": "a046d8a4-36f0-40f2-9be4-b4c3e7f1db45",
+      "treatmentId": "80a66ae9-e24e-41de-82d1-66e6ca89c886",
+      "status": "Waiting for Review, verified October 31 at 7:47 PM Eastern",
+      "order": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        5,
+        7
+      ],
+      "submissionId": "1af6dd14-778d-4881-a54a-8d2a2ee775a9"
+    },
+    "loginMonitoring": {
+      "checkedAt": "2026-11-01T04:03:54Z",
+      "status": "Expired session; redirected to login with authResult=FAILED",
+      "expiredLoginNotified": true
+    }
+  },
+  "masterCopy": "Carry forward for future releases; no percentages, rewards wording, or disclaimer section.",
+  "video": "On hold",
+  "lastChecked": "2026-10-31",
+  "icon": "On hold; not modified October 31"
+}

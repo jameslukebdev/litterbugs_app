@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer, getClaims } = vi.hoisted(() => ({
+const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer, getClaims, displayCache } = vi.hoisted(() => ({
+  displayCache: new Map<string, string>(),
   getClaims: vi.fn(),
   rpc: vi.fn(),
   download: vi.fn(),
@@ -14,6 +15,13 @@ const { rpc, download, from, convert, sharp, rotate, resize, webp, toBuffer, get
 }));
 
 vi.mock('server-only', () => ({}));
+vi.mock('next/cache', () => ({
+  unstable_cache: (generate: () => Promise<string>, parts: string[]) => async () => {
+    const key = JSON.stringify(parts);
+    if (!displayCache.has(key)) displayCache.set(key, await generate());
+    return displayCache.get(key);
+  },
+}));
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -33,6 +41,7 @@ const caseId = '11111111-1111-4111-8111-111111111111';
 const photoPath = 'cleaner/report/before.heic';
 
 beforeEach(() => {
+  displayCache.clear();
   getClaims.mockReset();
   getClaims.mockResolvedValue({data:{claims:{sub:'owner'}}});
   rpc.mockReset();
@@ -109,6 +118,16 @@ function mockPublicReport(overrides: Record<string, unknown> = {}) {
 }
 
 describe('public report card photos', () => {
+  it('reuses resized bytes but rechecks publication before serving a warmed photo', async () => {
+    mockPublicReport();
+    const request = () => new Request('http://localhost/api/report-photo?path=user/report/photo.jpg&variant=card');
+    expect((await GET(request())).status).toBe(200);
+    expect((await GET(request())).status).toBe(200);
+    expect(download).toHaveBeenCalledOnce();
+    mockPublicReport({ is_published: false });
+    expect((await GET(request())).status).toBe(404);
+    expect(download).toHaveBeenCalledOnce();
+  });
   it('serves completed history after the old expiration, with publication and cancellation gates', async () => {
     const query = mockPublicReport({ cleanup_state: 'completed', expires_at: '2020-01-01' });
     const response = await GET(new Request('http://localhost/api/report-photo?path=user/report/photo.jpg&variant=card'));
@@ -189,5 +208,14 @@ describe('private account report photos', () => {
     history();getClaims.mockResolvedValue({data:{claims:null}});expect((await GET(request())).status).toBe(401);
     getClaims.mockResolvedValue({data:{claims:{sub:'owner',is_anonymous:true}}});expect((await GET(request())).status).toBe(401);
     expect(download).not.toHaveBeenCalled();
+  });
+  it('does not share a warmed account photo with an unrelated account', async () => {
+    history();
+    expect((await GET(request())).status).toBe(200);
+    expect((await GET(request())).headers.get('cache-control')).toBe('private, no-store');
+    expect(download).toHaveBeenCalledOnce();
+    history('other');
+    expect((await GET(request())).status).toBe(404);
+    expect(download).toHaveBeenCalledOnce();
   });
 });

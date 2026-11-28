@@ -1,0 +1,11 @@
+.recovery { width:100%; padding:20px; border:1px solid #d8d1f0; border-radius:16px; background:#f9f7ff; color:#292932; text-align:left; }
+.recovery h3 { margin:0 0 10px; font:900 24px/1.2 'Playful Nunito',sans-serif; letter-spacing:-.02em; }
+.recovery p { font-size:15px; line-height:1.5; margin:0 0 14px; }
+.help { margin:0 0 16px; }
+.help summary { padding:7px 0; font-size:14px; font-weight:700; cursor:pointer; color:#4438bb; }
+.help p { margin:8px 0 0; font-size:14px; }
+.actions { display:flex; flex-wrap:wrap; gap:10px; }
+.actions button { flex:1 1 160px; }
+.recovery .actions button.retry { background:#5146ed; border-color:#5146ed; color:#fff; }
+.recovery .actions button.retry:hover { background:#4438bb; border-color:#4438bb; }
+@media(max-width:400px) { .recovery { padding:16px; } .recovery h3 { font-size:22px; } }

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/cleanup-policy' },
   title: 'Cleanup Policy | Litterbugs',
   description: 'Contribution, safety, photo review, dispute, refund, and cleaner reward rules.',
-};
+});
 
 export default function CleanupPolicyPage() {
   return (
@@ -35,7 +36,7 @@ export default function CleanupPolicyPage() {
           title: 'How long a report and its pool remain active',
           content: <>
             <p>A report remains active for 30 days. Its reporter may actively renew it for another 30 days, with no fixed limit on active renewals. Contributions may continue for as long as the report remains active.</p>
-            <p>When the report expires, it leaves the active map. The reporter has seven days to renew it, carrying the entire pool forward, or close it for refunds. Taking no action during those seven days closes the report and starts refunds.</p>
+            <p>When the report expires, it leaves the active map. The reporter has seven days to renew it, carrying the entire pool forward, or close it for refunds. Taking no action during those seven days closes the report and starts refunds. Published reports remain in past reports with an expired label; this does not confirm a cleanup or keep funding open.</p>
           </>,
         },
         {

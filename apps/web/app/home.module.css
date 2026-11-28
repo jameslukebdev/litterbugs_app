@@ -1,0 +1,57 @@
+.home {
+  --home-heading-size: clamp(28px, 3vw, 36px);
+  --home-subheading-size: clamp(26px, 2.5vw, 30px);
+  --home-body-size: 22px;
+  --home-section-gap: 96px;
+  --home-heading-gap: 32px;
+  --home-section-padding: 0px;
+}
+
+/* One owner for section spacing avoids stacked margins and padding. */
+.sections {
+  display: grid;
+  gap: var(--home-section-gap);
+  padding-bottom: var(--home-section-gap);
+}
+
+.sections > section { margin: 0; padding-block: 0; }
+.sections h2 { font-size: var(--home-heading-size); line-height: 1.2; letter-spacing: -.025em; }
+
+/* Fixed text rows keep the report carousel compact and consistently sized. */
+.home :global(.public-report-cards .report-result-copy) {
+  display: grid;
+  grid-template-rows: 22px 28px 20px;
+  gap: 6px;
+}
+.home :global(.public-report-cards .report-result-copy > strong) {
+  display: block;
+  min-width: 0;
+  height: 22px;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+}
+.home :global(.public-report-cards .report-result-reward) {
+  justify-self: start;
+  max-width: 100%;
+  height: 28px;
+  font-size: 16px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home + :global(.discovery-footer) { font-size: 16px; line-height: 1.5; padding-block: 24px; gap: 24px; flex-wrap: wrap; }
+.home + :global(.discovery-footer) nav { gap: 12px 24px; }
+.home + :global(.discovery-footer) button { font-size: inherit; }
+
+@media (max-width: 700px) {
+  .home {
+    --home-body-size: 20px;
+    --home-section-gap: 64px;
+    --home-heading-gap: 24px;
+  }
+}

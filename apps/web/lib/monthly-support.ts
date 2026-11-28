@@ -10,3 +10,9 @@ export function monthlySupportLinks() {
     portalUrl: 'https://billing.stripe.com/p/login/dRmfZa2yDeU24DxfMF7Zu00',
   };
 }
+
+/** Fixed, non-identifying properties for checkout intent, never proof of payment. */
+export function supportCheckoutProperties(value: Record<string, unknown>) {
+  return [5, 10, 25].includes(value.amount as number) && value.currency === 'USD' && value.billing_interval === 'month'
+    ? { amount: value.amount as number, currency: 'USD', billing_interval: 'month' } : null;
+}

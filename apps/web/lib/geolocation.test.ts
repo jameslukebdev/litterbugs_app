@@ -1,10 +1,29 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+afterEach(() => vi.useRealTimers());
 
 import { GEOLOCATION_OPTIONS, getBrowserLocation, requireReportLocation } from './geolocation';
+import { ReportLocationError } from './report-location-error';
 
 describe('browser geolocation', () => {
+  it('releases the control when the browser never calls back and ignores a late result', async () => {
+    vi.useFakeTimers();
+    let reply!: PositionCallback;
+    const request = getBrowserLocation({ getCurrentPosition: success => { reply = success; } });
+    const result = expect(request).rejects.toThrow('too long');
+    await vi.advanceTimersByTimeAsync(12000);
+    await result;
+    reply({ coords: { latitude: 0, longitude: 0 } } as GeolocationPosition);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('clears the deadline on browser failure or success', async () => {
+    vi.useFakeTimers();
+    await getBrowserLocation({ getCurrentPosition: success => success({ coords: { latitude: 0, longitude: 0 } } as GeolocationPosition) });
+    expect(vi.getTimerCount()).toBe(0);
+    await expect(getBrowserLocation({ getCurrentPosition: () => { throw new Error('Unavailable'); } })).rejects.toThrow('Unavailable');
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('returns allowed coordinates with the production request options', async () => {
     const getCurrentPosition = vi.fn((success: PositionCallback) => {
       success({ coords: { latitude: 35.994, longitude: -78.8986 } } as GeolocationPosition);
@@ -46,6 +65,21 @@ describe('browser geolocation', () => {
     await expect(requireReportLocation({ latitude: 0, longitude: 0 }, {
       getCurrentPosition: success => success(stale),
     })).rejects.toThrow('Please try your location again.');
+  });
+  it('bounds a report check with no browser callback and ignores a late success', async () => {
+    vi.useFakeTimers();
+    let late!: PositionCallback;
+    const check = requireReportLocation({ latitude: 0, longitude: 0 }, { getCurrentPosition: success => { late = success; } });
+    const rejected = expect(check).rejects.toMatchObject({ reason: 'location_timeout' });
+    await vi.advanceTimersByTimeAsync(20000);
+    await rejected;
+    late({ coords: { latitude: 0, longitude: 0 }, timestamp: Date.now() } as GeolocationPosition);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('classifies a synchronous location API error and releases its deadline', async () => {
+    vi.useFakeTimers();
+    await expect(requireReportLocation({ latitude: 0, longitude: 0 }, { getCurrentPosition: () => { throw new Error('Browser unavailable'); } })).rejects.toBeInstanceOf(ReportLocationError);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

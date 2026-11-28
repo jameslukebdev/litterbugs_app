@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "checked": "All 8 visually reviewed; no source enlarged. Three native screenshots preserved unchanged. Four live web captures replace softer screenshots. First photograph uses original 3600x2400 asset.",
+  "rows": [
+    {
+      "file": "01-make-money-reporting-original-hq.png",
+      "source": [
+        3600,
+        2400
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.562,
+      "upscaled": false,
+      "bytes": 1356459
+    },
+    {
+      "file": "02-make-money-cleaning-hq.png",
+      "source": [
+        972,
+        1684
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.667,
+      "upscaled": false,
+      "bytes": 593409
+    },
+    {
+      "file": "03-donate.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.576,
+      "upscaled": false,
+      "bytes": 211946
+    },
+    {
+      "file": "04-map-hq.png",
+      "source": [
+        648,
+        1120
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 1,
+      "upscaled": false,
+      "bytes": 1194528
+    },
+    {
+      "file": "06-before-after-hq.png",
+      "source": [
+        862,
+        1058
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.752,
+      "upscaled": false,
+      "bytes": 873309
+    },
+    {
+      "file": "08-track-your-litter-hq.png",
+      "source": [
+        972,
+        1684
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.667,
+      "upscaled": false,
+      "bytes": 192946
+    },
+    {
+      "file": "05-reports.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.576,
+      "upscaled": false,
+      "bytes": 912279
+    },
+    {
+      "file": "07-share.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "resizeScale": 0.576,
+      "upscaled": false,
+      "bytes": 276019
+    }
+  ]
+}

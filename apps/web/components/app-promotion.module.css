@@ -27,11 +27,11 @@
 .desktopQr { margin-top: 28px; border-top: 1px solid #e3e9e3; padding-top: 12px; }
 .continue { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; color: #536357; font-size: 14px; }
 @media (max-width: 1100px) {
-  .strip { display: flex; align-items: center; gap: 10px; height: 64px; padding: 8px 14px; background: #edf5ed; border-bottom: 1px solid #dbe7dc; }
+  .strip { display: flex; align-items: center; gap: 10px; height: 64px; padding: 8px 14px; background: #f4f1ff; border-bottom: 1px solid #e3dff0; }
   .strip > img { flex: none; border-radius: 10px; }
   .stripCopy { display: grid; gap: 3px; flex: 1; min-width: 0; }
-  .stripCopy strong { color: #243d2a; font-size: 13px; line-height: 1.2; }
-  .stripCopy span { color: #526b58; font-size: 12px; line-height: 1.2; }
+  .stripCopy strong { color: #302761; font-family: 'Playful Nunito', sans-serif; font-weight: 900; font-size: 14px; line-height: 1.2; }
+  .stripCopy span { color: #686477; font-size: 12px; line-height: 1.2; }
   .navigation { display: none; }
   .desktopQr { display: none; }
   .downloadPage { margin-block: 24px; padding: 28px 20px; }
@@ -39,3 +39,29 @@
 @media (max-width: 360px) { .strip { gap: 8px; padding-inline: 8px; } .stripCopy strong { font-size: 12px; } .useApp { padding-inline: 10px; } }
 
 @media (pointer: coarse) { .installed { display: block; } }
+
+.pagePromotion { display: none; }
+@media (max-width: 760px) {
+  .pagePromotion { display: block; margin-top: 24px; }
+  .pagePromotion .strip { border-top: 1px solid #e3dff0; border-bottom: 0; }
+}
+
+/* Official store artwork includes its own border and clear space. */
+.stores.stores { gap: 8px; align-items: center; }
+.stores.stores a { padding: 0; border: 0; border-radius: 7px; background: transparent; box-shadow: none; min-height: 44px; }
+.stores.stores a:hover { background: transparent; opacity: .85; }
+.stores.stores img { display: block; width: 126px; height: auto; }
+.stores.stores a:last-child img { width: 154px; margin: -8px -9px; }
+.stores.stores a:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 4px; }
+
+.popover .stores.stores { display: grid; grid-template-columns: 1fr 1.08fr; gap: 10px; }
+.popover .stores.stores a { min-width: 0; padding: 0; }
+.popover .stores.stores img { width: 100%; height: auto; }
+.popover .stores.stores a:last-child img { width: calc(100% + 18px); max-width: none; margin: -8px -9px; }
+
+.popover p, .downloadPage p { color: #686477; }
+
+.strip.strip { background: #f4f1ff; }
+.strip .useApp { border-radius: 14px; background: var(--green); box-shadow: 0 3px 0 #3528ac; }
+.strip .useApp:hover { background: var(--green-dark); }
+.strip .useApp:focus-visible { outline-color: #5146ed; }

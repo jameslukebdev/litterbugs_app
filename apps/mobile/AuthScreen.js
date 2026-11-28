@@ -2,7 +2,8 @@ import AppleSignInButton from './components/AppleSignInButton';
 import SteadyButtonContent from './components/SteadyButtonContent';
 import { openSupport } from './lib/support';
 import { useProfile } from './lib/profile';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { trackSignIn } from './lib/analytics';
 import {
   ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
@@ -16,6 +17,9 @@ import {
   resendSignupVerification, sendPasswordRecovery, signInWithEmail,
   signInWithProvider, signUpWithEmail,
 } from './lib/auth';
+import BrandBug from './components/BrandBug';
+import { colors, fonts } from './lib/theme';
+import SlideUp from './components/SlideUp';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -56,7 +60,13 @@ const getProviderErrorMessage = (error) => {
 };
 
 export default function AuthScreen() {
-  const { pendingAction } = useProfile();
+  const { pendingAction, pendingReportCoordinate } = useProfile();
+  // Why this screen opened: a report, a fund or a cleanup in progress, or the person's own choice.
+  useEffect(() => {
+    trackSignIn('shown', { intent: pendingAction?.kind === 'cleanup' ? 'clean' : pendingAction?.kind === 'fund' ? 'fund' : pendingReportCoordinate ? 'report' : 'none' });
+    // Leaving without signing in. Ignored after a success, or while an emailed link is pending.
+    return () => trackSignIn('closed');
+  }, []);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailMode, setEmailMode] = useState('login');
   const [sentReason, setSentReason] = useState('signup');
@@ -115,6 +125,7 @@ export default function AuthScreen() {
       setLoadingEmail(true);
 
       if (emailMode === 'login') {
+        trackSignIn('submitted', { method: 'email_login' });
         const { error } = await signInWithEmail(cleanEmail, password);
         if (error) {
           const unverified = error.message?.toLowerCase().includes('email not confirmed');
@@ -131,6 +142,7 @@ export default function AuthScreen() {
       }
 
       if (emailMode === 'signup') {
+        trackSignIn('submitted', { method: 'email_signup' });
         const { data, error } = await signUpWithEmail(cleanEmail, password);
         const hiddenDuplicate = Array.isArray(data?.user?.identities)
           && data.user.identities.length === 0;
@@ -148,6 +160,7 @@ export default function AuthScreen() {
           setPassword('');
           return;
         }
+        trackSignIn('verification_sent', { method: 'email_signup' });
         setSentReason('signup');
         setEmailMode('sent');
         setPassword('');
@@ -190,6 +203,7 @@ export default function AuthScreen() {
 
     try {
       setLoadingProvider(provider);
+      trackSignIn('submitted', { method: provider });
       await signInWithProvider(provider);
     } catch (error) {
       if (isProviderCancellation(error)) return;
@@ -224,7 +238,7 @@ export default function AuthScreen() {
         {image ? (
           <Image source={image} style={styles.googleIcon} resizeMode="contain" />
         ) : (
-          <Ionicons name={icon} size={21} color={id === 'facebook' ? '#fff' : '#222'} style={styles.buttonIcon} />
+          <Ionicons name={icon} size={21} color={id === 'facebook' ? '#1877F2' : colors.ink} style={styles.buttonIcon} />
         )}
         <Text style={[
           styles.providerText,
@@ -234,7 +248,7 @@ export default function AuthScreen() {
         {loading && (
           <ActivityIndicator
             size="small"
-            color={id === 'facebook' ? '#fff' : '#333'}
+            color={colors.ink}
             style={styles.providerSpinner}
           />
         )}
@@ -250,8 +264,8 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Image source={require('./assets/LB_Logo_PNG.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : 'Join the Cleanup Movement'}</Text>
-        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : 'Sign in to track and share reports.'}</Text>
+        <Text style={styles.title}>{pendingAction?.kind === 'cleanup' ? 'Sign in to help clean this up' : pendingAction?.kind === 'fund' ? 'Sign in to fund this cleanup' : pendingReportCoordinate ? 'Sign in to post your report' : 'Create a free account or sign in'}</Text>
+        <Text style={styles.subtitle}>{pendingAction ? 'Sign in or create an account to continue with this cleanup.' : pendingReportCoordinate ? 'Your spot is saved. Next you’ll add a photo.' : 'Put litter on the map and earn cash from funded cleanups.'}</Text>
 
         <View style={styles.actions}>
           <AppleSignInButton onPress={() => handleProvider('apple')} disabled={Boolean(loadingProvider)} loading={loadingProvider === 'apple'} />
@@ -262,20 +276,20 @@ export default function AuthScreen() {
             <View style={styles.divider} />
           </View>
           <TouchableOpacity style={[styles.emailButton, loadingProvider && styles.disabled]} onPress={openEmail} disabled={Boolean(loadingProvider)} accessibilityRole="button" accessibilityLabel="Continue with Email">
-            <Ionicons name="mail-outline" size={21} color="#fff" style={styles.buttonIcon} />
+            <Ionicons name="mail-outline" size={21} color={colors.white} style={styles.buttonIcon} />
             <Text style={styles.emailText}>Continue with Email</Text>
           </TouchableOpacity>
         </View>
         <View style={{ marginTop: 20, alignItems: 'center', maxWidth: 420 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {['Terms', 'Privacy'].map(label => <TouchableOpacity key={label} accessibilityRole="link" onPress={() => Linking.openURL(`https://litterbugs.app/${label === 'Terms' ? 'terms' : 'privacy'}`).catch(() => Alert.alert('Couldn’t open page', 'Visit litterbugs.app for our terms and privacy policy.'))} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' }}><Text style={{ color: '#526259' }}>{label}</Text></TouchableOpacity>)}
+            {['Terms', 'Privacy'].map(label => <TouchableOpacity key={label} accessibilityRole="link" onPress={() => Linking.openURL(`https://litterbugs.app/${label === 'Terms' ? 'terms' : 'privacy'}`).catch(() => Alert.alert('Couldn’t open page', 'Visit litterbugs.app for our terms and privacy policy.'))} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' }}><Text style={{ color: colors.body }}>{label}</Text></TouchableOpacity>)}
           </View>
-          <TouchableOpacity accessibilityRole="button" onPress={() => openSupport()} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}><Text style={{ color: '#2F7D32', fontWeight: '600' }}>Get help signing in</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" onPress={() => openSupport()} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}><Text style={{ color: colors.primary, fontWeight: '600' }}>Get help signing in</Text></TouchableOpacity>
         </View>
       </ScrollView>
 
       <StatusBar hidden={false} />
-      <Modal visible={emailModalOpen} animationType="slide" transparent onRequestClose={closeEmail}>
+      <Modal visible={emailModalOpen} animationType="fade" transparent onRequestClose={closeEmail}>
         <TouchableWithoutFeedback onPress={closeEmail} accessible={false}>
           <View style={emailStyles.backdrop}>
             <KeyboardAvoidingView
@@ -284,7 +298,7 @@ export default function AuthScreen() {
               style={emailStyles.kav}
             >
               <TouchableWithoutFeedback accessible={false}>
-                <View style={emailStyles.sheet}>
+                <SlideUp style={emailStyles.sheet}>
                   <ScrollView
                     contentContainerStyle={emailStyles.sheetContent}
                     keyboardShouldPersistTaps="handled"
@@ -294,7 +308,7 @@ export default function AuthScreen() {
                   <View style={emailStyles.handle} />
                   {emailMode === 'sent' ? (
                     <View style={emailStyles.sentContent}>
-                      <Ionicons name="mail-unread-outline" size={42} color="#2F7D32" />
+                      <Ionicons name="mail-unread-outline" size={42} color={colors.primary} />
                       <Text style={emailStyles.sentTitle}>Check your email</Text>
                       <Text style={emailStyles.sentText}>
                         {sentReason === 'signup'
@@ -304,7 +318,7 @@ export default function AuthScreen() {
                       {sentReason === 'signup' && (
                         <>
                           <TouchableOpacity style={emailStyles.textButton} onPress={handleResend} disabled={loadingEmail} accessibilityRole="button" accessibilityLabel="Resend verification email">
-                            <SteadyButtonContent label="Resend verification email" busy={loadingEmail} busyLabel="Sending…" color="#2F7D32" />
+                            <SteadyButtonContent label="Resend verification email" busy={loadingEmail} busyLabel="Sending…" color={colors.primary} />
                           </TouchableOpacity>
                           <View style={emailStyles.sentLinksRow}>
                             <TouchableOpacity style={emailStyles.sentLinkButton} onPress={() => resetForm('login')} accessibilityRole="button" accessibilityLabel="Sign in instead">
@@ -332,13 +346,13 @@ export default function AuthScreen() {
                           </Text>
                         </View>
                         <TouchableOpacity onPress={closeEmail} style={emailStyles.closeButton} accessibilityRole="button" accessibilityLabel="Close">
-                          <Ionicons name="close" size={24} color="#555" />
+                          <Ionicons name="close" size={24} color={colors.body} />
                         </TouchableOpacity>
                       </View>
 
                       <Text style={emailStyles.label}>Email</Text>
                       <TextInput
-                        editable={!loadingEmail} selectionColor="#2F7D32"
+                        editable={!loadingEmail} selectionColor={colors.primary}
                         value={email} onChangeText={setEmail} placeholder="you@example.com"
                         autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
                         textContentType="emailAddress" autoComplete="email" style={emailStyles.input}
@@ -350,7 +364,7 @@ export default function AuthScreen() {
                           <Text style={emailStyles.label}>Password</Text>
                           <View style={emailStyles.passwordRow}>
                             <TextInput
-                              editable={!loadingEmail} selectionColor="#2F7D32"
+                              editable={!loadingEmail} selectionColor={colors.primary}
                               value={password} onChangeText={setPassword} placeholder={emailMode === 'signup' ? 'At least 8 characters' : 'Your password'}
                               autoCapitalize="none" autoCorrect={false} secureTextEntry={!showPassword}
                               textContentType={emailMode === 'signup' ? 'newPassword' : 'password'}
@@ -359,7 +373,7 @@ export default function AuthScreen() {
                               onSubmitEditing={handleEmailSubmit} accessibilityLabel="Password"
                             />
                             <TouchableOpacity onPress={() => setShowPassword((visible) => !visible)} style={emailStyles.eyeButton} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
-                              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#666" />
+                              <BrandBug kind="bee" size={26} style={{ opacity: showPassword ? 1 : 0.6 }} />
                             </TouchableOpacity>
                           </View>
                         </>
@@ -399,7 +413,7 @@ export default function AuthScreen() {
                     </>
                   )}
                   </ScrollView>
-                </View>
+                </SlideUp>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
           </View>
@@ -410,57 +424,58 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   logo: { width: 112, height: 112, marginBottom: 8 },
-  title: { fontSize: 24, lineHeight: 31, fontWeight: '600', color: '#333', marginBottom: 6, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#666', marginBottom: 22, textAlign: 'center' },
+  title: { fontSize: 24, lineHeight: 31, fontFamily: fonts.heading, color: colors.ink, marginBottom: 6, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: colors.muted, marginBottom: 22, textAlign: 'center' },
   actions: { width: '100%', maxWidth: 420 },
-  providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 14, marginBottom: 11 },
-  providerText: { color: '#222', fontSize: 16, fontWeight: '700' },
+  providerButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 11 },
+  providerText: { color: colors.ink, fontSize: 16, fontWeight: '700' },
   providerSpinner: { position: 'absolute', right: 16 },
-  googleButton: { borderColor: '#747775' },
+  googleButton: { borderColor: colors.line },
   googleText: { color: '#1F1F1F' },
   googleIcon: { width: 20, height: 20, marginRight: 10 },
-  facebookButton: { backgroundColor: '#1877F2', borderColor: '#1877F2' },
-  facebookText: { color: '#fff' },
+  // Website sign-in: Facebook is a white button with the blue mark, like Google.
+  facebookButton: { borderColor: colors.line },
+  facebookText: { color: colors.ink },
   buttonIcon: { marginRight: 10 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
-  divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#BCC3CA' },
-  dividerText: { marginHorizontal: 12, color: '#777', fontSize: 13 },
-  emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', borderRadius: 14, marginTop: 7 },
-  emailText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  divider: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.lineStrong },
+  dividerText: { marginHorizontal: 12, color: colors.muted, fontSize: 13 },
+  emailButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 14, marginTop: 7 },
+  emailText: { color: colors.white, fontSize: 16, fontWeight: '600' },
   disabled: { opacity: 0.58 },
 });
 
 const emailStyles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.34)', justifyContent: 'flex-end' },
   kav: { flex: 1, justifyContent: 'flex-end' },
-  sheet: { maxHeight: '92%', backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, overflow: 'hidden' },
+  sheet: { maxHeight: '92%', backgroundColor: colors.white, borderTopLeftRadius: 22, borderTopRightRadius: 22, overflow: 'hidden' },
   sheetContent: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 34 : 22 },
-  handle: { width: 42, height: 5, borderRadius: 3, backgroundColor: '#D3D7DB', alignSelf: 'center', marginBottom: 14 },
+  handle: { width: 42, height: 5, borderRadius: 3, backgroundColor: colors.lineStrong, alignSelf: 'center', marginBottom: 14 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start' },
   headingCopy: { flex: 1 },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginTop: -8, marginRight: -10 },
-  title: { fontSize: 22, fontWeight: '600', color: '#333' },
-  subtitle: { fontSize: 14, lineHeight: 20, color: '#666', marginTop: 5, marginBottom: 10 },
-  label: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 7, marginTop: 11 },
-  input: { minHeight: 50, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12, paddingHorizontal: 14 },
-  passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D8DDE2', borderRadius: 12 },
+  title: { fontSize: 22, fontFamily: fonts.heading, color: colors.ink },
+  subtitle: { fontSize: 14, lineHeight: 20, color: colors.muted, marginTop: 5, marginBottom: 10 },
+  label: { fontSize: 14, fontWeight: '700', color: colors.ink, marginBottom: 7, marginTop: 11 },
+  input: { minHeight: 50, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 14 },
+  passwordRow: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 12 },
   passwordInput: { flex: 1, paddingHorizontal: 14 },
   eyeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   forgotButton: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center' },
-  linkText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
-  error: { color: '#B42318', fontSize: 14, lineHeight: 20, marginTop: 9 },
-  primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32', marginTop: 14, width: '100%' },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  linkText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  error: { color: colors.red, fontSize: 14, lineHeight: 20, marginTop: 9 },
+  primaryButton: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, marginTop: 14, width: '100%' },
+  primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '600' },
   switchRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
-  switchText: { color: '#666', fontSize: 14 },
+  switchText: { color: colors.muted, fontSize: 14 },
   switchLinkButton: { minHeight: 44, justifyContent: 'center' },
-  switchLink: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
+  switchLink: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   sentContent: { alignItems: 'center', paddingTop: 4 },
-  sentTitle: { fontSize: 22, fontWeight: '600', color: '#333', marginTop: 12 },
-  sentText: { fontSize: 15, lineHeight: 22, color: '#5C6670', textAlign: 'center', marginTop: 8 },
+  sentTitle: { fontSize: 22, fontFamily: fonts.heading, color: colors.ink, marginTop: 12 },
+  sentText: { fontSize: 15, lineHeight: 22, color: colors.muted, textAlign: 'center', marginTop: 8 },
   textButton: { minHeight: 44, justifyContent: 'center', marginTop: 5 },
   sentLinksRow: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 18 },
   sentLinkButton: { minHeight: 44, justifyContent: 'center' },

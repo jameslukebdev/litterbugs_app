@@ -1,0 +1,29 @@
+.carousel { min-width: 0; }
+.heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: var(--home-heading-gap, 20px); }
+.heading h2 { margin: 0; }
+.controls { display: flex; align-items: center; gap: 8px; }
+.controls a { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; color: var(--green-dark); font-size: 14px; font-weight: 600; white-space: nowrap; text-decoration: none; border-bottom: 0; }
+.controls a:hover { color: var(--green); text-decoration: none; }
+.controls a:focus-visible { outline: 3px solid var(--green); outline-offset: 4px; border-radius: 4px; }
+.controls > button { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--green-dark); font: inherit; font-size: 24px; cursor: pointer; }
+.controls > button:hover:not(:disabled) { background: var(--green-soft); }
+.controls > button:disabled { opacity: .35; cursor: default; }
+.carousel .track { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: calc((100% - 44px) / 3); gap: 22px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 16px; scroll-padding-inline: 2px; }
+.track > article { scroll-snap-align: start; min-width: 0; }
+.carousel .track { scrollbar-width: none; }
+.track::-webkit-scrollbar { display: none; }
+.controls > button:focus-visible, .track:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+@media (max-width: 1000px) { .carousel .track { grid-auto-columns: calc((100% - 22px) / 2); } }
+@media (max-width: 600px) { .carousel .track { grid-auto-columns: 88%; } }
+.controls > button { flex-shrink: 0; }
+.controls { flex-wrap: wrap; }
+.rewardNote { color: var(--muted); font-size: 13px; margin: -4px 0 16px; }
+.rewardNote a { color: var(--green-dark); }
+.heading h2 { font-size: var(--home-heading-size, clamp(28px, 3vw, 36px)); line-height: 1.2; letter-spacing: -.025em; }
+.controls > a { font-size: 18px; }
+.carousel .track:has(> div:only-child) { grid-auto-columns: 100%; }
+@media (max-width: 600px) {
+  .controls { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; width: 100%; }
+  .controls > div { grid-column: 1 / -1; }
+  .controls > a { margin-right: 0; }
+}

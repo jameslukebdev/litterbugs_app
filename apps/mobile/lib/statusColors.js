@@ -1,8 +1,10 @@
+import { colors } from './theme';
+
 export const statusColors = Object.freeze({
-  neutral: { color: '#59636A', backgroundColor: '#F1F4F2' },
-  success: { color: '#245F2A', backgroundColor: '#EAF4EC' },
-  pending: { color: '#805C00', backgroundColor: '#FFF5DB' },
-  error: { color: '#B42318', backgroundColor: '#FDEEEB' },
+  neutral: { color: colors.muted, backgroundColor: colors.mist },
+  success: { color: colors.done, backgroundColor: colors.doneSoft },
+  pending: { color: colors.yellow, backgroundColor: colors.yellowSoft },
+  error: { color: colors.red, backgroundColor: colors.redSoft },
 });
 export function paymentTone(status) {
   if (['payment_pending', 'refund_pending', 'refund_processing'].includes(status)) return 'pending';

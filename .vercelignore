@@ -16,3 +16,6 @@ skills-lock.json
 .env*
 **/.env*
 supabase/.temp/
+
+# Store marketing assets are not website build inputs.
+release-assets/

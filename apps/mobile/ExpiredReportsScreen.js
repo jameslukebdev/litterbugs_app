@@ -1,18 +1,23 @@
 import { userMessage } from './lib/userMessage';
 import { useCallback, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import useFocusedResource from './lib/useFocusedResource';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { closeExpiredReport, formatUsd, loadMyExpiredReports, renewExpiredReport } from './lib/funding';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
-import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { showFlowDone } from './components/FlowDone';
+import RemotePhoto from './components/RemotePhoto';
+import { PhotoBatchProvider } from './components/PhotoBatch';
+import BrandBug from './components/BrandBug';
+import { EmptyState, PrimaryButton, PullRefresh, TextLink } from './components/ui';
+import { colors, fonts } from './lib/theme';
 
 export default function ExpiredReportsScreen() {
   const { user } = useSession();
-  const { refreshReports } = useReports();
+  const { refreshReports, getReportPhotoUrl } = useReports();
   const insets = useSafeAreaInsets();
   const [busyId, setBusyId] = useState(null);
   const resource = useFocusedResource(useCallback(() => loadMyExpiredReports(user.id), [user?.id]), { enabled: Boolean(user?.id) });
@@ -23,6 +28,7 @@ export default function ExpiredReportsScreen() {
     try {
       setBusyId(report.id);
       await renewExpiredReport(report.id);
+      showFlowDone({ bug: 'dragonfly', title: 'Report renewed', text: Number(report.funded_amount_cents) > 0 ? 'Renewed for 30 days with its cleanup fund preserved.' : 'Renewed for 30 days.' });
       await Promise.all([load(), refreshReports({ showRefresh: false })]);
     } catch (error) {
       Alert.alert('Couldn’t renew report', userMessage(error, 'This report may have changed. Refresh and try again.'));
@@ -41,6 +47,7 @@ export default function ExpiredReportsScreen() {
           try {
             setBusyId(report.id);
             await closeExpiredReport(report.id);
+            showFlowDone({ bug: 'dragonfly', title: 'Report closed', text: Number(report.funded_amount_cents) > 0 ? 'Everyone who chipped in is being refunded.' : '' });
             await Promise.all([load(), refreshReports({ showRefresh: false })]);
           } catch (error) {
             Alert.alert('Couldn’t close report', userMessage(error, 'This report may have changed. Refresh and try again.'));
@@ -51,50 +58,66 @@ export default function ExpiredReportsScreen() {
   );
 
   return (
+    // The renewal cards' photos appear together.
+    <PhotoBatchProvider>
     <ScrollView
-      style={{ backgroundColor: '#FFFFFF' }}
+      style={{ backgroundColor: colors.white }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#2F7D32" />}
+      refreshControl={<PullRefresh refreshing={loading && reports.length > 0} onRefresh={load} />}
     >
-      <Text style={styles.title}>Renew or close reports</Text>
-      <View style={styles.explanation}><Ionicons name="calendar-outline" size={20} color="#49704D" /><Text style={styles.subtitle}>Expired reports stay here for 7 days. Renewing starts a fresh 30-day period and keeps the cleanup fund attached.</Text></View>
       {loading && reports.length === 0 ? (
-        <BrandedLoadingState compact title="Checking expired reports…" message="Looking for reports that need your decision." />
+        <LoadingBee label="Checking expired reports" />
       ) : null}
-      {error ? <TouchableOpacity accessibilityRole="button" onPress={load} style={styles.closeButton}><Text>Couldn’t load reports. Tap to retry.</Text></TouchableOpacity> : null}
+      {error ? <TextLink label="Couldn’t load reports. Tap to retry." onPress={load} style={styles.closeButton} /> : null}
       {!loading && !error && reports.length === 0 ? (
-        <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="checkmark-circle-outline" size={28} color="#49704D" /></View><Text style={styles.emptyTitle}>Nothing needs a decision</Text><Text style={styles.emptyText}>Reports that need renewal will appear here.</Text></View>
+        <EmptyState bug="flower" title="Nothing needs a decision" text="Reports that need renewal will appear here." style={styles.empty} />
       ) : reports.map((report) => (
+        // Website renewal card: the question, the report, its fund, the deadline, two choices.
         <View key={report.id} style={styles.card}>
-          <Text style={styles.reportTitle}>{report.title || 'Litter report'}</Text>
-          <Text style={styles.meta}>Cleanup reward: {formatUsd(report.funded_amount_cents)}</Text>
-          <Text style={styles.meta}>Decide by {new Date(report.renewal_decision_due_at).toLocaleString()}</Text>
-          <TouchableOpacity style={styles.renewButton} onPress={() => renew(report)} disabled={Boolean(busyId)}>
-            {busyId === report.id ? <LoadingButtonContent label="Renewing…" /> : <Text style={styles.renewText}>Renew for 30 days</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.closeButton} onPress={() => close(report)} disabled={Boolean(busyId)}>
-            {busyId === report.id ? <LoadingButtonContent label="Updating…" color="#A33A32" /> : <Text style={styles.closeText}>Close and refund</Text>}
-          </TouchableOpacity>
+          <Text style={styles.cardHeading}>Keep this report open?</Text>
+          <View style={styles.reportRow}>
+            <RemotePhoto path={report.photo_paths?.[0]} getUrl={getReportPhotoUrl} label={`Photo for ${report.title || 'litter report'}`} style={styles.photo} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reportTitle}>{report.title || 'Litter report'}</Text>
+              {Number(report.funded_amount_cents) > 0 ? (
+                <View style={styles.fundRow}>
+                  <BrandBug kind="bee" size={16} />
+                  <Text style={styles.fundText}>{formatUsd(report.funded_amount_cents)} in its cleanup fund</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.meta}>
+            Decide by <Text style={styles.due}>{new Date(report.renewal_decision_due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</Text>. If you don’t, it closes{Number(report.funded_amount_cents) > 0 ? ' and everyone who chipped in is refunded' : ''}.
+          </Text>
+          <View style={styles.choices}>
+            <PrimaryButton label="Renew 30 days" busyLabel="Updating report…" busy={busyId === report.id} disabled={Boolean(busyId)} onPress={() => renew(report)} style={styles.choice} />
+            <TouchableOpacity style={[styles.choice, styles.closeChoice, Boolean(busyId) && { opacity: 0.6 }]} disabled={Boolean(busyId)} onPress={() => close(report)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={Number(report.funded_amount_cents) > 0 ? 'Close and refund' : 'Close report'}>
+              <Text style={styles.closeChoiceText}>{Number(report.funded_amount_cents) > 0 ? 'Close and refund' : 'Close report'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ))}
     </ScrollView>
+    </PhotoBatchProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, padding: 20, backgroundColor: '#FFFFFF' },
-  title: { color: '#26332B', fontSize: 24, lineHeight: 30, fontWeight: '600' },
-  explanation: { marginTop: 14, padding: 14, borderRadius: 13, backgroundColor: '#F4F8F4', flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  subtitle: { flex: 1, color: '#637167', fontSize: 14, lineHeight: 21 },
-  empty: { minHeight: 240, marginTop: 24, padding: 20, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#EFF5EF', alignItems: 'center', justifyContent: 'center' },
-  emptyText: { marginTop: 7, color: '#6D7970', fontSize: 14, lineHeight: 21, textAlign: 'center' },
-  emptyTitle: { marginTop: 14, color: '#303B34', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  card: { marginTop: 17, padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#E0E8E1', backgroundColor: '#FFFFFF' },
-  reportTitle: { color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  meta: { marginTop: 7, color: '#667078', fontSize: 14 },
-  renewButton: { minHeight: 48, marginTop: 17, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#2F7D32' },
-  renewText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  closeButton: { minHeight: 46, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
-  closeText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
+  content: { flexGrow: 1, padding: 20, backgroundColor: colors.white },
+  empty: { minHeight: 240, marginTop: 24 },
+  card: { marginBottom: 16, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  cardHeading: { color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  reportRow: { marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  photo: { width: 64, height: 64, borderRadius: 12 },
+  reportTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  fundRow: { marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  fundText: { color: colors.yellow, fontSize: 14, fontWeight: '800' },
+  meta: { marginTop: 12, color: colors.body, fontSize: 14, lineHeight: 21 },
+  due: { color: colors.yellow, fontWeight: '800' },
+  choices: { marginTop: 14, flexDirection: 'row', gap: 10 },
+  choice: { flex: 1, minHeight: 48, paddingHorizontal: 8 },
+  closeChoice: { alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.redBorder, backgroundColor: colors.white },
+  closeChoiceText: { color: colors.red, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  closeButton: { marginTop: 9 },
 });

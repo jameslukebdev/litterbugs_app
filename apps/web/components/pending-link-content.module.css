@@ -1,0 +1,6 @@
+.content { position: relative; display: inline-block; }
+:where(.link) { position: relative; }
+.indicator, .content::before { position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
+.content::before { content: ''; }
+.indicator[data-pending], .content[data-pending]::before { opacity: .055; }
+@media (prefers-reduced-motion: reduce) { .indicator, .content::before { transition: none; } }

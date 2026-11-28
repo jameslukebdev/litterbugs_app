@@ -10,3 +10,9 @@ it('rejects future, malformed or incompatible data before local replacement',()=
   for(const value of [{...report,version:2},{...report,coordinates:{latitude:NaN,longitude:0}},{...report,draft:{...report.draft,selectedTypes:'Bottles'}},{...report,step:9}]) expect(()=>accountDraftPayload(value,'report')).toThrow();
   expect(()=>accountDraftPayload(report,'cleanup:attempt')).toThrow();
 });
+it('retains optional cleanup hours while still opening older drafts', () => {
+  const draft = {version:1,kind:'cleanup',description:'Removed bottles',bagsOrItems:'2',weightPounds:'5',correctionDueAt:null};
+  expect(accountDraftPayload({...draft,hoursSpent:'1.5'},'cleanup:attempt')).toMatchObject({hoursSpent:'1.5'});
+  expect(accountDraftPayload(draft,'cleanup:attempt')).toEqual(draft);
+  for (const hoursSpent of [90, null, 'x'.repeat(21)]) expect(() => accountDraftPayload({...draft,hoursSpent},'cleanup:attempt')).toThrow();
+});

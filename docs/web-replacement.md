@@ -114,7 +114,11 @@ create a JavaScript map ID plus a browser-only key restricted to:
 - Approved Vercel preview origins while testing.
 
 The existing Android key remains restricted to the Android package and signing
-certificate. Places API is not required or authorized.
+certificate. On November 6, 2026, Grant authorized Place Autocomplete (New) for
+website location discovery. `places.googleapis.com` is enabled in `litterbugs-auth`
+and allowed on the local-development and production website browser keys, alongside
+Maps JavaScript and Geocoding. Their existing referrer restrictions are unchanged.
+Android keys and credentials are unchanged.
 
 ## Local verification
 
@@ -168,8 +172,9 @@ domains were attached only after the acceptance gates in
 `docs/cutover-checklist.md` passed.
 
 The root `check` command scans both the web runtime source and compiled output
-for the archived Supabase project, excluded map/marketplace systems, Places API,
-and public secret-key mistakes. It type-checks both Edge Functions with pinned
+for the archived Supabase project, excluded map/marketplace systems,
+and public secret-key mistakes. Website Place Autocomplete is authorized as noted
+above. It type-checks both Edge Functions with pinned
 Deno and runs a pinned Wrangler dry-run for the moved `services/auth-bridge`
 Worker. Its source diff changes only the logo import path; the deployed
 `auth.litterbugs.app` domain and routes remain unchanged.

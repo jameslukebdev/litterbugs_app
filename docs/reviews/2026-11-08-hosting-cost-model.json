@@ -1,0 +1,126 @@
+{
+  "as_of": "2026-11-08",
+  "currency": "USD",
+  "scope": "One Litterbugs website, steady 30-day hosting estimate before tax; existing external services and migration work excluded.",
+  "observed": {
+    "project": "litterbugs-web",
+    "start_utc": "2026-10-21T07:00:00+00:00",
+    "as_of_utc": "2026-11-08T21:28:37+00:00",
+    "elapsed_days": 18.603,
+    "cdn_requests": 64010,
+    "outbound_transfer_gb_rounded": 2,
+    "function_invocations": 50490,
+    "provisioned_memory_gb_hours": 6.73,
+    "image_transformations": 111,
+    "ready_production_target_deployments": 88,
+    "deployment_count_complete": true,
+    "ready_deployment_caveat": "Production-target READY records are a proxy, not proof every deployment published to a custom domain. Retaining equivalent publishing cadence is a modeling assumption."
+  },
+  "projection_30_days": {
+    "factor": 1.6126,
+    "cdn_requests": 103224,
+    "outbound_gb_from_rounded_input": 3.23,
+    "memory_gb_hours_vercel_proxy": 10.85,
+    "ready_production_target_deploys": 141.9,
+    "cpu_hours_cost_derived_proxy": 2.39
+  },
+  "budget_assumptions": {
+    "requests": 110000,
+    "outbound_gb": 4,
+    "netlify_function_compute_gb_hours": 15,
+    "cloudflare_cpu_hours": 3,
+    "build_wall_minutes_range": [
+      300,
+      800
+    ],
+    "render_total_outbound_gb_example": 8,
+    "cloudflare_cache_storage_and_ops": "Assumed below included/free allowances; actual adapter architecture not yet benchmarked.",
+    "photo_processing": "Existing Supabase storage retained. No separate paid image-processing server assumed. Compatibility must be demonstrated before quoting Cloudflare as migration-ready.",
+    "render_memory": "$7 instance has 512MB; if insufficient for photo processing, next 2GB instance is $25 before extras."
+  },
+  "netlify": {
+    "base_run_credits": 252.0,
+    "rates": {
+      "request_credits_per_10000": 2,
+      "bandwidth_credits_per_gb": 20,
+      "function_compute_credits_per_gb_hour": 10,
+      "credits_per_live_deploy": 15,
+      "free_credits": 300,
+      "personal_base_usd": 9,
+      "personal_included_credits": 1000,
+      "personal_pack_usd": 5,
+      "personal_pack_credits": 500,
+      "pro_base_usd": 20,
+      "pro_included_credits": 3000,
+      "pro_pack_usd": 10,
+      "pro_pack_credits": 1500
+    },
+    "scenarios": {
+      "140": {
+        "monthly_live_deploys": 140,
+        "netlify_credits": 2352.0,
+        "personal_usd": 24,
+        "pro_usd": 20,
+        "lowest_paid_usd": 20
+      },
+      "30": {
+        "monthly_live_deploys": 30,
+        "netlify_credits": 702.0,
+        "personal_usd": 9,
+        "pro_usd": 20,
+        "lowest_paid_usd": 9
+      }
+    },
+    "pricing_note": "Current browser pricing displayed Personal $9 and Pro $20. Purchase/account quote governs; no subscription created."
+  },
+  "cloudflare": {
+    "base_usd": 5,
+    "modeled_usage_overage_usd": 0,
+    "planning_total_range_usd": [
+      5,
+      7
+    ],
+    "included_worker_requests": 10000000,
+    "included_cpu_ms": 30000000,
+    "build_minutes_paid_included": 6000,
+    "images_unique_transformations_free": 5000,
+    "range_note": "$2 contingency for adapter/cache/processing differences; not an observed bill or guaranteed cap."
+  },
+  "render": {
+    "workspace_usd": 0,
+    "instance_usd": 7,
+    "included_build_minutes": 500,
+    "additional_build_minutes_pack": 1000,
+    "additional_build_minutes_pack_usd": 5,
+    "included_outbound_gb": 5,
+    "outbound_overage_usd_per_gb": 0.15,
+    "example_outbound_overage_usd": 0.45,
+    "planning_total_range_usd": [
+      7,
+      13
+    ]
+  },
+  "vercel": {
+    "base_usd": 20,
+    "modeled_overage_usd": 0,
+    "total_usd": 20,
+    "scope_note": "Shared existing Pro plan; migrating Litterbugs alone does not cancel it while other business projects still need Pro."
+  },
+  "limitations": [
+    "Cross-host compute metrics are not identical; provisioning, caching and builds require a trial measurement.",
+    "No migration, compatibility build, new account or billing change performed.",
+    "Resend downgrade remains scheduled for Dec 8; its interim subscription is unchanged by host selection.",
+    "Supabase, Google Maps, payment fees, analytics, domains and other external services are not included because this compares replacing the website host."
+  ],
+  "sources": [
+    "Signed-in Vercel project Usage, current Oct21-Nov21 cycle observed Nov8",
+    "Scoped Vercel CLI READY production deployment pagination (5 pages)",
+    "https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/",
+    "https://www.netlify.com/pricing/",
+    "https://developers.cloudflare.com/workers/platform/pricing/",
+    "https://developers.cloudflare.com/workers/ci-cd/builds/limits-and-pricing/",
+    "https://developers.cloudflare.com/images/pricing/",
+    "https://render.com/pricing",
+    "https://render.com/docs/new-workspace-plans"
+  ]
+}

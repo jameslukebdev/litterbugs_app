@@ -1,0 +1,22 @@
+const fs=require('fs'),path=require('path'),sharp=require('sharp');sharp.concurrency(1);sharp.cache(false);
+const d=__dirname,old=path.join(d,'../v13');
+(async()=>{
+ const m=JSON.parse(fs.readFileSync(path.join(old,'manifest.json'))),g=m.gallery[0],screen=g.screen;
+ for(const x of m.gallery.slice(1))fs.copyFileSync(path.join(old,x.file),path.join(d,x.file));
+ const input=path.join(d,'source/homepage-original-X4.jpg'),meta=await sharp(input).metadata();
+ const photo=await sharp(input).resize(screen.width,screen.height,{fit:'cover',position:'centre'}).removeAlpha().png().toBuffer();
+ const name='01-make-money-reporting-original-hq.png';
+ await sharp(path.join(old,g.file)).composite([{input:photo,left:screen.left,top:screen.top}]).removeAlpha().png().toFile(path.join(d,name));
+ Object.assign(g,{file:name,source:'source/homepage-original-X4.jpg',type:'Real Canva stock photograph used on homepage; no generative editing'});
+ m.status='High-resolution replacement prepared';m.notUploaded=true;
+ m.provenance.illustrations='No generated imagery. Lead photo is the exact homepage Canva stock photograph Taking Photos with a Smart Phone. Extracted losslessly from Canva Print PDF export, image dimensions 3600x2400. Resized downward and center-cropped into the existing phone frame.';
+ m.provenance.presentation='Same heading, purple background, frame, 1080x1920 canvas and screenshot order. Other seven panels are unchanged from v13.';
+ m.submission={order:[1,2,3,4,6,8,5,7],video:null,aiDeclaration:"Don't label assets",status:'prepared',appIcon:'../v12/listing-assets/litterbugs-icon-white-512.png',featureGraphic:'../v12/listing-assets/litterbugs-feature-white-1024x500.png'};
+ m.provenance.sourceDesign='https://www.canva.com/design/DAHZaHojjUg/d9YegEBOjpJ79XJyIFSCYw/edit';
+ fs.writeFileSync(path.join(d,'manifest.json'),JSON.stringify(m,null,2));
+ const thumbnails=[];
+ for(let i=0;i<m.gallery.length;i++)thumbnails.push({input:await sharp(path.join(d,m.gallery[i].file)).resize(270,480).png().toBuffer(),left:24+(i%4)*294,top:24+Math.floor(i/4)*504});
+ await sharp({create:{width:1200,height:1032,channels:3,background:'#e9e5de'}}).composite(thumbnails).png().toFile(path.join(d,'gallery-review.png'));
+ const actual=await sharp(path.join(d,name)).extract(screen).raw().toBuffer(),expected=await sharp(photo).raw().toBuffer();if(!actual.equals(expected))throw Error('Pixel verification failed');
+ console.log(JSON.stringify({source:[meta.width,meta.height],export:[1080,1920],verified:true}));
+})();

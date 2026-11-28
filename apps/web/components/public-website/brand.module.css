@@ -1,0 +1,424 @@
+@font-face { font-family: 'Playful Nunito'; src: url('/fonts/nunito/black.ttf') format('truetype'); font-weight: 700 900; font-display: swap; }
+.brand { --ink: #292932; --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; --soft: #f8f7fc; background: #fff; }
+.brand h1, .brand h2, .brand h3 { font-family: 'Playful Nunito', sans-serif; font-weight: 900; }
+.brand main h1, .brand main h2, .brand main h3 { color: #292932; }
+/* Keep original widths, grids, spacing, section order, and breakpoints. */
+.brand > header { box-shadow: 0 2px 0 #f0edf8; }
+.brand > header img[src*="litterbugs-logo"] { mix-blend-mode: multiply; }
+.brand > header a, .brand > header button { font-weight: 700; }
+.brand :global(.header-report-button), .brand :global(.public-account-control) { border-radius: 14px; border-color: #5146ed; box-shadow: 0 3px 0 #d9d4f5; }
+.brand :global(.header-report-button) { background: #5146ed; color: #fff; box-shadow: 0 4px 0 #3528ac; }
+.brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 22px; box-shadow: 0 5px 0 #9bbbf3; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(2) > img { box-shadow: 0 5px 0 #ffce38; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) > img { box-shadow: 0 5px 0 #9fd17a; }
+.brand section[aria-labelledby='report-starter-title'] article h3 { color: #2e539e; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(2) h3 { color: #826200; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) h3 { color: #2f6b3a; }
+.brand section[aria-labelledby='report-starter-title'] article button, .brand section[aria-labelledby='report-starter-title'] article a { border-radius: 14px; border-color: #9bbbf3; background: #c2d8ff; color: #234485; box-shadow: 0 4px 0 #9bbbf3; font-weight: 700; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(2) a { background: #ffce38; color: #493a10; border-color: #ffce38; box-shadow: 0 4px 0 #d9ac19; }
+.brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a { background: #b8e198; color: #24521f; border-color: #9fd17a; box-shadow: 0 4px 0 #8cc366; }
+.brand :global(.report-result) { border-radius: 20px; border-color: #e1dcf0; box-shadow: 0 4px 0 #eeeaf8; }
+.brand :global(.report-result-photo) { border-radius: 20px 20px 0 0; }
+.brand :global(.report-result-reward) { border-radius: 10px; }
+.brand a:focus-visible, .brand button:focus-visible { outline: 3px solid #5146ed; outline-offset: 4px; }
+
+/* Shared interaction language: raised controls, quiet links, visible focus. */
+.brand {
+  --playful-hover: #eeebff;
+  --playful-border: #d8d1f0;
+  --playful-ease: 160ms ease;
+}
+.brand :is(a, button, summary, input) {
+  transition: background-color var(--playful-ease), color var(--playful-ease), border-color var(--playful-ease), box-shadow var(--playful-ease), transform var(--playful-ease);
+}
+.brand :is(a, button, summary, input, [tabindex='0']):focus-visible {
+  outline: 3px solid #5146ed;
+  outline-offset: 4px;
+}
+.brand button:disabled { transform: none; box-shadow: none; }
+.brand button[aria-expanded], .brand > header a { border-radius: 10px; }
+.brand > header a[aria-label='Open map'] { border-color: var(--playful-border); border-radius: 12px; box-shadow: 0 3px 0 #eeeaf8; }
+.brand > header ul { border-color: var(--playful-border); border-radius: 18px; box-shadow: 0 7px 0 #ede9f6, 0 12px 28px #5146ed12; }
+.brand > header ul a { border-radius: 8px; }
+.brand > header button[aria-expanded='true'] { color: #4438bb; background: var(--playful-hover); box-shadow: 0 3px 0 #d8d1f0; }
+.brand dialog { border-color: var(--playful-border); }
+.brand dialog::backdrop { background-color: #26213d55; }
+.brand input { border-color: var(--playful-border); border-radius: 12px; caret-color: #5146ed; }
+.brand :global(.place-search-dropdown) { border-color: var(--playful-border); border-radius: 14px; box-shadow: 0 6px 0 #ede9f6, 0 12px 28px #5146ed12; }
+
+/* Carry the finish through the carousel and its secondary controls. */
+.brand section[aria-roledescription='carousel'] button[aria-controls] { border-color: var(--playful-border); box-shadow: 0 3px 0 #e6e1f5; background: #fff; }
+.brand section[aria-roledescription='carousel'] button[aria-controls]:disabled { box-shadow: none; background: #f8f7fc; opacity: .45; }
+.brand :global(.report-card-container) { border-radius: 20px; box-shadow: 0 4px 0 #eeeaf8; transition: box-shadow var(--playful-ease); }
+.brand :global(.report-result) { box-shadow: none; }
+.brand :global(.public-card-footer) { border-color: #e1dcf0; border-radius: 0 0 20px 20px; }
+.brand :global(.public-card-options) summary { color: #65578b; border-radius: 10px; }
+.brand :global(.public-card-options[open]) summary { color: #4438bb; background: var(--playful-hover); }
+.brand :global(.public-card-options-panel) { border-color: var(--playful-border); border-radius: 14px; box-shadow: 0 5px 0 #ede9f6; }
+.brand :global(.public-card-options-panel) button { border-radius: 10px; }
+
+/* The final section uses the same soft corners and tactile action treatment. */
+.brand section[aria-labelledby='home-cleanup-title'] figure img { border-radius: 22px; box-shadow: 0 5px 0 #e3dff0; }
+.brand section[aria-labelledby='home-cleanup-title'] figure:nth-child(2) img { box-shadow: 0 5px 0 #8ed7c5; }
+.brand section[aria-labelledby='home-cleanup-title'] figcaption { color: #5c566b; font-weight: 600; }
+.brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a {
+  border-radius: 14px; color: #125443; border-color: #8ed7c5; background: #b9e9dd; box-shadow: 0 4px 0 #8ed7c5;
+}
+.brand :global(.discovery-footer) { border-color: #e5dff2; }
+.brand :global(.discovery-footer) :is(a, button) { border-radius: 4px; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .brand > header a:hover, .brand > header button:hover:not(:disabled) { color: #4438bb; background-color: #f4f1ff; }
+  .brand > header a[aria-label='Litterbugs home']:hover { background: transparent; transform: rotate(-3deg); }
+  .brand > header ul a:hover { background: var(--playful-hover); box-shadow: -3px 0 0 #b645d3; }
+  .brand :global(.public-account-control):hover { border-color: #5146ed; background: var(--playful-hover); box-shadow: 0 4px 0 #d9d4f5; transform: translateY(-1px); }
+  .brand :global(.header-report-button):hover { background: #4436d4; color: #fff; }
+  .brand section[aria-labelledby='report-starter-title'] article :is(button, a):hover:not(:disabled) { background: #b2cfff; color: #234485; border-color: #84aaeb; transform: translateY(-2px); box-shadow: 0 6px 0 #84aaeb; }
+  .brand section[aria-labelledby='report-starter-title'] article:nth-child(2) a:hover { background: #ffd95b; color: #493a10; border-color: #ffce38; box-shadow: 0 6px 0 #d9ac19; }
+  .brand section[aria-labelledby='report-starter-title'] article:nth-child(3) a:hover { background: #aedb8b; color: #24521f; border-color: #8cc366; box-shadow: 0 6px 0 #8cc366; }
+  .brand main > section[aria-labelledby="home-title"] a:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .brand section[aria-roledescription='carousel'] button[aria-controls]:hover:not(:disabled) { background: var(--playful-hover); border-color: #a79ce8; box-shadow: 0 4px 0 #d8d1f0; transform: translateY(-1px); }
+  .brand :global(.public-card-options) summary:hover, .brand :global(.public-card-options-panel) button:hover { background: var(--playful-hover); color: #4438bb; }
+  .brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a:hover { background: #abe3d5; color: #125443; border-color: #6cc6af; box-shadow: 0 6px 0 #6cc6af; transform: translateY(-2px); }
+  .brand section[aria-labelledby='home-cleanup-title'] > div:first-child > a:hover,
+  .brand section[aria-roledescription='carousel'] > div:first-child a:hover,
+  .brand :global(.discovery-footer) :is(a, button):hover { color: #4438bb; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+}
+.brand section[aria-labelledby='report-starter-title'] article :is(button, a):active:not(:disabled),
+.brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a:active,
+.brand section[aria-roledescription='carousel'] button[aria-controls]:active:not(:disabled),
+.brand :global(.public-account-control):active,
+.brand :global(.header-report-button):active { transform: translateY(3px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .brand *, .brand *::before, .brand *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  .brand :is(a, button):hover, .brand :is(a, button):active { transform: none !important; }
+}
+
+/* One card surface: image, copy, and attribution belong to one object.
+   Sub-actions retain their keyboard focus without repainting separate blocks. */
+.brand :global(.public-report-cards .report-card-container) {
+  --card-fill: #fff;
+  --card-edge: #e3e1e9;
+  background: var(--card-fill);
+  border-radius: 22px;
+  box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #e9e6ef;
+  transition: box-shadow 160ms ease, background-color 160ms ease;
+}
+.brand :global(.public-report-cards .report-result),
+.brand :global(.public-report-cards .report-result):is(:hover, :active, :focus-visible) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: 22px 22px 0 0;
+  transform: none;
+}
+.brand :global(.public-report-cards .report-result-photo) { border-radius: 21px 21px 0 0; }
+.brand :global(.public-report-cards .public-card-footer) {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0 0 22px 22px;
+  height: 72px;
+  padding: 10px 52px 12px 16px;
+  gap: 10px;
+}
+.brand :global(.public-report-cards .report-result-copy) { padding-top: 16px; }
+.brand :global(.public-report-cards .report-author),
+.brand :global(.public-report-cards .report-author):is(:hover, :active) {
+  background: transparent; color: #45434d; box-shadow: none;
+  text-decoration: none; border-radius: 10px; gap: 10px;
+}
+.brand :global(.public-report-cards .report-author-copy) { gap: 4px; }
+.brand :global(.public-report-cards .report-author-copy > span:first-child) { font-weight: 600; font-size: 13px; }
+.brand :global(.public-report-cards .community-rank-badge) { color: #66616f; font-size: 11px; gap: 5px; }
+.brand :global(.public-report-cards .community-rank-badge img) { width: 20px; height: 20px; object-fit: contain; }
+.brand :global(.public-report-cards .report-author-initial),
+.brand :global(.public-report-cards .report-author > img) {
+  width: 34px; height: 34px; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #e3e1e9; flex-shrink: 0;
+}
+.brand :global(.public-report-cards .public-card-date) { color: #716c79; font-size: 11px; }
+.brand :global(.public-report-cards .public-card-options) { bottom: 14px; right: 8px; }
+.brand :global(.public-report-cards .public-card-options summary) { min-width: 36px; min-height: 40px; }
+.brand :global(.public-report-cards .public-card-options summary):hover { background: transparent; }
+.brand :global(.public-report-cards .public-card-options-panel) { padding: 6px; }
+.brand :global(.public-report-cards .public-card-options-panel button) { min-height: 44px; padding: 10px 14px; }
+.brand :global(.public-report-cards .report-result-workflow) { border-radius: 9px; background: #fff; color: #514639; box-shadow: 0 2px 0 #00000015; font-weight: 700; }
+.brand :global(.public-report-cards .report-result-reward) { background: #efedff; color: #5140aa; border-radius: 8px; }
+.brand :global(.public-report-cards .report-card-container):has(:focus-visible) {
+  --card-edge: #a89ae0;
+  box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #d8cfee;
+}
+@media (hover: hover) and (pointer: fine) {
+  .brand :global(.public-report-cards .report-card-container):hover {
+    --card-fill: #f9f7ff; --card-edge: #b5a7e6;
+    box-shadow: 0 0 0 2px var(--card-edge), 0 5px 0 #d8cfee;
+  }
+}
+
+/* Header text controls need whitespace inside their highlighted shape. */
+@media (min-width: 1240px) {
+  .brand > header nav button[aria-expanded] { padding-inline: 12px; min-height: 46px; }
+}
+.brand > header button[aria-expanded='true'] { box-shadow: none; }
+.brand > header ul { padding: 10px; border: 2px solid #e7e3ef; box-shadow: 0 4px 0 #ece8f2; }
+.brand > header ul a { padding-inline: 12px; }
+.brand > header ul a:hover { box-shadow: none; }
+.brand :global(.public-account-control-signed-out) { min-height: 46px; padding-inline: 18px; border-width: 2px; }
+/* Profile is a circle, not a rectangular raised button surrounding a circle. */
+.brand :global(.public-account-control-profile),
+.brand :global(.public-account-control-profile):is(:hover, :active) {
+  border: 0; border-radius: 50%; background: transparent;
+  box-shadow: none; transform: none;
+}
+.brand :global(.public-account-avatar-frame) { border-radius: 50%; }
+.brand :global(.public-account-avatar),
+.brand :global(.public-account-initials) { border: 2px solid #b3a6e5; padding: 3px; background-color: #fff; border-radius: 50%; box-shadow: none; }
+.brand :global(.public-account-control-profile):hover :is(:global(.public-account-avatar), :global(.public-account-initials)) { opacity: 1; border-color: #5146ed; }
+.brand :global(.public-account-control-profile):focus-visible { outline-offset: 3px; border-radius: 50%; }
+
+/* Use the same generous button padding throughout the three actions. */
+.brand section[aria-labelledby='report-starter-title'] article :is(a, button) { min-height: 54px; padding: 12px 24px; border-width: 2px; }
+.brand section[aria-labelledby='report-starter-title'] article button[class*='remove'] {
+  min-height: 44px; padding: 8px 10px; border: 0; box-shadow: none;
+  background: transparent; color: #615573; font-size: 16px;
+}
+.brand section[aria-labelledby='report-starter-title'] article button[class*='remove']:hover { background: #f3edf8; box-shadow: none; transform: none; }
+.brand section[aria-labelledby='report-starter-title'] article p[role='alert'] a { padding: 0; min-height: auto; border: 0; background: none; box-shadow: none; text-decoration: underline; }
+.brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a { padding: 12px 24px; min-height: 54px; border-width: 2px; }
+.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded] { border-radius: 12px; padding-inline: 12px; }
+/* Give the member name its own clear line; metadata sits beside the rank. */
+.brand :global(.public-report-cards .public-card-date) { position: absolute; right: 52px; bottom: 12px; line-height: 20px; }
+.brand :global(.public-report-cards .report-author) { align-self: flex-start; }
+.brand :global(.public-report-cards .public-card-options summary) { background: transparent; }
+.brand :global(.public-report-cards .public-card-options[open] summary) { background: #eeebff; }
+/* Never expose an avatar that has not finished loading on hover. */
+.brand :global(.public-account-control-profile):hover :global(.public-account-avatar:not([data-loaded='true'])) { opacity: 0; }
+
+/* Public guides share the homepage's type, action, and section rhythm. */
+.brand { --public-section-gap: 72px; }
+.brand.brand > main > header { box-shadow: none; }
+.brand.brand > main h1 { color: #292932; }
+.brand.brand > main :is(h2, h3) { color: #292932; }
+.brand.brand > main :global(.primary-button),
+.brand.brand > main a[href*='buy.stripe.com'] {
+  min-height: 54px; padding: 12px 24px; border: 2px solid #5146ed;
+  border-radius: 14px; background: #5146ed; color: #fff;
+  box-shadow: 0 4px 0 #3528ac; font-weight: 700; text-decoration: none;
+}
+.brand.brand > main :global(.secondary-button) {
+  min-height: 48px; padding: 10px 20px; border: 2px solid #d8d1f0;
+  border-radius: 14px; background: #f4f1ff; color: #4438bb; box-shadow: 0 3px 0 #d8d1f0;
+}
+.brand main :is(input[type='radio'], input[type='checkbox']) { accent-color: #5146ed; }
+.brand main fieldset label:has(input[type='radio']) { padding: 8px 12px; border: 2px solid #e6e2ef; border-radius: 14px; }
+.brand main fieldset label:has(input:checked) { border-color: #b3a6e5; background: #f4f1ff; }
+.brand > footer { font-size: 16px; line-height: 1.5; padding-block: 24px; gap: 24px; flex-wrap: wrap; }
+.brand > footer nav { gap: 12px 24px; }
+.brand > footer button { font-size: inherit; }
+.brand.brand > main > header ~ section { scroll-margin-top: 112px; }
+@media (hover:hover) and (pointer:fine) {
+  .brand.brand > main :global(.primary-button):hover:not(:disabled), .brand.brand > main a[href*='buy.stripe.com']:hover { color: #fff; background: #4436d4; border-color: #4436d4; transform: translateY(-1px); box-shadow: 0 5px 0 #3528ac; }
+  .brand.brand > main :global(.secondary-button):hover { background: #eae4ff; border-color: #bcb0e6; }
+  .brand main :is(p,li) > a:hover { color: #4438bb; text-decoration-thickness: 2px; }
+}
+.brand.brand > main :global(.primary-button):active:not(:disabled), .brand.brand > main a[href*='buy.stripe.com']:active { transform: translateY(3px); box-shadow: none; }
+.brand.brand > main button:disabled { transform: none; box-shadow: none; }
+@media (prefers-reduced-motion:reduce) { .brand.brand > main :is(a,button):is(:hover,:active) { transform: none; } }
+
+.brand.brand > main h1 { font-size: clamp(34px, 4vw, 56px); line-height: 1.12; letter-spacing: -.035em; }
+.brand.brand > main > header { margin-bottom: 40px; }
+.brand.brand > main :global(.info-page-card) { border-color: #e3dff0; border-radius: 20px; box-shadow: 0 4px 0 #eeeaf8; }
+
+.brand.brand a, .brand.brand a:hover, .brand.brand button, .brand.brand button:hover { text-decoration: none !important; }
+.brand.brand > header a::after, .brand.brand > header button::after { display: none; }
+.brand.brand > header button[aria-expanded] { padding-inline: 12px; box-shadow: none; }
+.brand.brand > header a[href='/get-app'] { padding-inline: 12px; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded] { min-height: 44px; padding: 10px 14px; border: 2px solid #e0daef; border-radius: 14px; box-shadow: none; background: white; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded]:hover, .brand.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded='true'] { background: #f1eeff; border-color: #b3a6e5; }
+
+/* Distribute accents across the report tools, instead of a row of purple. */
+.brand.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded] { color: #775700; border-color: #ead89c; background: #fffdf5; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child button[aria-expanded]:is(:hover, [aria-expanded='true']) { color: #775700; background: #fff4cc; border-color: #d8b742; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child a { color: #5146bf; border-radius: 10px; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child a:hover { background: #efedff; color: #4438bb; }
+.brand.brand section[aria-roledescription='carousel'] button[aria-controls] { color: #ac343b; border: 2px solid #efd0cd; box-shadow: none; }
+.brand.brand section[aria-roledescription='carousel'] button[aria-controls]:hover:not(:disabled) { color: #ac343b; background: #fff0ee; border-color: #dcaaa6; }
+.brand.brand section[aria-roledescription='carousel'] button[aria-controls]:disabled { opacity: .4; background: #fff; }
+.brand.brand section[aria-roledescription='carousel'] h2 { color: #292932; }
+.brand.brand section[aria-labelledby='home-cleanup-title'] h2 { color: #292932; }
+.brand.brand > main > section:nth-of-type(3n + 2) > h2 { color: #5146bf; }
+.brand.brand > main > section:nth-of-type(3n + 3) > h2 { color: #ac343b; }
+/* Small, decorative logo companions; no new text or document-flow spacing. */
+.brand section[aria-labelledby='home-cleanup-title'],
+.brand > main > header { position: relative; }
+.brand section[aria-labelledby='home-cleanup-title']::before { content: ''; position: absolute; width: 36px; height: 36px; right: 6px; top: -38px; background-image: url('/brand/litterbugs-logo.png'); transform: rotate(16deg); pointer-events: none; }
+.brand > main > header::after { content: ''; position: absolute; width: 36px; height: 36px; right: 0; top: -26px; background-image: url('/brand/litterbugs-logo.png'); transform: rotate(12deg); pointer-events: none; }
+.brand > footer { position: relative; }
+.brand > footer::before { content: ''; position: absolute; width: 26px; height: 26px; right: 24px; top: -19px; background-image: url('/brand/litterbugs-logo.png'); transform: rotate(-15deg); pointer-events: none; }
+
+/* Match feature links to their navigation colors on the explanatory pages. */
+.brand.brand main strong a[href='/report-litter'] { color: #2e539e; }
+.brand.brand main strong a[href='/fund-a-cleanup'] { color: #775700; }
+.brand.brand main strong a[href='/cleaner'] { color: #5146bf; }
+.brand.brand main strong a[href='/report-litter']:hover { background: #e5efff; }
+.brand.brand main strong a[href='/fund-a-cleanup']:hover { background: #fff4cc; }
+.brand.brand main strong a[href='/cleaner']:hover { background: #efedff; }
+.brand > main > h1 { position: relative; }
+.brand > main > h1::after { content: ''; position: absolute; right: 0; top: -18px; width: 24px; height: 24px; background-image: url('/brand/litterbugs-logo.png'); pointer-events: none; transform: rotate(15deg); }
+
+/* Reuse the four original logo silhouettes as a CSS sprite, not redrawn icons.
+   The slight brightness correction blends the source's near-white canvas into white. */
+.brand section[aria-labelledby='home-cleanup-title']::before,
+.brand > main > header::after, .brand > main > h1::after, .brand > footer::before {
+  background-repeat: no-repeat; filter: brightness(1.045); pointer-events: none;
+}
+.brand section[aria-labelledby='home-cleanup-title']::before,
+.brand > main > h1::after {
+  background-size: 836.842% 521.687%; background-position: 100% 46.857%;
+}
+.brand section[aria-labelledby='home-cleanup-title']::before { left: 4px; right: auto; top: -48px; width: 30px; height: 33px; }
+.brand > main > header::after, .brand > footer::before {
+  background-size: 583.486% 424.51%; background-position: 73.435% 0%;
+}
+/* Decorative touches stay in separated page regions, outside interactive targets. */
+.brand > footer::before { right: 32px; top: -28px; }
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:first-child a {
+  padding: 8px 12px; min-height: 44px; border-radius: 12px; color: #176350;
+}
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:first-child a:hover { color: #125443; background: #e2f8f3; }
+.brand.brand section[aria-roledescription='carousel'] > div:first-child a { padding: 8px 12px; margin-right: 0; min-height: 44px; }
+
+/* Public-page consistency pass: retain prose and layout, unify interactive surfaces. */
+.brand.brand main strong a[href='/report-litter'] { color: #2e539e; }
+.brand.brand main strong a[href='/report-litter']:hover { background: #e5efff; }
+.brand.brand > main > section:nth-of-type(3n + 2) > h2,
+.brand.brand > main > section:nth-of-type(3n + 3) > h2 { color: #292932; }
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) :is(p,li) a:not(:has(img)):not(:global(.primary-button)):not(:global(.secondary-button)) {
+  border-radius: 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) :is(p,li) a:not(:has(img)):hover {
+  color: #4438bb; background: #f4f1ff; box-shadow: 3px 0 0 #f4f1ff, -3px 0 0 #f4f1ff;
+}
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > header > a:not(:global(.primary-button)),
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > nav a,
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > div:last-child > a:not(:global(.primary-button)) {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px;
+  border-radius: 12px; color: #5146bf;
+}
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > header > a:not(:global(.primary-button)):hover,
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > nav a:hover,
+.brand.brand > main:not(:has(> section[aria-labelledby='home-title'])) > div:last-child > a:not(:global(.primary-button)):hover { background: #efedff; color: #4438bb; }
+.brand.brand > footer nav { gap: 4px 8px; }
+.brand.brand > footer nav :is(a,button) { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 10px; border-radius: 10px; }
+.brand.brand > footer nav :is(a,button):hover { background: #f4f1ff; color: #4438bb; }
+.brand.brand > main fieldset label:has(input[type='radio']):hover { border-color: #b3a6e5; background: #f4f1ff; }
+/* The original logo sprite stays outside text and action hit targets. */
+.brand > main > header::after { top: -32px; right: 12px; width: 30px; height: 28px; }
+.brand > main > h1::after { top: -24px; right: 8px; width: 22px; height: 24px; }
+
+/* Rotate existing logo accents across page families, one accent per region. */
+.brand[data-public-page='/report-litter'] > main > header::after,
+.brand[data-public-page='/fund-a-cleanup'] > main > header::after {
+ background-size: 605.714% 416.346%; background-position: 0% 57.751%;
+}
+.brand[data-public-page='/cleaner'] > main > header::after,
+.brand[data-public-page='/cleanups'] > main > header::after {
+ background-size: 836.842% 521.687%; background-position: 100% 46.857%;
+}
+.brand[data-public-page='/about'] > main > header::after,
+.brand[data-public-page='/support'] > main > header::after {
+ background-size: 908.571% 636.765%; background-position: 54.77% 100%;
+}
+
+.brand[data-public-page='/get-app'] > main > h1::after,
+.brand[data-public-page='/get-app'] > footer::before { content: none; display: none; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Finishing pass (2026-11-03). Same playful direction: colors, stickers,
+   raised controls and layout all stay. This only tightens type scale, text
+   color hierarchy, small-text legibility and spacing so the page reads as
+   finished. Appended last on purpose.
+   ─────────────────────────────────────────────────────────────────────────── */
+.brand { --fin-body: #4a4857; --fin-muted: #6b6878; }
+
+/* Hero: supporting copy one step quieter than the headline, tighter measure. */
+.brand.brand main > section[aria-labelledby='home-title'] h1 { letter-spacing: -.035em; }
+.brand.brand main > section[aria-labelledby='home-title'] p { margin: 24px 0 30px; max-width: 34ch; color: var(--fin-body); font-size: clamp(20px, 1.9vw, 24px); line-height: 1.5; }
+
+/* Section copy: comfortable reading size instead of oversized body text. */
+.brand.brand section[aria-labelledby='report-starter-title'] article > p { color: var(--fin-body); font-size: 19px; line-height: 1.55; margin-bottom: 22px; }
+.brand.brand section[aria-labelledby='report-starter-title'] article h3 { margin-bottom: 10px; }
+.brand.brand section[aria-labelledby='report-starter-title'] article :is(a, button):not([class*='remove']) { font-size: 18px; }
+
+/* Report cards: legible metadata and a little more air. */
+.brand.brand :global(.public-report-cards .report-result-copy) { padding: 18px 18px 0; }
+.brand.brand :global(.public-report-cards .report-result-copy > strong) { font-size: 17px; letter-spacing: -.01em; color: #292932; }
+.brand.brand :global(.public-report-cards .report-result-summary) { color: var(--fin-muted); font-size: 13px; }
+.brand.brand :global(.public-report-cards .public-card-footer) { height: 78px; padding: 12px 52px 14px 18px; }
+.brand.brand :global(.public-report-cards .report-author-copy > span:first-child) { font-size: 14px; color: #33313d; }
+.brand.brand :global(.public-report-cards .community-rank-badge) { font-size: 12px; }
+.brand.brand :global(.public-report-cards .public-card-date) { font-size: 12px; color: var(--fin-muted); bottom: 14px; }
+@media (max-width: 760px) {
+  .brand.brand :global(.public-report-cards .public-card-footer) { height: auto; min-height: 88px; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .brand.brand :global(.public-report-cards .public-card-footer .report-author) { height: auto; flex: none; width: 100%; }
+  .brand.brand :global(.public-report-cards .public-card-date) { position: static; line-height: 1.3; }
+  .brand :global(.public-report-cards .report-author + .public-card-date) { margin-inline-start: 44px; }
+  .brand :global(.public-report-cards .public-card-date:empty) { display: none; }
+  .brand :global(.public-report-cards .public-card-options) { top: 14px; bottom: auto; }
+}
+.brand.brand :global(.public-report-cards .report-result-workflow) { min-height: 26px; padding: 0 10px; font-size: 12px; }
+
+/* "Browse all" reads as a deliberate link, not a stray caption. */
+.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports'] {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 22px; font-size: 17px; font-weight: 700; color: #5146bf;
+}
+.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']::after { content: '→'; transition: transform var(--playful-ease); }
+.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']:hover::after { transform: translateX(3px); }
+
+/* Before/after: quieter captions, balanced detail row. */
+.brand.brand section[aria-labelledby='home-cleanup-title'] figcaption { margin-top: 10px; font-size: 15px; color: var(--fin-muted); }
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:last-child { margin-top: 28px; }
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:last-child p { color: var(--fin-muted); font-size: 19px; }
+
+/* Footer: calmer, evenly spaced. */
+.brand.brand > footer { padding-block: 28px; color: var(--fin-muted); font-size: 15px; }
+.brand.brand > footer nav :is(a, button) { color: var(--fin-body); font-size: 15px; }
+.brand.brand section[aria-labelledby='home-cleanup-title'] > div:last-child > a { font-size: 18px; }
+
+/* Reporting family = dragonfly. The reporting page's heading bug is the dragonfly, not the bee sprite. */
+.brand[data-public-page='/report-litter'] > main > header::after { background: url('/brand/ranks/dragonfly.svg') no-repeat center / contain; filter: none; }
+
+/* Cleaned up = flower, mint family. The cleanup section's heading bug is the flower. */
+.brand section[aria-labelledby='home-cleanup-title']::before { background: url('/brand/bugs/flower.png') no-repeat center / contain; filter: none; width: 30px; height: 30px; }
+
+/* Nov 2026: no loose decorative bugs; colour through text and the bugs that label something. */
+.brand.brand > footer::before,
+.brand.brand section[aria-labelledby='home-cleanup-title']::before { content: none; display: none; }
+/* "Explore what you can do": keep the coloured headings and buttons, drop the coloured photo edges. */
+.brand.brand.brand section[aria-labelledby='report-starter-title'] article > img { border-radius: 18px; box-shadow: none; }
+/* Completed-cleanup example (homepage, guides, community pages): keeps its mint button and mint photo glow. */
+.brand.brand.brand section[data-cleanup-proof] figcaption { margin-top: 8px; color: #686477; font-size: 14px; font-weight: 700; }
+.brand.brand.brand section[data-cleanup-proof] > div:last-child h3 { color: #292932; }
+.brand.brand.brand section[data-cleanup-proof] > div:last-child p { margin-top: 6px; color: #686477; font-size: 16px; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a { gap: 6px; transition: color .15s ease; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a::after { content: '→'; display: inline-block; transition: transform .15s ease; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover { color: #0b3b2f; background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:hover::after { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) { .brand.brand.brand section[data-cleanup-proof] > div:first-child a::after { transition: none; } }
+
+/* Nov 2026: link arrows become a little ant that scurries forward while you hover ("See completed cleanups",
+   "Browse all litter reports"). */
+.brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']::after,
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a::after {
+  content: ''; display: inline-block; width: 20px; height: 20px; margin-left: 6px; vertical-align: -4px;
+  background: url('/brand/bugs/ant.svg') no-repeat center / contain; rotate: 108deg; transform: none; transition: none;
+}
+.brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']:is(:hover, :focus-visible)::after,
+.brand.brand.brand section[data-cleanup-proof] > div:first-child a:is(:hover, :focus-visible)::after {
+  transform: none; animation: bug-scurry-on 700ms ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand.brand.brand main section:has(:global(.public-report-cards)) > a[href='/reports']:is(:hover, :focus-visible)::after,
+  .brand.brand.brand section[data-cleanup-proof] > div:first-child a:is(:hover, :focus-visible)::after { animation: none; }
+}
+@keyframes bug-scurry-on { 0%, 100% { translate: 0 0; } 25% { translate: 3px -1px; } 50% { translate: 6px 0; } 75% { translate: 3px -1px; } }

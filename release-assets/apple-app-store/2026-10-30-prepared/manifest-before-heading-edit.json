@@ -1,0 +1,297 @@
+{
+  "created": "2026-10-30",
+  "status": "Recommended Apple set: five real iPhone screenshots and three marketing panels. Prepared, not uploaded.",
+  "order": [
+    1,
+    2,
+    3,
+    4,
+    6,
+    8,
+    5,
+    7
+  ],
+  "uploaded": false,
+  "video": "On hold; no video created or changed.",
+  "noGeneratedImagery": true,
+  "iconStatus": "On hold at user request. Existing standalone asset untouched; no app icon or build changes.",
+  "formats": [
+    {
+      "width": 1320,
+      "height": 2868,
+      "files": [
+        "screenshots/1320x2868/01-report-litter.png",
+        "screenshots/1320x2868/02-clean-up.png",
+        "screenshots/1320x2868/03-donate.png",
+        "screenshots/1320x2868/04-map.png",
+        "screenshots/1320x2868/05-before-after.png",
+        "screenshots/1320x2868/06-track-litter.png",
+        "screenshots/1320x2868/07-find-cleanup.png",
+        "screenshots/1320x2868/08-share.png"
+      ],
+      "phoneFrame": {
+        "x": 210,
+        "y": 804,
+        "width": 900,
+        "height": 1914,
+        "border": 18
+      }
+    },
+    {
+      "width": 1242,
+      "height": 2688,
+      "files": [
+        "screenshots/1242x2688/01-report-litter.png",
+        "screenshots/1242x2688/02-clean-up.png",
+        "screenshots/1242x2688/03-donate.png",
+        "screenshots/1242x2688/04-map.png",
+        "screenshots/1242x2688/05-before-after.png",
+        "screenshots/1242x2688/06-track-litter.png",
+        "screenshots/1242x2688/07-find-cleanup.png",
+        "screenshots/1242x2688/08-share.png"
+      ],
+      "phoneFrame": {
+        "x": 198,
+        "y": 746,
+        "width": 847,
+        "height": 1801,
+        "border": 17
+      }
+    }
+  ],
+  "sourceChecks": [
+    {
+      "position": 1,
+      "originalNumber": 1,
+      "type": "Marketing panel: original real Canva homepage photograph",
+      "source": "../../google-play/2026-10-30-refresh/v14/source/homepage-original-X4.jpg",
+      "requiredBeforeAppleUpload": null
+    },
+    {
+      "position": 2,
+      "originalNumber": 2,
+      "type": "Marketing panel: real website report card captured at triple resolution",
+      "source": "source/marketing/02-real-reward-card.png",
+      "originalSource": "source/marketing/02-real-reward-card-full.png",
+      "url": "https://litterbugs.app/map?view=reports&browse=1&lat=36.217&lng=-81.675&zoom=12.0",
+      "verifiedVisibleAmount": "$25 reward",
+      "treatment": "Actual rendered report card with its original purple reward badge, photograph, title, metadata and reporter footer. No added amount callout.",
+      "requiredBeforeAppleUpload": null,
+      "reportTitle": "Lots of trash near steps to Greenwood Lot"
+    },
+    {
+      "position": 3,
+      "originalNumber": 3,
+      "type": "Real iPhone app capture, version 2.0.1",
+      "source": "source/iphone/03-donate.png",
+      "requiredBeforeAppleUpload": null
+    },
+    {
+      "position": 4,
+      "originalNumber": 4,
+      "type": "Real iPhone app capture, version 2.0.1",
+      "source": "source/iphone/04-boone-map.png",
+      "requiredBeforeAppleUpload": null
+    },
+    {
+      "position": 5,
+      "originalNumber": 6,
+      "type": "Marketing story: real Greenwood Lot before-and-after photographs",
+      "source": "source/marketing/before-after-story.png",
+      "originalSource": "../../google-play/2026-10-30-refresh/v14/source/before-after-hq.png",
+      "treatment": "Original high-quality photos, cropped without retouching, in two large stacked panels with 64px side margins. Marketing story, not a native app screen.",
+      "requiredBeforeAppleUpload": null,
+      "photoSources": [
+        "source/marketing/greenwood-before-original.jpg",
+        "source/marketing/greenwood-after-original.jpg"
+      ],
+      "safeSideMargin": 64
+    },
+    {
+      "position": 6,
+      "originalNumber": 8,
+      "type": "Real iPhone app capture, version 2.0.1",
+      "source": "source/iphone/08-track-litter.png",
+      "requiredBeforeAppleUpload": null
+    },
+    {
+      "position": 7,
+      "originalNumber": 5,
+      "type": "Real iPhone app capture, version 2.0.1",
+      "source": "source/iphone/05-reports.png",
+      "requiredBeforeAppleUpload": null
+    },
+    {
+      "position": 8,
+      "originalNumber": 7,
+      "type": "Real iPhone app capture, version 2.0.1",
+      "source": "source/iphone/07-share.png",
+      "requiredBeforeAppleUpload": null
+    }
+  ],
+  "appleSpecs": "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications",
+  "appleScreenshotGuidance": "https://developer.apple.com/app-store/asset-best-practices/#screenshots",
+  "checks": [
+    {
+      "file": "screenshots/1320x2868/01-report-litter.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 2463802
+    },
+    {
+      "file": "screenshots/1320x2868/02-clean-up.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1236540
+    },
+    {
+      "file": "screenshots/1320x2868/03-donate.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 337780
+    },
+    {
+      "file": "screenshots/1320x2868/04-map.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1738221
+    },
+    {
+      "file": "screenshots/1320x2868/05-before-after.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 2699745
+    },
+    {
+      "file": "screenshots/1320x2868/06-track-litter.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 535206
+    },
+    {
+      "file": "screenshots/1320x2868/07-find-cleanup.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1851955
+    },
+    {
+      "file": "screenshots/1320x2868/08-share.png",
+      "width": 1320,
+      "height": 2868,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 452744
+    },
+    {
+      "file": "screenshots/1242x2688/01-report-litter.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 2195452
+    },
+    {
+      "file": "screenshots/1242x2688/02-clean-up.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1105214
+    },
+    {
+      "file": "screenshots/1242x2688/03-donate.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 312636
+    },
+    {
+      "file": "screenshots/1242x2688/04-map.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1579682
+    },
+    {
+      "file": "screenshots/1242x2688/05-before-after.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 2430309
+    },
+    {
+      "file": "screenshots/1242x2688/06-track-litter.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 486785
+    },
+    {
+      "file": "screenshots/1242x2688/07-find-cleanup.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 1647112
+    },
+    {
+      "file": "screenshots/1242x2688/08-share.png",
+      "width": 1242,
+      "height": 2688,
+      "opaque": true,
+      "screenInteriorPixelsVerified": true,
+      "sourceEnlarged": false,
+      "bytes": 414899
+    }
+  ],
+  "appleGuidance": {
+    "url": "https://developer.apple.com/help/app-review/guideline-reference/2-3-3-screenshots",
+    "checked": "2026-10-30",
+    "nativeAppPanels": 5,
+    "marketingPanels": 3,
+    "minimumNativePanelsForEight": 5
+  },
+  "captureDevice": {
+    "name": "iPhone 17 Pro",
+    "size": "1206x2622",
+    "runtime": "iOS 26.5",
+    "appVersion": "2.0.1",
+    "source": "Existing simulator build; no compilation or app source changes",
+    "data": "Real production app data; no fabricated reports, payments, or earnings",
+    "location": "Boone test location, authorized by user; no real device location used"
+  },
+  "uploadStatus": "Not uploaded. Rechecked October 31: App Store Connect screenshot DropZone disabled while 2.0.1 is Pending Developer Release. Approved release left intact."
+}

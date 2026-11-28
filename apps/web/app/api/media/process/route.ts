@@ -3,20 +3,23 @@ import 'server-only';
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@litterbugs/report-contract';
 
+import { cleanupIssuesEnabled, issueClient } from '@/lib/cleanup-issues';
 import { getSupabaseEnv } from '@/lib/env';
+import { requireGooglePhotoReview } from '@/lib/photo-content-review';
 import {
   MEDIA_MAX_SOURCE_BYTES,
   MEDIA_SCANNER_MAX_SOURCE_BYTES,
   MEDIA_QUARANTINE_BUCKET,
   MediaSecurityError,
   requireCleanMalwareScan,
+  requireAppropriatePhoto,
   sanitizeImage,
   validateSecureMediaRequest,
   type ValidatedSecureMediaRequest,
 } from '@/lib/media-security';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 function errorResponse(status: number, code: string, message: string) {
   return Response.json({ error: { code, message } }, {
@@ -40,6 +43,13 @@ async function authorizeDestination(
   userId: string,
 ) {
   if (request.kind === 'avatar') return true;
+  if (request.kind === 'issue') {
+    if(!cleanupIssuesEnabled)return false;
+    const {data:attempt,error}=await admin.from('cleanup_attempts').select('id,cleaner_id,reporter_id,status,claim_expires_at').eq('id',request.subjectId!).maybeSingle();
+    if(error||!attempt||![attempt.cleaner_id,attempt.reporter_id].includes(userId))return false;
+    const {data:issue,error:issueError}=await issueClient(admin).from('cleanup_issues').select('id').eq('cleanup_attempt_id',attempt.id).neq('status','resolved').limit(1).maybeSingle();
+    return !issueError&&(!!issue||(attempt.cleaner_id===userId&&attempt.status==='claimed'&&Date.parse(attempt.claim_expires_at)>Date.now()));
+  }
   if (request.kind === 'report') {
     const { data, error } = await admin
       .from('reports')
@@ -182,6 +192,13 @@ export async function POST(request: Request) {
     try {
       await requireCleanMalwareScan(sourceBytes, sourceMimeType);
       const sanitized = await sanitizeImage(sourceBytes, sourceMimeType);
+      if (mediaRequest.kind !== 'avatar' || request.headers.get('x-litterbugs-photo-review') === 'approved-v1') {
+        await requireGooglePhotoReview(sanitized.bytes);
+      } else {
+        // Old avatars had no Google permission. Keep their existing provider;
+        // current mobile discloses Google and requires approval before upload.
+        await requireAppropriatePhoto(sanitized.bytes);
+      }
       const { error: uploadError } = await admin.storage
         .from(mediaRequest.destinationBucket)
         .upload(mediaRequest.destinationPath, sanitized.bytes, {

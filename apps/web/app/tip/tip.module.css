@@ -1,0 +1,331 @@
+/* Tips use the soft heart family (pale pink, Litterbugs red heart, dark red text); actions stay purple. */
+.page {
+  --tip-pink: #fff0f1;
+  --tip-pink-edge: #f8d3d7;
+  --tip-pink-strong: #f1aab2;
+  --tip-red: #a8323b;
+  --tip-muted: #686477;
+  --tip-line: #e3dff0;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 40px) 16px 64px;
+}
+
+.context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 0 0 10px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  color: #4438bb;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sandbox {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f4f3f7;
+  color: var(--tip-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card {
+  display: grid;
+  gap: 20px;
+  padding: clamp(20px, 5vw, 32px);
+  border: 1px solid var(--tip-line);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 10px 30px -18px rgba(42, 34, 90, .25);
+}
+
+/* Who you're tipping: photo with their rank bug, name, then town and cleanups. */
+.heading {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.who {
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tip-pink);
+  box-shadow: 0 0 0 4px #fff, 0 0 0 6px var(--tip-pink-edge);
+  color: var(--tip-red);
+  font: 900 32px/1 'Playful Nunito', system-ui, sans-serif;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rankBug {
+  position: absolute;
+  right: -8px;
+  bottom: -4px;
+  width: 34px;
+  height: 34px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(42, 34, 90, .18);
+  object-fit: contain;
+}
+
+.page .card .heading h1 {
+  margin: 0;
+  font-size: clamp(26px, 6vw, 32px);
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+
+.page .card .facts {
+  margin: 0;
+  color: var(--tip-muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.amount {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.card :global(.fund-preset) {
+  min-height: 56px;
+  border: 2px solid var(--tip-line);
+  background: #fff;
+  color: #292932;
+  box-shadow: none;
+}
+
+.card :global(.fund-preset):hover {
+  border-color: var(--tip-pink-strong);
+  background: #fff8f8;
+}
+
+.card :global(.fund-preset)[aria-pressed='true'] {
+  border-color: var(--tip-pink-strong);
+  background: var(--tip-pink);
+  color: var(--tip-red);
+  box-shadow: none;
+}
+
+.card :global(.fund-amount) label {
+  color: var(--tip-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card :global(.fund-amount-input) {
+  position: relative;
+  padding: 0;
+}
+
+.card :global(.fund-amount-input):focus-within {
+  border-color: #5146ed;
+  box-shadow: 0 0 0 3px #efedff;
+}
+
+.card :global(.fund-amount-input) b {
+  position: absolute;
+  inset-inline-start: 14px;
+  color: var(--tip-muted);
+  pointer-events: none;
+}
+
+.card :global(.fund-amount-input) input {
+  padding-inline: 32px 14px;
+}
+
+.card :global(.fund-amount-input) input:focus-visible {
+  outline: none;
+}
+
+.card .inputError {
+  color: #a02935;
+}
+
+/* Plain summary: what the cleaner gets first, then the fee, then what you pay. */
+.breakdown {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--tip-muted);
+  font-size: 15px;
+}
+
+.breakdown dt,
+.breakdown dd {
+  margin: 0;
+}
+
+.breakdown .gets {
+  color: #292932;
+  font-weight: 800;
+}
+
+.breakdown .total {
+  padding-top: 10px;
+  border-top: 1px solid var(--tip-line);
+  color: #292932;
+  font-family: 'Playful Nunito', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.card .continue {
+  margin: 0;
+}
+
+.stripeBadge {
+  justify-self: center;
+  margin-top: -6px;
+  border-radius: 5px;
+  opacity: .85;
+}
+
+.stripeBadge img {
+  display: block;
+}
+
+.email {
+  display: grid;
+  gap: 6px;
+}
+
+.email label {
+  color: var(--tip-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.email input,
+.email textarea {
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 2px solid var(--tip-line);
+  border-radius: 16px;
+  background: #fff;
+  color: #292932;
+  font: inherit;
+  font-size: 16px;
+}
+
+.email textarea {
+  min-height: 84px;
+  padding: 10px 14px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.email input:focus-visible,
+.email textarea:focus-visible {
+  border-color: #5146ed;
+  outline: none;
+  box-shadow: 0 0 0 3px #efedff;
+}
+
+.pay {
+  display: grid;
+  gap: 16px;
+}
+
+.payHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 800;
+}
+
+.change {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--tip-line);
+  border-radius: 10px;
+  background: #fff;
+  color: #45434d;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  color: #a02935;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.done {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+
+.done svg {
+  width: 44px;
+  height: 44px;
+  color: #e0434f;
+}
+
+.done h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.done p {
+  margin: 0;
+  color: var(--tip-muted);
+}
+
+.closed {
+  margin: 0;
+  color: var(--tip-muted);
+  text-align: center;
+}

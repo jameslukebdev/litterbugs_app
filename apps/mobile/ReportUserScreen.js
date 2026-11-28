@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import SteadyButtonContent from './components/SteadyButtonContent';
+import { ErrorText, PrimaryButton } from './components/ui';
 import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
+import { colors, fonts } from './lib/theme';
 
 const REASONS = [
   ['spam_or_misleading', 'Spam or misleading'],
@@ -94,45 +95,37 @@ export default function ReportUserScreen({ navigation, route }) {
           {REASONS.map(([value, label]) => {
             const selected = reason === value;
             return (
-              <TouchableOpacity key={value} style={[styles.reasonRow, selected && styles.reasonSelected]} disabled={submitting} onPress={() => { setReason(value); setError(''); }} accessibilityRole="radio" accessibilityState={{ checked: selected }}>
-                <Text style={styles.reasonText}>{label}</Text>
-                <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={23} color={selected ? '#2F7D32' : '#8B949A'} />
+              <TouchableOpacity key={value} style={styles.reasonRow} disabled={submitting} onPress={() => { setReason(value); setError(''); }} accessibilityRole="radio" accessibilityState={{ checked: selected }}>
+                <Text style={[styles.reasonText, selected && styles.reasonTextSelected]}>{label}</Text>
+                <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={23} color={selected ? colors.primary : colors.subtle} />
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {(
-          <>
-            <Text style={styles.label}>What happened?{reason === 'other' ? ' (required)' : ' (optional)'}</Text>
-            <TextInput editable={!submitting} selectionColor="#2F7D32" accessibilityLabel="Report details" value={details} onChangeText={(value) => { setDetails(value); setError(''); }} maxLength={500} multiline textAlignVertical="top" style={styles.input} placeholder="Tell us what happened." />
-            <Text style={styles.counter}>{details.length}/500</Text>
-          </>
-        )}
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+        <Text style={styles.label}>What happened?{reason === 'other' ? ' (required)' : ' (optional)'}</Text>
+        <TextInput editable={!submitting} placeholderTextColor={colors.subtle} selectionColor={colors.primary} accessibilityLabel="Report details" value={details} onChangeText={(value) => { setDetails(value); setError(''); }} maxLength={500} multiline textAlignVertical="top" style={styles.input} placeholder="Tell us what happened." />
+        <Text style={styles.counter}>{details.length}/500</Text>
+        <ErrorText style={styles.error}>{error}</ErrorText>
 
-        <TouchableOpacity style={[styles.submitButton, submitting && styles.disabled]} onPress={submit} disabled={submitting}>
-          <SteadyButtonContent label="Submit report" busy={submitting} busyLabel="Submitting report…" />
-        </TouchableOpacity>
+        <PrimaryButton label="Submit report" busy={submitting} busyLabel="Submitting report…" onPress={submit} style={styles.submitButton} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 40 },
-  title: { color: '#262C30', fontSize: 23, lineHeight: 30, fontWeight: '600' },
-  subtitle: { marginTop: 8, color: '#6C757C', fontSize: 14, lineHeight: 20 },
-  reasonSelected: { backgroundColor: '#F0F7F1' },
-  reasons: { marginTop: 22, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: '#E2EAE3', backgroundColor: '#FFFFFF' },
-  reasonRow: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E0E3E5' },
-  reasonText: { flex: 1, paddingVertical: 12, color: '#30363B', fontSize: 16 },
-  label: { marginTop: 22, marginBottom: 7, color: '#333A3F', fontSize: 14, fontWeight: '600' },
-  input: { minHeight: 130, padding: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, backgroundColor: '#FFFFFF', fontSize: 16 },
-  counter: { marginTop: 5, color: '#7A8288', fontSize: 12, textAlign: 'right' },
-  error: { marginTop: 10, color: '#B42318', fontSize: 14 },
-  submitButton: { minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  submitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  disabled: { opacity: 0.6 },
+  title: { color: colors.ink, fontSize: 23, lineHeight: 30, fontFamily: fonts.heading },
+  subtitle: { marginTop: 8, color: colors.muted, fontSize: 14, lineHeight: 20 },
+  reasonTextSelected: { color: colors.primaryDark, fontWeight: '600' },
+  reasons: { marginTop: 22, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  reasonRow: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+  reasonText: { flex: 1, paddingVertical: 12, color: colors.ink, fontSize: 16 },
+  label: { marginTop: 22, marginBottom: 7, color: colors.ink, fontSize: 14, fontWeight: '600' },
+  input: { minHeight: 130, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white, color: colors.ink, fontSize: 16 },
+  counter: { marginTop: 5, color: colors.muted, fontSize: 12, textAlign: 'right' },
+  error: { marginTop: 10 },
+  submitButton: { marginTop: 24 },
 });

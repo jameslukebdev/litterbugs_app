@@ -26,7 +26,8 @@ describe('mobile loading experience', () => {
       'CleanupSubmissionScreen.js',
       'CleanupReviewScreen.js',
     ].forEach((fileName) => {
-      expect(readMobileSource(fileName)).toContain('BrandedLoadingState');
+      // A branded loader: the logo screen or the website's fading loading bee.
+      expect(readMobileSource(fileName)).toMatch(/BrandedLoadingState|LoadingBee/);
     });
   });
 
@@ -53,7 +54,10 @@ describe('mobile loading experience', () => {
     expect(source).toContain(
       'if (!mapSurfaceLoaded || reportsLoading || !initialLocationResolved) return undefined;'
     );
-    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false, requestPermission: false })');
+    expect(source).toContain('locateAndCenterMap({ showPermissionAlert: false, requestPermission: false, animateOnPosition: false');
+    // A first-time map never opens empty: it starts on an area with pins and waits for them.
+    expect(source).toContain('startingRegion({ origin: userRegion, points: await points })');
+    expect(source).toContain('if (!mapRegionsAreEquivalent(loadedRegion, region)) {');
     expect(source).not.toContain('initialMapLoadingOpacity');
   });
 
@@ -61,7 +65,7 @@ describe('mobile loading experience', () => {
     expect(readMobileSource('AuthScreen.js')).toContain('Signing in…');
     expect(readMobileSource('CompleteProfileScreen.js')).toContain('Saving profile…');
     const reportDetails = readMobileSource('components/ReportDetailsSheet.jsx');
-    expect(reportDetails).toContain('>Claim Cleanup</Text>');
+    expect(reportDetails).toContain('>Clean</Text>');
     expect(reportDetails).not.toContain('Opening claim…');
     expect(reportDetails).toContain('busy: cleanupActionBusy');
     expect(readMobileSource('CleanupSubmissionScreen.js')).toContain('Uploading cleanup photos…');
@@ -70,6 +74,6 @@ describe('mobile loading experience', () => {
   it('does not show a false empty reports message during the initial fetch', () => {
     const source = readMobileSource('ReportList.js');
     expect(source).toContain('initialLoading');
-    expect(source).toContain('Loading nearby reports…');
+    expect(source).toContain('<LoadingBee label="Loading nearby reports"');
   });
 });

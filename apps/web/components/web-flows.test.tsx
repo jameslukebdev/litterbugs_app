@@ -32,17 +32,16 @@ describe('web product boundaries', () => {
     expect(screen.queryByRole('button', { name: /continue with apple/i })).toBeNull();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /continue with facebook/i })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Continue with Email' }));
-    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy();
-    expect(screen.getByLabelText('Email address')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /^sign in$/i }).find(button => button.getAttribute('type') !== 'button')).toBeTruthy();
+    expect(screen.getByLabelText('Email')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /guest/i })).toBeNull();
   });
 
   it('shows Facebook when its website setting is enabled', () => {
     render(<AuthDialog onClose={vi.fn()} facebookLoginEnabled />);
 
-    expect(screen.getByRole('button', { name: /continue with facebook/i })).toBeTruthy();
-    const facebookMark = document.querySelector('.facebook-provider-icon');
+    const facebookButton = screen.getByRole('button', { name: /continue with facebook/i });
+    const facebookMark = facebookButton.querySelector('svg');
     expect(facebookMark?.getAttribute('viewBox')).toBe('0 0 512 512');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill')).toBe('currentColor');
     expect(facebookMark?.querySelector('path')?.getAttribute('fill-rule')).toBe('evenodd');
@@ -60,6 +59,9 @@ describe('web product boundaries', () => {
     );
 
     expect(screen.getByText('Step 1 of 5')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Add photos' })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /Add report photo [1-3]/ })).toHaveLength(3);
+    expect(document.querySelector('.photo-picker')).toBeNull();
     expect(screen.getByLabelText('Report title (optional)')).toBeTruthy();
     const photoNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(photoNext.disabled).toBe(true);
@@ -74,6 +76,7 @@ describe('web product boundaries', () => {
 
     const litterNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(litterNext.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Bottles' }).querySelector('svg')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Bottles' }));
     expect(litterNext.disabled).toBe(false);
     fireEvent.click(litterNext);
@@ -81,11 +84,13 @@ describe('web product boundaries', () => {
     expect(screen.getByText('Step 3 of 5')).toBeTruthy();
     const severityNext = screen.getByRole('button', { name: /next/i }) as HTMLButtonElement;
     expect(severityNext.disabled).toBe(true);
+    expect(screen.getByText('A noticeable buildup')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Medium/ }));
     fireEvent.click(severityNext);
     expect(screen.getByText('Step 4 of 5')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     expect(screen.getByText('Step 5 of 5')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Review report' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Submit report' })).toBeTruthy();
   });
 
@@ -121,7 +126,7 @@ describe('report creation funding choice', () => {
     fireEvent.click(screen.getByRole('button', { name: '$5' }));
     expect(screen.getByText('$5.00')).toBeTruthy();
     expect(screen.getByText('Shown at checkout')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit title' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a title' }));
     fireEvent.change(screen.getByLabelText('Report title (optional)'), { target: { value: 'Country road bottles' } });
     fireEvent.click(screen.getByRole('button', { name: 'Back to review' }));
     expect(screen.getByText('Step 5 of 5')).toBeTruthy();
@@ -195,7 +200,8 @@ it('retains the review stage, photos, title and custom funding choice while chan
   expect(URL.revokeObjectURL).not.toHaveBeenCalled();
   rerender(<ReportWizard {...base} coordinates={{ latitude: 36.1, longitude: -81.1 }} />);
   expect(screen.getByText('Step 5 of 5')).toBeTruthy();
-  expect(screen.getByText('36.10000, -81.10000')).toBeTruthy();
+  expect(screen.getByTitle('Confirmed report location').getAttribute('src')).toContain('q=36.1,-81.1');
+  expect(screen.getByRole('link', { name: 'View location on map' }).getAttribute('href')).toContain('query=36.1,-81.1');
   expect(screen.getByText('Country road')).toBeTruthy();
   expect(await screen.findByAltText('Report photo 1')).toBeTruthy();
   expect((screen.getByLabelText('Starting contribution amount ($)') as HTMLInputElement).value).toBe('12.34');

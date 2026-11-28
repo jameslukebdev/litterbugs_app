@@ -1,25 +1,16 @@
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import SmoothImage from './SmoothImage';
 import { Ionicons } from '@expo/vector-icons';
 
+import BrandBug from './BrandBug';
+import HopOnTrue from './HopOnTrue';
 import RemotePhoto from './RemotePhoto';
-import { reportPresentation } from '../lib/reportPresentation';
-
-function statusPresentation(report) {
-  if (report?.cleanup_state === 'completed') {
-    return { label: 'Completed', icon: 'leaf', tone: 'completed' };
-  }
-  if (['claimed', 'completion_submitted', 'changes_requested'].includes(report?.cleanup_state)) {
-    return {
-      label: report.cleanup_state === 'completion_submitted' ? 'Awaiting review' : 'In progress',
-      icon: 'time',
-      tone: 'pending',
-    };
-  }
-  if (report?.cancelled_at || report?.expired_at) {
-    return { label: reportPresentation(report).status, icon: 'trash', tone: 'available' };
-  }
-  return { label: 'Available', icon: 'trash', tone: 'available' };
-}
+import { usePhotoBatchSlot } from './PhotoBatch';
+import { reportStatePresentation } from '../lib/reportState';
+import { reportAfterPhotoUrl, reportCardPhotoUrl } from '../lib/reportPhotoUrls';
+import { hapticTap } from '../lib/haptics';
+import { colors, fonts } from '../lib/theme';
 
 export default function ReportPreviewHero({
   report,
@@ -28,12 +19,26 @@ export default function ReportPreviewHero({
   isFavorite,
   onFavorite,
   favoritesReady,
+  sheet = false,
 }) {
-  const status = statusPresentation(report);
-  const pending = status.tone === 'pending';
+  const status = reportStatePresentation(report);
+  // Website cards: a cleaned report leads with its after photo. Otherwise the card uses
+  // the website's small card copy of the report photo, which loads far faster than the
+  // original upload; each falls back to the next, ending at the original photo.
+  const photoPath = report?.photo_paths?.[0] ?? null;
+  const quickSources = useMemo(() => [
+    report?.cleanup_state === 'completed' && reportAfterPhotoUrl(report?.id),
+    reportCardPhotoUrl(photoPath),
+  ].filter(Boolean), [report?.cleanup_state, report?.id, photoPath]);
+  const [fallbacks, setFallbacks] = useState(0);
+  useEffect(() => { setFallbacks(0); }, [report?.id, photoPath]);
+  const quickSource = quickSources[fallbacks];
+  // One slot for the card's photo, kept while a missing after photo falls back to the
+  // report photo, so the fallback still appears together with the other cards.
+  const photoSlot = usePhotoBatchSlot(true, report?.id);
 
   return (
-    <View style={styles.hero}>
+    <View style={[styles.hero, sheet && styles.sheetHero]}>
       <TouchableOpacity
         activeOpacity={0.9}
         accessibilityRole="button"
@@ -42,40 +47,47 @@ export default function ReportPreviewHero({
         onPress={() => onPress?.(report)}
         style={styles.heroPhotoButton}
       >
-        <RemotePhoto
-          path={report?.photo_paths?.[0] ?? null}
+        {quickSource ? (
+          <SmoothImage
+            key={quickSource}
+            source={quickSource}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            style={styles.heroPhoto}
+            batchSlot={photoSlot}
+            onError={() => { photoSlot?.restart(); setFallbacks(value => value + 1); }}
+            accessibilityLabel={quickSource.includes('/photo/after') ? `${report?.title || 'Report'} after cleanup` : `${report?.title || 'Report'} photo`}
+          />
+        ) : <RemotePhoto
+          path={photoPath}
           getUrl={getPhotoUrl}
+          batchSlot={photoSlot}
           label={`${report?.title || 'Report'} photo`}
           style={styles.heroPhoto}
-        />
+        />}
       </TouchableOpacity>
-      <View
-        pointerEvents="none"
-        style={[
-          styles.badge,
-          status.tone === 'completed'
-            ? styles.statusCompleted
-            : pending ? styles.statusPending : styles.statusAvailable,
-        ]}
-      >
-        <Ionicons name={status.icon} size={13} color={pending ? '#4F3900' : '#FFFFFF'} />
-        <Text style={[styles.badgeText, pending && styles.pendingBadgeText]}>{status.label}</Text>
+      <View pointerEvents="none" style={[styles.badge, status.tone === 'done' && styles.badgeCleaned]}>
+        {status.bug ? <BrandBug kind={status.bug} size={14} /> : null}
+        {/* Website card label: short words ("Available", "In progress", "Cleaned") with the bug. */}
+        <Text style={[styles.badgeText, { color: status.ink }]}>{status.tone === 'open' ? 'Available' : status.tone === 'busy' ? 'In progress' : status.tone === 'done' ? 'Cleaned' : status.label}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.favorite, isFavorite && styles.favoriteSelected]}
+        style={[styles.favorite, sheet && styles.sheetFavorite]}
         accessibilityRole="button"
         accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         accessibilityState={{ selected: Boolean(isFavorite), disabled: !favoritesReady }}
         disabled={!favoritesReady}
         hitSlop={6}
-        onPress={() => onFavorite?.(report.id)}
+        onPress={() => { hapticTap(); onFavorite?.(report.id); }}
       >
-        <Ionicons
-          name={isFavorite ? 'heart' : 'heart-outline'}
-          size={26}
-          color={isFavorite ? '#E13B3B' : '#FFFFFF'}
-          style={!isFavorite ? styles.favoriteOutline : undefined}
-        />
+        <HopOnTrue active={Boolean(isFavorite)}>
+          <Ionicons
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            size={26}
+            color={isFavorite ? colors.severityHigh : colors.white}
+            style={styles.favoriteOutline}
+          />
+        </HopOnTrue>
       </TouchableOpacity>
     </View>
   );
@@ -84,31 +96,35 @@ export default function ReportPreviewHero({
 const styles = StyleSheet.create({
   hero: {
     width: '100%',
-    height: 160,
+    aspectRatio: 1.7,
     overflow: 'hidden',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    backgroundColor: '#EDF2EE',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    backgroundColor: colors.mist,
   },
-  heroPhotoButton: { width: '100%', height: 160 },
-  heroPhoto: { width: '100%', height: 160 },
+  heroPhotoButton: { width: '100%', height: '100%' },
+  // A map sheet already owns the rounded top edge and its grabber rail.
+  sheetHero: { borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+  heroPhoto: { width: '100%', height: '100%' },
   badge: {
     position: 'absolute',
-    left: 12,
-    top: 14,
+    left: 10,
+    top: 10,
     maxWidth: '70%',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    minHeight: 24,
+    paddingLeft: 7,
+    paddingRight: 10,
+    borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
+    // Neutral white label over the photo; colour comes from the bug and text.
+    backgroundColor: colors.white,
+    boxShadow: '0 2px 6px rgba(42, 34, 90, 0.15)',
   },
-  statusAvailable: { backgroundColor: '#E13B3B' },
-  statusPending: { backgroundColor: '#FFB907' },
-  statusCompleted: { backgroundColor: '#2F7D32' },
-  badgeText: { fontSize: 12, fontWeight: '800', color: '#FFFFFF' },
-  pendingBadgeText: { color: '#4F3900' },
+  // Cleaned-up reports wear the mint fill.
+  badgeCleaned: { backgroundColor: colors.doneSoft },
+  badgeText: { fontSize: 12, fontFamily: fonts.heading },
   favorite: {
     position: 'absolute',
     right: 6,
@@ -118,7 +134,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  favoriteSelected: { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.94)' },
+  // Leave the sheet's fixed close target clear of the favorite button's hit slop.
+  sheetFavorite: { top: 14 },
   favoriteOutline: {
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 1 },

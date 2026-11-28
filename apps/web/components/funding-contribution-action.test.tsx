@@ -1,14 +1,20 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FundingContributionAction } from './funding-contribution-action';
+import { loadStripe } from '@stripe/stripe-js/pure';
 
-const { loadFlags, createContribution, quote } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn() }));
+const { loadFlags, createContribution, quote, stripeMock } = vi.hoisted(() => ({ loadFlags: vi.fn(), createContribution: vi.fn(), quote: vi.fn(), stripeMock: { ready: false, confirmPayment: vi.fn() } }));
 
-vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number) => createContribution(report, amount).then((intent: unknown) => ({ intent, amount })) }));
+const telemetry = vi.hoisted(() => ({ step: vi.fn(), failure: vi.fn(), observe: vi.fn() }));
+vi.mock('@/lib/website-analytics', async original => ({ ...await original<object>(), trackParticipation: telemetry.step, trackParticipationFailure: telemetry.failure }));
+vi.mock('@/lib/observe-contribution', () => ({ observeContributionConfirmation: telemetry.observe }));
+
+vi.mock('@/lib/payment-attempt', () => ({ resumeOrCreatePayment: (_user: string, report: string, amount: number, _version?: number, showName?: boolean) =>
+  createContribution(report, amount, ...(showName === undefined ? [] : [showName])).then((intent: unknown) => ({ intent, amount })) }));
 
 vi.mock('@/lib/funding', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/funding')>(),
@@ -17,12 +23,12 @@ vi.mock('@/lib/funding', async (importOriginal) => ({
   createCleanupContribution: createContribution,
 }));
 
-vi.mock('@stripe/stripe-js', () => ({ loadStripe: vi.fn().mockResolvedValue(null) }));
+vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: vi.fn().mockResolvedValue(null) }));
 vi.mock('@stripe/react-stripe-js', () => ({
   Elements: ({ children }: { children: React.ReactNode }) => children,
   PaymentElement: () => <div>Secure card form</div>,
-  useElements: () => null,
-  useStripe: () => null,
+  useElements: () => stripeMock.ready ? {} : null,
+  useStripe: () => stripeMock.ready ? { confirmPayment: stripeMock.confirmPayment } : null,
 }));
 
 const report: Report = {
@@ -56,7 +62,8 @@ const report: Report = {
 };
 
 beforeEach(() => {
-  quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd' }));
+  stripeMock.ready = false;
+  quote.mockImplementation(async (principalAmountCents: number) => ({ principalAmountCents, platformFeeCents: Math.floor((principalAmountCents + 5) / 10) + 50, totalAmountCents: principalAmountCents + Math.floor((principalAmountCents + 5) / 10) + 50, pricingVersion: 2, currency: 'usd', supportsContributorVisibility: true }));
 });
 
 afterEach(() => {
@@ -65,22 +72,59 @@ afterEach(() => {
 });
 
 describe('FundingContributionAction', () => {
+  it('continues a guest Fund link to auth once after availability loads, without starting payment', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    const signIn = vi.fn();
+    const view = render(<FundingContributionAction report={report} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(signIn).toHaveBeenCalledTimes(1));
+    view.rerender(<FundingContributionAction report={{ ...report }} userId={null} autoOpen onRequireSignIn={() => signIn()} />);
+    expect(signIn).toHaveBeenCalledTimes(1);
+    expect(createContribution).not.toHaveBeenCalled();
+    expect(quote).not.toHaveBeenCalled();
+  });
+
+  it('does not open auth for a Fund link when funding is disabled or unavailable', async () => {
+    loadFlags.mockResolvedValue({ payments_enabled: false, gemini_financial_review_enabled: false });
+    const signIn = vi.fn();
+    const view = render(<FundingContributionAction report={report} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(loadFlags).toHaveBeenCalled());
+    expect(signIn).not.toHaveBeenCalled();
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    view.unmount();
+    render(<FundingContributionAction report={{ ...report, cleanup_state: 'completed' }} userId={null} autoOpen onRequireSignIn={signIn} />);
+    await waitFor(() => expect(loadFlags).toHaveBeenCalledTimes(2));
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
   it('stays hidden while the production funding flags are off', async () => {
     loadFlags.mockResolvedValue({ payments_enabled: false, gemini_financial_review_enabled: false });
     render(<FundingContributionAction report={report} userId="member-id" />);
     await waitFor(() => expect(loadFlags).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: 'Add funds' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fund' })).toBeNull();
   });
 
   it('shows the exact reward, fee, and total before opening Stripe', async () => {
     loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
     render(<FundingContributionAction report={report} userId="member-id" />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Add funds' }));
-    expect(await screen.findByText('Cleaner reward')).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: 'Fund' }));
+    expect(await screen.findByText('Goes to the cleaner')).toBeTruthy();
     expect(screen.getByText('$25.00')).toBeTruthy();
     expect(screen.getByText('$3.00')).toBeTruthy();
     expect(screen.getByText('$28.00')).toBeTruthy();
     expect(screen.getByText(/full charge—including the fee—is refunded/i)).toBeTruthy();
+    expect(loadStripe).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('shows names by default and sends the anonymous choice %s with the reservation', async (anonymous) => {
+    loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+    quote.mockResolvedValue({ principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2, currency: 'usd', supportsContributorVisibility: true });
+    createContribution.mockResolvedValue({ publishableKey: null });
+    render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
+    const choice = await screen.findByRole('checkbox', { name: 'Donate anonymously' }) as HTMLInputElement;
+    expect(choice.checked).toBe(false);
+    if (anonymous) fireEvent.click(choice);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500, !anonymous));
   });
 });
 
@@ -95,7 +139,7 @@ describe('report creation handoff', () => {
     expect(await screen.findByText('$6.00')).toBeTruthy();
     expect(createContribution).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledWith(report.id, 500, true));
   });
 
   it('waits for eligibility without creating a payment or replacing the selected amount', async () => {
@@ -107,6 +151,17 @@ describe('report creation handoff', () => {
     rerender(<FundingContributionAction report={report} userId="member-id" initialAmountCents={100} startOpen />);
     expect((await screen.findByLabelText('Cleanup fund contribution amount') as HTMLInputElement).value).toBe('1.00');
   });
+});
+
+it('never starts a charge if the server cannot save the anonymous choice', async () => {
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  quote.mockResolvedValue({ principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2, currency: 'usd' });
+  render(<FundingContributionAction report={report} userId="member-id" initialAmountCents={500} startOpen />);
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Donate anonymously' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('alert');
+  expect(createContribution).not.toHaveBeenCalled();
+  expect(loadStripe).not.toHaveBeenCalled();
 });
 
 describe('server-confirmed pricing', () => {
@@ -132,6 +187,7 @@ describe('server-confirmed pricing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Refresh the website');
     expect(screen.queryByText('Secure card form')).toBeNull();
+    expect(telemetry.failure).toHaveBeenCalledWith('fund', 'amount_review', 'payment_start_failed');
   });
 });
 
@@ -143,4 +199,71 @@ it('blocks new payment creation while pricing is unavailable', async () => {
   await screen.findByText('Pricing is unavailable.');
   expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
   expect(createContribution).not.toHaveBeenCalled();
+  expect(telemetry.failure).toHaveBeenCalledWith('fund', 'amount_review', 'payment_quote_failed');
+});
+
+it('reserves the funding action while flags load without enabling payment prematurely', async () => {
+  let resolve!: (flags: { payments_enabled: boolean; gemini_financial_review_enabled: boolean }) => void;
+  loadFlags.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+  const signIn = vi.fn();
+  render(<FundingContributionAction report={report} userId={null} onRequireSignIn={signIn} />);
+  expect(screen.getByRole('status', { name: 'Checking funding availability' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Fund' })).toBeNull();
+  await act(async () => resolve({ payments_enabled: true, gemini_financial_review_enabled: true }));
+  expect(screen.queryByRole('status', { name: 'Checking funding availability' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Fund' }));
+  expect(signIn).toHaveBeenCalledTimes(1);
+});
+
+it('returns to the receipt without carrying page addresses or provider secrets', async () => {
+  stripeMock.ready = true;
+  stripeMock.confirmPayment.mockResolvedValue({ error: { message: 'Mock confirmation stopped' } });
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  createContribution.mockResolvedValue({ contributionId: 'receipt', publishableKey: 'pk_test_fixture', paymentIntentClientSecret: 'test_secret', principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2 });
+  window.history.replaceState({}, '', '/map?report=report&returnTo=%2Fcommunities%2Fus%2Fnc%2Fboone&payment_intent_client_secret=ignored');
+  render(<FundingContributionAction report={report} userId="member" initialAmountCents={500} startOpen />);
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Pay $6.00' }));
+  await waitFor(() => expect(stripeMock.confirmPayment).toHaveBeenCalled());
+  const url = new URL(stripeMock.confirmPayment.mock.calls[0][0].confirmParams.return_url);
+  expect(url.pathname).toBe('/payment-return');
+  expect(url.searchParams.get('report')).toBe(report.id);
+  expect(url.searchParams.get('contribution')).toBe('receipt');
+  expect(url.searchParams.has('returnTo')).toBe(false);
+  expect(url.searchParams.has('payment_intent_client_secret')).toBe(false);
+  window.history.replaceState({}, '', '/');
+});
+
+it('opens amount review after sign-in and eligibility, without starting payment or reopening after dismissal', async () => {
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  const view = render(<FundingContributionAction report={report} userId={null} autoOpen />);
+  await screen.findByRole('button', { name: 'Fund' });
+  expect(screen.queryByRole('dialog')).toBeNull();
+  view.rerender(<FundingContributionAction report={report} userId="member" autoOpen />);
+  expect(await screen.findByRole('dialog')).toBeTruthy();
+  expect(screen.getByText('Roadside bottles')).toBeTruthy();
+  expect(createContribution).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  view.rerender(<FundingContributionAction report={{ ...report }} userId="member" autoOpen />);
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('tracks the new funding flow through payment submission and observes confirmation separately', async () => {
+  stripeMock.ready = true;
+  stripeMock.confirmPayment.mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
+  loadFlags.mockResolvedValue({ payments_enabled: true, gemini_financial_review_enabled: true });
+  createContribution.mockResolvedValue({ contributionId: 'receipt', publishableKey: 'pk_test_fixture', paymentIntentClientSecret: 'test_secret', principalAmountCents: 500, platformFeeCents: 100, totalAmountCents: 600, pricingVersion: 2 });
+  render(<FundingContributionAction report={report} userId="member" initialAmountCents={500} startOpen />);
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false));
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'amount_review');
+  expect(loadStripe).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Pay $6.00' }));
+  expect(loadStripe).toHaveBeenCalledExactlyOnceWith('pk_test_fixture');
+  await screen.findByText('Thank you!');
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_form');
+  expect(telemetry.step).toHaveBeenCalledWith('fund', 'payment_submitted');
+  expect(telemetry.observe).toHaveBeenCalledExactlyOnceWith('receipt');
+  expect(telemetry.step).not.toHaveBeenCalledWith('fund', 'payment_confirmed');
 });

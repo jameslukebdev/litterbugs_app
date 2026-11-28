@@ -1,6 +1,9 @@
+import ReportIssueActions from './components/ReportIssueActions';
+import PhotoReviewChoice from './components/PhotoReviewChoice';
 import { usePreventRemove } from '@react-navigation/native';
 import * as Crypto from 'expo-crypto';
 import CloudDraftStatus from './components/CloudDraftStatus';
+import { startTiming, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import { cloudDrafts } from './lib/cloudDrafts';
 import { loadCleanupDraft, saveCleanupDraft, clearCleanupDraft } from './lib/savedCleanupDraft';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,6 +11,7 @@ import {
   ActivityIndicator,
   AppState,
   Alert,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -23,6 +27,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BrandedLoadingState, { LoadingButtonContent } from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { hapticSuccess } from './lib/haptics';
+import { showFlowDone } from './components/FlowDone';
+import { EmptyState, ErrorText, SecondaryButton, TextLink } from './components/ui';
 
 import {
   chooseCleanupPhotos,
@@ -39,6 +47,7 @@ import { cleanupLoadErrorPresentation } from './lib/cleanupLoadError';
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
+import { colors, fonts } from './lib/theme';
 
 const submissionErrorMessage = (error) => {
   const message = error?.message ?? '';
@@ -58,7 +67,7 @@ const submissionErrorMessage = (error) => {
 };
 
 function LoadingState() {
-  return <BrandedLoadingState title="Opening cleanup…" message="Loading the report and your cleanup details." />;
+  return <LoadingBee label="Opening cleanup" style={{ backgroundColor: colors.white }} />;
 }
 
 function CleanupPhoto({ photo, index, review = false, onRemove }) {
@@ -78,7 +87,7 @@ function CleanupPhoto({ photo, index, review = false, onRemove }) {
       />
       {loading ? (
         <View style={styles.photoLoading} accessibilityLabel={`Loading photo ${index + 1}`}>
-          <ActivityIndicator color="#2F7D32" />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
       {!review ? (
@@ -88,7 +97,7 @@ function CleanupPhoto({ photo, index, review = false, onRemove }) {
           accessibilityRole="button"
           accessibilityLabel={`Remove cleanup photo ${index + 1}`}
         >
-          <Ionicons name="close" size={18} color="#FFFFFF" />
+          <Ionicons name="close" size={18} color={colors.white} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -107,10 +116,14 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   }, [cleanupId, userId]));
   const { data: context, loading, error: loadError } = contextResource;
   const [step, setStep] = useState('form');
+  useEffect(() => { trackParticipation('clean', 'evidence_form'); }, []);
   const [photos, setPhotos] = useState([]);
+  const [photoReviewAccepted, setPhotoReviewAccepted] = useState(false);
+  useEffect(() => { setPhotoReviewAccepted(false); }, [photos]);
   const [description, setDescription] = useState('');
   const [bagsOrItemsRemoved, setBagsOrItemsRemoved] = useState('');
   const [weightPounds, setWeightPounds] = useState('');
+  const [hoursSpent, setHoursSpent] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submissionProgress, setSubmissionProgress] = useState({
@@ -128,7 +141,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const submitted = useRef(false);
   const draftOwner = useRef(null);
   const latestDraft = useRef(null);
-  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, submissionId: submissionId.current, correctionDueAt: context?.attempt?.correction_due_at ?? null };
+  latestDraft.current = { photos, description, bagsOrItemsRemoved, weightPounds, hoursSpent, submissionId: submissionId.current, correctionDueAt: context?.attempt?.correction_due_at ?? null };
 
   useEffect(() => {
     let active = true;
@@ -140,12 +153,12 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     loadCleanupDraft(userId, cleanupId, context.attempt.correction_due_at ?? null).then(draft => {
       if (!active) return;
       submissionId.current = draft?.submissionId || Crypto.randomUUID();
-      setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds('');
+      setPhotos([]); setDescription(''); setBagsOrItemsRemoved(''); setWeightPounds(''); setHoursSpent('');
       draftOwner.current = `${userId}:${cleanupId}`;
       setMissingPhotoCount(draft?.missingPhotoCount || 0);
       if (draft) {
         setPhotos(draft.photos); setDescription(draft.description);
-        setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || '');
+        setBagsOrItemsRemoved(draft.bagsOrItemsRemoved || ''); setWeightPounds(draft.weightPounds || ''); setHoursSpent(draft.hoursSpent || '');
         if (draft.submissionId) submissionId.current = draft.submissionId;
         setDraftStatus('Draft restored');
       }
@@ -161,7 +174,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       .then(() => { if (active) setDraftStatus('Draft saved on this device'); })
       .catch(() => { if (active) setDraftStatus('Draft not saved — keep this screen open and try again'); }), 500);
     return () => { active = false; clearTimeout(timer); };
-  }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds]);
+  }, [draftReady, userId, cleanupId, photos, description, bagsOrItemsRemoved, weightPounds, hoursSpent]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
@@ -172,7 +185,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     return () => subscription.remove();
   }, [draftReady, userId, cleanupId]);
 
-  usePreventRemove(draftReady && !submitted.current && Boolean(photos.length || description || bagsOrItemsRemoved || weightPounds) && !exitAction, ({ data }) => {
+  usePreventRemove(draftReady && !submitted.current && Boolean(photos.length || description || bagsOrItemsRemoved || weightPounds || hoursSpent) && !exitAction, ({ data }) => {
     saveCleanupDraft(userId, cleanupId, latestDraft.current)
       .then(() => setExitAction(data.action))
       .catch(() => Alert.alert('Couldn’t save draft', 'Keep this screen open and try again.'));
@@ -191,6 +204,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   const descriptionInputRef = useRef(null);
   const bagsInputRef = useRef(null);
   const weightInputRef = useRef(null);
+  const hoursInputRef = useRef(null);
 
   const revealCleanupEntryField = (inputRef) => {
     const keyboardAnimationDelay = Platform.OS === 'ios' ? 320 : 120;
@@ -238,6 +252,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
     description,
     bagsOrItemsRemoved,
     weightPounds,
+    hoursSpent,
   });
 
   const continueToReview = () => {
@@ -249,7 +264,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
   };
 
   const submit = async () => {
-    if (submitting || !context) return;
+    if (submitting || !context || context.attempt.issue_paused_at || context.report.cleanup_issue_hold || !photoReviewAccepted) return;
     const validation = currentValidation();
     setErrors(validation.errors);
     if (!validation.valid) {
@@ -257,6 +272,7 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       return;
     }
 
+    const timing = startTiming('submission', { flow: 'clean' });
     try {
       setSubmitting(true);
       setSubmissionProgress({ stage: 'preparing', current: 1, total: photos.length });
@@ -272,6 +288,8 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
         ...validation.normalized,
       });
       submitted.current = true;
+      trackParticipation('clean', 'evidence_submitted');
+      timing.finish('ready');
       await clearCleanupDraft(userId, cleanupId).catch(() => {});
       await refreshReports({ showRefresh: false }).catch(() => {});
 
@@ -284,56 +302,50 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             ? 'A Litterbugs team member is reviewing the photos. Your payout is paused, and we’ll contact you if we need anything.'
             : 'Your photos are being reviewed. The 48-hour dispute window starts only after they pass.';
 
-      Alert.alert(
-        aiDecision?.status === 'better_photos'
-          ? 'Better photos needed'
-          : context.attempt.status === 'changes_requested'
-          ? 'Cleanup resubmitted'
-          : 'Cleanup submitted',
-        context.attempt.is_paid
-          ? paidMessage
-          : 'Your cleanup evidence is awaiting review. The original reporter has 48 hours to respond before automatic approval.',
-        [{
-          text: aiDecision?.status === 'better_photos' ? 'Review feedback' : 'View report',
-          onPress: () => aiDecision?.status === 'better_photos'
-            ? navigation.replace('CleanupFeedback', { cleanupId: context.attempt.id })
-            : navigation.navigate('App', {
-              screen: 'Map',
-              params: { reportId: context.attempt.report_id },
-            }),
-        }],
-        { cancelable: false }
-      );
+      if (aiDecision?.status === 'better_photos') {
+        Alert.alert(
+          'Better photos needed',
+          context.attempt.is_paid ? paidMessage : 'Please review the feedback and send clearer photos.',
+          [{ text: 'Review feedback', onPress: () => navigation.replace('CleanupFeedback', { cleanupId: context.attempt.id }) }],
+          { cancelable: false }
+        );
+      } else {
+        // Website finish: land back on the report with the "Photos sent" banner.
+        hapticSuccess();
+        showFlowDone({
+          bug: 'flower',
+          title: 'Photos sent',
+          text: context.attempt.is_paid ? paidMessage : 'Cleanup submitted. The reporter has 48 hours to review it.',
+        });
+        navigation.navigate('App', { screen: 'Map', params: { reportId: context.attempt.report_id } });
+      }
     } catch (error) {
       console.log('Cleanup submission error:', error);
+      trackParticipationFailure('clean', 'evidence_submitted', error?.photoStep === 'prepare' ? 'photo_prepare_failed' : error?.photoStep === 'upload' ? 'photo_upload_failed' : 'evidence_submit_unconfirmed');
+      timing.finish(error?.photoStep ? 'failed' : 'unconfirmed');
       Alert.alert('Couldn’t submit cleanup', submissionErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if ((loading && !context) || (!draftReady && userId && cleanupId)) return <LoadingState />;
+  if ((loading && !context && !loadError) || (!draftReady && userId && cleanupId && !loadError)) return <LoadingState />;
 
   if (loadError || !context) {
     const recovery = cleanupLoadErrorPresentation(loadError);
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
-        <Text style={styles.centerTitle}>Cleanup unavailable</Text>
-        <Text style={styles.centerText}>{recovery.message}</Text>
-        {recovery.retryable ? <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={contextResource.refresh}><Text style={styles.primaryButtonText}>Retry cleanup</Text></TouchableOpacity> : null}
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go back</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Cleanup unavailable" text={recovery.message} action={recovery.retryable ? { label: 'Retry cleanup', onPress: contextResource.refresh } : null} />
+        <TextLink label="Go back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
 
+  if (context.attempt.issue_paused_at || context.report.cleanup_issue_hold) return <ScrollView style={styles.container} contentContainerStyle={{ padding: 22, gap: 16 }}><Text style={styles.title}>Cleanup paused</Text><Text style={styles.reportTitle}>{context.report.title}</Text><ReportIssueActions report={context.report} attempt={context.attempt} userId={userId} visible onIssue={params => navigation.navigate('CleanupIssue', params)} /></ScrollView>;
+
   if (draftLoadError) return <View style={styles.centerState}>
-    <Text style={styles.centerTitle}>Couldn’t restore your draft</Text>
-    <Text style={styles.centerText}>Retry before adding evidence so your saved draft is not replaced.</Text>
-    <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={() => setDraftRestoreAttempt(attempt => attempt + 1)}><Text style={styles.primaryButtonText}>Retry saved draft</Text></TouchableOpacity>
-    <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Go back</Text></TouchableOpacity>
+    <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Couldn’t restore your draft" text="Retry before adding evidence so your saved draft is not replaced." action={{ label: 'Retry saved draft', onPress: () => setDraftRestoreAttempt(attempt => attempt + 1) }} />
+    <TextLink label="Go back" onPress={() => navigation.goBack()} />
   </View>;
 
   const reportTitle = context.report?.title || 'Litter cleanup';
@@ -344,6 +356,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       dateStyle: 'medium',
       timeStyle: 'short',
     })
+    : null;
+  // Website cleanup flow: the deadline sits under the step's heading.
+  const sendByValue = isCorrection ? context.attempt.correction_due_at : context.attempt.claim_expires_at;
+  const sendBy = sendByValue && Number.isFinite(Date.parse(sendByValue))
+    ? new Date(sendByValue).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null;
   const submissionTitle = submissionProgress.stage === 'preparing'
     ? 'Preparing cleanup photos…'
@@ -380,23 +397,29 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
       >
         {draftReady && !submitted.current ? <CloudDraftStatus userId={userId} draftKey={`cleanup:${cleanupId}`} onRestored={() => setDraftRestoreAttempt(value => value + 1)} /> : null}
         {!submitted.current ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          {missingPhotoCount > 0 ? <Text style={{ color: '#8A6400', marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
-          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: '#687178', fontSize: 12 }}>{draftStatus}</Text>
-          <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: '#2F7D32', fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
+          {missingPhotoCount > 0 ? <Text style={{ color: colors.yellow, marginBottom: 8 }}>{missingPhotoCount} saved {missingPhotoCount === 1 ? 'photo is' : 'photos are'} no longer on this device. Add replacement photos before submitting. Your other answers were kept.</Text> : null}
+          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: colors.muted, fontSize: 12 }}>{draftStatus}</Text>
+          <TouchableOpacity accessibilityRole="button" disabled={submitting} onPress={saveAndExit} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.primary, fontWeight: '700' }}>Save and exit</Text></TouchableOpacity>
         </View> : null}
-        <Text style={styles.eyebrow}>
-          {step === 'form' ? (isCorrection ? 'UPDATE EVIDENCE' : 'STEP 1 OF 2 · CLEANUP DETAILS') : 'STEP 2 OF 2 · REVIEW'}
-        </Text>
-        <Text style={styles.title}>
-          {step === 'form'
-            ? (isCorrection ? 'Update your submission' : 'Show what you cleaned')
-            : (isCorrection ? 'Review your update' : 'Review your cleanup')}
-        </Text>
-        <Text style={styles.reportTitle}>{reportTitle}</Text>
+        {/* Website cleanup flow header: the caterpillar beside the step's question and the report. */}
+        <View style={styles.flowHead}>
+          <Image source={require('./assets/bugs/caterpillar.png')} style={styles.flowBug} resizeMode="contain" accessible={false} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} accessibilityRole="header">
+              {step === 'form'
+                ? (isCorrection ? 'Update your cleanup photos' : 'Show what you cleaned')
+                : 'Ready to send?'}
+            </Text>
+            <Text style={styles.reportTitle}>{reportTitle}</Text>
+            {sendBy ? <Text style={styles.reportTitle}>Send by {sendBy}</Text> : null}
+          </View>
+        </View>
+
+        {!isCorrection ? <ReportIssueActions report={context.report} attempt={context.attempt} userId={userId} visible onIssue={params => navigation.navigate('CleanupIssue', params)} utilityOnly /> : null}
 
         {isCorrection && step === 'form' ? (
           <View style={styles.correctionNotice}>
-            <Ionicons name="time-outline" size={21} color="#755900" />
+            <Ionicons name="time-outline" size={21} color={colors.yellow} />
             <View style={styles.correctionNoticeCopy}>
               <Text style={styles.correctionNoticeTitle}>Changes requested</Text>
               <Text style={styles.correctionNoticeText}>Resubmit by {correctionDeadline}.</Text>
@@ -411,11 +434,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
           <>
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>After photos</Text>
+                <Text style={styles.sectionTitle}>1  Add after photos</Text>
                 <Text style={styles.required}>Required · {photos.length}/{MAX_CLEANUP_PHOTOS}</Text>
               </View>
               <Text style={styles.helper}>
-                Add 1–3 photos. When appropriate, include another angle to clearly show the completed cleanup.
+                1 to 3 photos. Try to stand where the reporter did.
               </Text>
 
               {photos.length > 0 ? (
@@ -429,24 +452,24 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               {photos.length < MAX_CLEANUP_PHOTOS ? (
                 <View style={styles.photoActions}>
                   <TouchableOpacity style={styles.photoButton} onPress={() => addPhotos('camera')}>
-                    <Ionicons name="camera-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
                     <Text style={styles.photoButtonText}>Take photo</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.photoButton} onPress={() => addPhotos('library')}>
-                    <Ionicons name="images-outline" size={20} color="#2F7D32" />
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
                     <Text style={styles.photoButtonText}>Choose photos</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
-              {errors.photos ? <Text style={styles.error}>{errors.photos}</Text> : null}
+              <ErrorText style={styles.error}>{errors.photos}</ErrorText>
             </View>
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Cleanup description</Text>
+                <Text style={styles.sectionTitle}>2  What did you clean up?</Text>
                 <Text style={styles.required}>Required</Text>
               </View>
-              <TextInput selectionColor="#2F7D32"
+              <TextInput selectionColor={colors.primary}
                 ref={descriptionInputRef}
                 style={[styles.descriptionInput, errors.description && styles.inputError]}
                 value={description}
@@ -465,16 +488,18 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               <Text style={styles.characterCount}>
                 {description.length}/{MAX_CLEANUP_DESCRIPTION_LENGTH}
               </Text>
-              {errors.description ? <Text style={styles.error}>{errors.description}</Text> : null}
+              <ErrorText style={styles.error}>{errors.description}</ErrorText>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Impact details</Text>
-              <Text style={styles.helper}>Optional information for future community impact reporting.</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>3  How much and how long?</Text>
+                <Text style={styles.required}>Optional</Text>
+              </View>
               <View style={styles.numericRow}>
                 <View style={styles.numericField}>
-                  <Text style={styles.inputLabel}>Bags/items removed</Text>
-                  <TextInput selectionColor="#2F7D32"
+                  <Text style={styles.inputLabel}>Bags or items</Text>
+                  <TextInput selectionColor={colors.primary}
                     ref={bagsInputRef}
                     style={[styles.numericInput, errors.bagsOrItemsRemoved && styles.inputError]}
                     value={bagsOrItemsRemoved}
@@ -488,11 +513,11 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                     editable={!submitting}
                     onFocus={() => revealCleanupEntryField(bagsInputRef)}
                   />
-                  {errors.bagsOrItemsRemoved ? <Text style={styles.error}>{errors.bagsOrItemsRemoved}</Text> : null}
+                  <ErrorText style={styles.error}>{errors.bagsOrItemsRemoved}</ErrorText>
                 </View>
                 <View style={styles.numericField}>
                   <Text style={styles.inputLabel}>Weight removed (lb)</Text>
-                  <TextInput selectionColor="#2F7D32"
+                  <TextInput selectionColor={colors.primary}
                     ref={weightInputRef}
                     style={[styles.numericInput, errors.weightPounds && styles.inputError]}
                     value={weightPounds}
@@ -506,20 +531,39 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
                     editable={!submitting}
                     onFocus={() => revealCleanupEntryField(weightInputRef)}
                   />
-                  {errors.weightPounds ? <Text style={styles.error}>{errors.weightPounds}</Text> : null}
+                  <ErrorText style={styles.error}>{errors.weightPounds}</ErrorText>
                 </View>
+              </View>
+              <View style={styles.hoursField}>
+                <Text style={styles.inputLabel}>How long did it take? (hrs)</Text>
+                <TextInput selectionColor={colors.primary}
+                  ref={hoursInputRef}
+                  style={[styles.numericInput, errors.hoursSpent && styles.inputError]}
+                  value={hoursSpent}
+                  onChangeText={(value) => {
+                    setHoursSpent(value);
+                    setErrors((current) => ({ ...current, hoursSpent: undefined }));
+                  }}
+                  placeholder="1.5"
+                  keyboardType="decimal-pad"
+                  maxLength={5}
+                  editable={!submitting}
+                  onFocus={() => revealCleanupEntryField(hoursInputRef)}
+                />
+                <ErrorText style={styles.error}>{errors.hoursSpent}</ErrorText>
               </View>
             </View>
 
             <TouchableOpacity style={styles.primaryButton} onPress={continueToReview}>
-              <Text style={styles.primaryButtonText}>Review Cleanup</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>Check before sending</Text>
+              <Ionicons name="arrow-forward" size={20} color={colors.white} />
             </TouchableOpacity>
           </>
         ) : (
           <>
             <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>AFTER PHOTOS</Text>
+              <Text style={styles.reviewHeading}>This is what the reporter will see</Text>
+              <Text style={styles.reviewLabel}>After photos</Text>
               <View style={styles.photoGrid}>
                 {photos.map((photo, index) => (
                   <CleanupPhoto key={`${photo.uri}-${index}`} photo={photo} index={index} review />
@@ -527,26 +571,30 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
               </View>
               {photos.length === 1 ? (
                 <View style={styles.encouragement}>
-                  <Ionicons name="information-circle-outline" size={20} color="#755900" />
+                  <Ionicons name="information-circle-outline" size={20} color={colors.yellow} />
                   <Text style={styles.encouragementText}>
                     One photo is allowed. Add another angle if it would make the result clearer.
                   </Text>
                 </View>
               ) : null}
 
-              <Text style={styles.reviewLabel}>DESCRIPTION</Text>
+              <Text style={styles.reviewLabel}>Your note</Text>
               <Text style={styles.reviewText}>{normalized.description}</Text>
 
               <View style={styles.reviewMetrics}>
                 <View style={styles.reviewMetric}>
-                  <Text style={styles.reviewLabel}>BAGS/ITEMS</Text>
+                  <Text style={styles.reviewLabel}>Bags or items</Text>
                   <Text style={styles.reviewMetricValue}>{normalized.bagsOrItemsRemoved ?? 'Not provided'}</Text>
                 </View>
                 <View style={styles.reviewMetric}>
-                  <Text style={styles.reviewLabel}>WEIGHT REMOVED</Text>
+                  <Text style={styles.reviewLabel}>Weight removed</Text>
                   <Text style={styles.reviewMetricValue}>
                     {normalized.weightPounds ? `${normalized.weightPounds} lb` : 'Not provided'}
                   </Text>
+                </View>
+                <View style={styles.reviewMetric}>
+                  <Text style={styles.reviewLabel}>Time spent</Text>
+                  <Text style={styles.reviewMetricValue}>{normalized.durationMinutes ? `${Math.round(normalized.durationMinutes / 6) / 10} hrs` : 'Not provided'}</Text>
                 </View>
               </View>
             </View>
@@ -554,32 +602,27 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
             <Text style={styles.reviewNotice}>
               {context.attempt.is_paid
                 ? 'Your photos are checked first. Once they pass, the reporter has 48 hours to review your cleanup. Any required team review must also finish before a reward is sent.'
-                : 'After submission, the reporter has 48 hours to review your cleanup before automatic approval.'}
+                : 'The reporter has 48 hours to check it. If they don’t respond, it’s approved automatically.'}
             </Text>
 
+            <PhotoReviewChoice accepted={photoReviewAccepted} onChange={setPhotoReviewAccepted} disabled={submitting} />
             <TouchableOpacity
-              style={[styles.primaryButton, submitting && styles.disabled]}
+              style={[styles.primaryButton, (submitting || !photoReviewAccepted) && styles.disabled]}
               onPress={submit}
-              disabled={submitting}
+              disabled={submitting || !photoReviewAccepted}
             >
               {submitting ? (
                 <LoadingButtonContent label="Submitting cleanup…" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
                   <Text style={styles.primaryButtonText}>
-                    {isCorrection ? 'Resubmit Cleanup' : 'Submit Cleanup'}
+                    {isCorrection ? 'Resend cleanup' : 'Send cleanup'}
                   </Text>
                 </>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => setStep('form')}
-              disabled={submitting}
-            >
-              <Text style={styles.secondaryButtonText}>Edit details</Text>
-            </TouchableOpacity>
+            <SecondaryButton label="Edit" onPress={() => setStep('form')} disabled={submitting} style={styles.secondaryButton} />
           </>
         )}
       </ScrollView>
@@ -588,54 +631,54 @@ export default function CleanupSubmissionScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
-  centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
-  correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#FFF9DD' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  flowHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  flowBug: { width: 44, height: 44 },
+  title: { color: colors.ink, fontSize: 20, lineHeight: 24, fontFamily: fonts.heading },
+  reportTitle: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 21 },
+  correctionNotice: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: colors.yellowSoft },
   correctionNoticeCopy: { flex: 1 },
-  correctionNoticeTitle: { color: '#755900', fontSize: 14, fontWeight: '600' },
-  correctionNoticeText: { marginTop: 3, color: '#755900', fontSize: 13, lineHeight: 18 },
-  feedbackLink: { marginTop: 7, color: '#2F7D32', fontSize: 13, fontWeight: '600' },
-  section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
+  correctionNoticeTitle: { color: colors.yellow, fontSize: 14, fontWeight: '600' },
+  correctionNoticeText: { marginTop: 3, color: colors.yellow, fontSize: 13, lineHeight: 18 },
+  feedbackLink: { marginTop: 7, color: colors.primary, fontSize: 13, fontWeight: '600' },
+  section: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  sectionTitle: { flex: 1, color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  required: { color: '#2F7D32', fontSize: 11, fontWeight: '600' },
-  helper: { marginTop: 7, color: '#6D767D', fontSize: 14, lineHeight: 20 },
+  sectionTitle: { flex: 1, color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  required: { color: colors.primary, fontSize: 11, fontWeight: '600' },
+  helper: { marginTop: 7, color: colors.muted, fontSize: 14, lineHeight: 20 },
   photoGrid: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: '#E9ECEE' },
+  photoWrap: { width: '31%', aspectRatio: 1, borderRadius: 13, overflow: 'hidden', backgroundColor: colors.line },
   photo: { width: '100%', height: '100%' },
-  photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E9ECEE' },
-  removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(30,35,38,0.78)' },
+  photoLoading: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.line },
+  removePhoto: { position: 'absolute', top: 2, right: 2, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(41, 41, 50, 0.78)' },
   photoActions: { marginTop: 14, flexDirection: 'row', gap: 10 },
-  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#8FBC92', borderRadius: 13, backgroundColor: '#F6FBF6' },
-  photoButtonText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
-  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 13, color: '#202428', fontSize: 16, lineHeight: 22, backgroundColor: '#FFFFFF' },
-  characterCount: { marginTop: 5, color: '#8A9297', fontSize: 12, textAlign: 'right' },
+  photoButton: { flex: 1, minHeight: 48, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1.5, borderColor: colors.primaryBorder, borderBottomWidth: 4, borderBottomColor: colors.edge, borderRadius: 13, backgroundColor: colors.white },
+  photoButtonText: { color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
+  descriptionInput: { minHeight: 132, marginTop: 14, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 16, lineHeight: 22, backgroundColor: colors.white },
+  characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
   numericRow: { marginTop: 14, flexDirection: 'row', gap: 12 },
   numericField: { flex: 1 },
-  inputLabel: { color: '#59636A', fontSize: 13, fontWeight: '700' },
-  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 12, color: '#202428', fontSize: 16, backgroundColor: '#FFFFFF' },
-  inputError: { borderColor: '#C94F45' },
-  error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
-  primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
-  reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  reviewLabel: { marginTop: 16, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: '#E9ECEE' },
+  inputLabel: { color: colors.body, fontSize: 13, fontWeight: '700' },
+  hoursField: { marginTop: 12 },
+  numericInput: { minHeight: 50, marginTop: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 12, color: colors.ink, fontSize: 16, backgroundColor: colors.white },
+  inputError: { borderColor: colors.red },
+  error: { marginTop: 7, fontSize: 13, lineHeight: 18 },
+  primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
+  primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  secondaryButton: { marginTop: 12 },
+  reviewCard: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  reviewHeading: { color: colors.ink, fontSize: 16, fontFamily: fonts.heading },
+  reviewLabel: { marginTop: 16, color: colors.muted, fontSize: 13, fontWeight: '600' },
+  reviewPhotoWrap: { width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: 12, backgroundColor: colors.line },
   reviewPhoto: { width: '100%', height: '100%' },
-  reviewText: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
+  reviewText: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
   reviewMetrics: { flexDirection: 'row', gap: 12 },
   reviewMetric: { flex: 1 },
-  reviewMetricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '600' },
-  encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: '#FFF9DD' },
-  encouragementText: { flex: 1, color: '#755900', fontSize: 13, lineHeight: 18 },
-  reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: '#667078', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  reviewMetricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
+  encouragement: { marginTop: 13, padding: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, backgroundColor: colors.yellowSoft },
+  encouragementText: { flex: 1, color: colors.yellow, fontSize: 13, lineHeight: 18 },
+  reviewNotice: { marginTop: 17, paddingHorizontal: 5, color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   disabled: { opacity: 0.6 },
 });

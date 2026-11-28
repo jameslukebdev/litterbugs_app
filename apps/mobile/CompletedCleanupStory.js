@@ -1,38 +1,51 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 
 import CompactRankBadge from './CompactRankBadge';
+import BrandBug from './components/BrandBug';
+import SmoothImage from './components/SmoothImage';
+import PrivateView from './components/PrivateView';
 import ProfileAvatar from './ProfileAvatar';
 import {
   cleanupImpactFacts,
   formatCleanupDate,
 } from './lib/cleanupImpactPresentation';
+import { hapticSelect } from './lib/haptics';
+import { colors, fonts } from './lib/theme';
 
-function AfterPhoto({ url, index, count, width }) {
+function AfterPhoto({ url: original, quickUrl, index, count, width }) {
+  const screen = useWindowDimensions();
+  const [fullOpen, setFullOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // The website's resized copy first; the signed original if that copy can't load.
+  const [quickFailed, setQuickFailed] = useState(false);
+  const url = quickUrl && !quickFailed ? quickUrl : original;
 
   return (
-    <View style={[styles.photoFrame, { width }]}>
+    <View style={[styles.photoFrame, { width, height: Math.round(width * 0.75) }]}>
       {!failed ? (
-        <ExpoImage
+        <SmoothImage
+          key={url}
           source={url}
           contentFit="cover"
           cachePolicy="memory-disk"
-          transition={180}
           style={styles.photo}
           onLoadStart={() => setLoading(true)}
           onLoad={() => setLoading(false)}
           onError={() => {
+            if (url !== original) { setQuickFailed(true); return; }
             setLoading(false);
             setFailed(true);
           }}
@@ -42,13 +55,13 @@ function AfterPhoto({ url, index, count, width }) {
 
       {loading ? (
         <View style={styles.photoOverlay}>
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={colors.white} />
         </View>
       ) : null}
 
       {failed ? (
         <View style={styles.photoUnavailable}>
-          <Ionicons name="image-outline" size={34} color="#5E6B61" />
+          <Ionicons name="image-outline" size={34} color={colors.body} />
           <Text style={styles.photoUnavailableText}>After photo couldn’t load.</Text>
         </View>
       ) : null}
@@ -58,6 +71,20 @@ function AfterPhoto({ url, index, count, width }) {
           <Text style={styles.photoCountText}>{index + 1}/{count}</Text>
         </View>
       ) : null}
+      {/* Same as the report photos: the whole picture, uncropped, on a black screen. */}
+      {!failed ? (
+        <TouchableOpacity style={styles.fullPhotoButton} onPress={() => setFullOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View full after photo ${index + 1} of ${count}`}>
+          <Ionicons name="expand-outline" size={20} color={colors.ink} />
+        </TouchableOpacity>
+      ) : null}
+      <Modal visible={fullOpen} animationType="fade" onRequestClose={() => setFullOpen(false)} statusBarTranslucent>
+        <View style={styles.fullPhotoBackdrop}>
+          {fullOpen ? <ExpoImage source={url} contentFit="contain" cachePolicy="memory-disk" style={{ width: screen.width, height: screen.height }} accessibilityLabel={`Full after-cleanup photo ${index + 1} of ${count}`} /> : null}
+          <TouchableOpacity style={styles.fullPhotoClose} onPress={() => setFullOpen(false)} accessibilityRole="button" accessibilityLabel="Close full photo">
+            <Ionicons name="close" size={22} color={colors.ink} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -67,9 +94,12 @@ export default function CompletedCleanupStory({
   loading,
   error,
   photoWidth,
+  beforePhotos,
   onCleanerPress,
   onRetry,
 }) {
+  const [photoSide, setPhotoSide] = useState('after');
+
   if (loading) {
     return null;
   }
@@ -77,7 +107,7 @@ export default function CompletedCleanupStory({
   if (error || !impact) {
     return (
       <View style={styles.stateCard}>
-        <Ionicons name="alert-circle-outline" size={34} color="#6F796F" />
+        <Ionicons name="alert-circle-outline" size={34} color={colors.muted} />
         <Text style={styles.stateTitle}>Cleanup details unavailable</Text>
         <Text style={styles.stateText}>
           The report is complete, but its impact details couldn’t be loaded.
@@ -93,47 +123,43 @@ export default function CompletedCleanupStory({
 
   const cleanerName = impact.cleaner?.display_name || 'Cleaner profile unavailable';
   const facts = cleanupImpactFacts(impact.submission);
+  // Time always has its place in the row; older cleanups were sent without it.
+  if (!facts.some(fact => fact.icon === 'time-outline')) {
+    facts.push({ icon: 'time-outline', value: '–', caption: 'time not recorded', label: 'Time spent was not recorded' });
+  }
+  // Website report sheet: one photo area with an After cleanup / Before switch.
+  const canSwitchPhotos = Boolean(beforePhotos) && impact.afterPhotoUrls.length > 0;
+  const showBefore = canSwitchPhotos && photoSide === 'before';
 
   return (
     <View style={styles.story}>
-      <View style={styles.completionBanner}>
-        <View style={styles.completionIcon}>
-          <Ionicons name="checkmark" size={25} color="#FFFFFF" />
-        </View>
-        <View style={styles.completionCopy}>
-          <Text style={styles.eyebrow}>COMMUNITY IMPACT</Text>
-          <Text style={styles.completionTitle}>Cleanup Complete</Text>
-        </View>
-      </View>
 
-      <TouchableOpacity
-        style={styles.cleanerRow}
-        onPress={onCleanerPress}
-        disabled={!impact.cleaner?.id || !onCleanerPress}
-        activeOpacity={0.72}
-        accessibilityRole={impact.cleaner?.id && onCleanerPress ? 'button' : undefined}
-        accessibilityLabel={`Cleaned by ${cleanerName}`}
-      >
-        <ProfileAvatar profile={impact.cleaner} size={52} />
-        <View style={styles.cleanerCopy}>
-          <Text style={styles.cleanerLabel}>Cleaned by</Text>
-          <Text style={styles.cleanerName}>{cleanerName}</Text>
-          <CompactRankBadge userId={impact.cleaner?.id} appearance="profileCard" />
-          {impact.cleaner?.username ? (
-            <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
-          ) : null}
+      {canSwitchPhotos ? (
+        <View style={styles.sideSwitch} accessibilityRole="tablist" accessibilityLabel="Choose photos">
+          {[['after', 'After cleanup', 'flower', colors.done, '#8ED7C5'], ['before', 'Before', 'ladybug', '#A8323B', '#F2A8B0']].map(([side, label, bug, ink, edge]) => {
+            const selected = photoSide === side;
+            return (
+              <TouchableOpacity
+                key={side}
+                style={[styles.sideButton, selected && { borderColor: edge }]}
+                onPress={() => { if (!selected) hapticSelect(); setPhotoSide(side); }}
+                activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+              >
+                <BrandBug kind={bug} size={18} active={selected} />
+                <Text style={[styles.sideButtonText, selected && { color: ink }]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        {impact.cleaner?.id && onCleanerPress ? (
-          <Ionicons name="chevron-forward" size={21} color="#738076" />
-        ) : null}
-      </TouchableOpacity>
-
-      <View style={styles.sectionHeader}>
-        <Ionicons name="images-outline" size={21} color="#2F7D32" />
+      ) : (
         <Text style={styles.sectionTitle}>After cleanup</Text>
-      </View>
+      )}
 
-      {impact.afterPhotoUrls.length > 0 ? (
+      {/* Both sides share one 4:3 photo area, so switching never moves what is below. */}
+      <View style={{ minHeight: Math.round(photoWidth * 0.75) + 30 }}>
+      {showBefore ? beforePhotos : impact.afterPhotoUrls.length > 0 ? (
         <ScrollView
           horizontal
           pagingEnabled
@@ -146,6 +172,7 @@ export default function CompletedCleanupStory({
             <AfterPhoto
               key={`${url}-${index}`}
               url={url}
+              quickUrl={impact.afterPhotoQuickUrls?.[index]}
               index={index}
               count={impact.afterPhotoUrls.length}
               width={photoWidth}
@@ -154,146 +181,91 @@ export default function CompletedCleanupStory({
         </ScrollView>
       ) : (
         <View style={[styles.photoUnavailable, styles.emptyPhotos]}>
-          <Ionicons name="image-outline" size={34} color="#5E6B61" />
+          <Ionicons name="image-outline" size={34} color={colors.body} />
           <Text style={styles.photoUnavailableText}>After photos are unavailable.</Text>
         </View>
       )}
-
-      <View style={styles.cleanupDateRow}>
-        <Ionicons name="calendar-outline" size={18} color="#356B3A" />
-        <View style={styles.cleanupDateCopy}>
-          <Text style={styles.cleanupDateLabel}>Cleanup date</Text>
-          <Text style={styles.cleanupDateText}>
-            {formatCleanupDate(impact.attempt.completed_at)}
-          </Text>
-        </View>
       </View>
 
-      <View style={styles.descriptionCard}>
-        <Text style={styles.descriptionLabel}>What they did</Text>
-        <Text style={styles.descriptionText}>{impact.submission.description}</Text>
-      </View>
-
-      {facts.length > 0 ? (
-        <View style={styles.factsRow}>
-          {facts.map((fact) => (
-            <View key={fact.label} style={styles.factCard} accessible accessibilityLabel={fact.label}>
-              <Ionicons name={fact.icon} size={21} color="#2F7D32" />
-              <Text style={styles.factText}>{fact.label}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      {/* About the cleanup: the cleaner's own words first, then the numbers as one stat row.
+          The cleaner's name and words stay out of session replay. */}
+      <PrivateView style={styles.aboutCard}>
+        <Text style={styles.aboutTitle}>About the cleanup</Text>
+        <TouchableOpacity
+          style={styles.cleanerRow}
+          onPress={onCleanerPress}
+          disabled={!impact.cleaner?.id || !onCleanerPress}
+          activeOpacity={0.72}
+          accessibilityRole={impact.cleaner?.id && onCleanerPress ? 'button' : undefined}
+          accessibilityLabel={`Cleaned by ${cleanerName}`}
+        >
+          <ProfileAvatar profile={impact.cleaner} size={52} />
+          <View style={styles.cleanerCopy}>
+            <Text style={styles.cleanerLabel}>Cleaned by</Text>
+            <Text style={styles.cleanerName}>{cleanerName}</Text>
+            <CompactRankBadge userId={impact.cleaner?.id} appearance="plain" />
+            {impact.cleaner?.username ? (
+              <Text style={styles.cleanerUsername}>@{impact.cleaner.username}</Text>
+            ) : null}
+          </View>
+          {impact.cleaner?.id && onCleanerPress ? (
+            <Ionicons name="chevron-forward" size={21} color={colors.muted} />
+          ) : null}
+        </TouchableOpacity>
+        <Text style={styles.cleanupDateText}>Cleaned {formatCleanupDate(impact.attempt.completed_at)}</Text>
+        {impact.submission.description ? (
+          <View style={styles.commentRow}>
+            <Text style={styles.descriptionText}>“{impact.submission.description}”</Text>
+          </View>
+        ) : null}
+        {facts.length > 0 ? (
+          <View style={styles.factsRow}>
+            {facts.map((fact, index) => (
+              <View key={fact.label} style={[styles.factCard, index > 0 && styles.factDivider]} accessible accessibilityLabel={fact.label}>
+                <Ionicons name={fact.icon} size={20} color={colors.primary} />
+                <Text style={styles.factValue}>{fact.value}</Text>
+                <Text style={styles.factText}>{fact.caption}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </PrivateView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  story: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 18,
-    backgroundColor: '#F5FAF5',
-  },
-  completionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: '#E0F2E1',
-  },
-  completionIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2F7D32',
-  },
-  completionCopy: {
-    flex: 1,
-    marginLeft: 13,
-  },
-  eyebrow: {
-    color: '#4D7551',
-    fontSize: 11,
-    letterSpacing: 1.1,
-    fontWeight: '800',
-  },
-  completionTitle: {
-    marginTop: 3,
-    color: '#17451C',
-    fontSize: 24,
-    lineHeight: 29,
-    fontWeight: '900',
-  },
-  cleanerRow: {
-    minHeight: 62,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-  },
+  story: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, gap: 16, backgroundColor: colors.white },
+  completionBanner: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingRight: 104 },
+  completionTitle: { flexShrink: 1, color: colors.done, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  cleanerRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center' },
   cleanerCopy: {
     flex: 1,
     marginLeft: 12,
   },
   cleanerLabel: {
-    color: '#647168',
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
   },
-  cleanerName: {
-    marginTop: 2,
-    color: '#1E2820',
-    fontSize: 17,
-    fontWeight: '800',
-  },
+  cleanerName: { marginTop: 2, color: colors.ink, fontSize: 16, fontWeight: '700' },
   cleanerUsername: {
     marginTop: 1,
-    color: '#6A766D',
+    color: colors.muted,
     fontSize: 13,
   },
-  cleanupDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  cleanupDateCopy: {
-    marginLeft: 10,
-  },
-  cleanupDateLabel: {
-    color: '#617066',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cleanupDateText: {
-    marginTop: 2,
-    color: '#263128',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sectionTitle: {
-    color: '#1F3922',
-    fontSize: 18,
-    fontWeight: '900',
-  },
+  cleanupDateText: { color: colors.muted, fontSize: 13 },
+  sideSwitch: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 16, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  sideButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
+  sideButtonText: { color: colors.muted, fontSize: 15, fontWeight: '800' },
+  sectionTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   photoScroll: {
     borderRadius: 22,
   },
   photoFrame: {
-    height: 380,
     overflow: 'hidden',
     borderRadius: 22,
-    backgroundColor: '#DDE5DE',
+    backgroundColor: colors.line,
   },
   photo: {
     width: '100%',
@@ -303,13 +275,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(20, 40, 22, 0.28)',
+    backgroundColor: 'rgba(41, 41, 50, 0.28)',
   },
   photoUnavailable: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#E7EEE7',
+    backgroundColor: colors.line,
   },
   emptyPhotos: {
     minHeight: 180,
@@ -317,7 +289,7 @@ const styles = StyleSheet.create({
   },
   photoUnavailableText: {
     marginTop: 9,
-    color: '#59655B',
+    color: colors.body,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -329,71 +301,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: 'rgba(20, 28, 21, 0.72)',
+    backgroundColor: 'rgba(41, 41, 50, 0.72)',
   },
+  fullPhotoButton: { position: 'absolute', right: 12, bottom: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: colors.white },
+  fullPhotoText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  fullPhotoBackdrop: { flex: 1, backgroundColor: colors.black, alignItems: 'center', justifyContent: 'center' },
+  fullPhotoClose: { position: 'absolute', top: 58, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
   photoCountText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 12,
     fontWeight: '800',
   },
-  descriptionCard: {
-    padding: 17,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-  },
-  descriptionLabel: {
-    color: '#537057',
-    fontSize: 12,
-    letterSpacing: 0.4,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  descriptionText: {
-    marginTop: 8,
-    color: '#273029',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  factsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  factCard: {
-    minWidth: '46%',
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: '#E5F1E6',
-  },
-  factText: {
-    flex: 1,
-    marginLeft: 9,
-    color: '#315B35',
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '800',
-  },
-  stateCard: {
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    padding: 24,
-    borderRadius: 22,
-    backgroundColor: '#F0F6F0',
-  },
-  stateTitle: {
-    marginTop: 12,
-    color: '#283229',
-    fontSize: 18,
-    fontWeight: '800',
-  },
+  aboutCard: { padding: 16, gap: 10, borderRadius: 18, borderWidth: 1, borderColor: colors.doneBorder, backgroundColor: colors.doneSoft },
+  aboutHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aboutTitle: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
+  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 2 },
+  descriptionText: { flex: 1, color: colors.body, fontSize: 15, lineHeight: 22 },
+  factsRow: { flexDirection: 'row', marginTop: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.doneBorder },
+  factCard: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  factDivider: { borderLeftWidth: 1, borderLeftColor: colors.doneBorder },
+  factValue: { color: colors.ink, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  factText: { color: colors.muted, fontSize: 12, lineHeight: 16, textAlign: 'center' },
+  stateCard: { minHeight: 200, alignItems: 'center', justifyContent: 'center', margin: 20, padding: 24, borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  stateTitle: { marginTop: 12, color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
   stateText: {
     marginTop: 9,
-    color: '#667068',
+    color: colors.muted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -403,10 +336,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 18,
-    backgroundColor: '#2F7D32',
+    backgroundColor: colors.primary,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 14,
     fontWeight: '800',
   },

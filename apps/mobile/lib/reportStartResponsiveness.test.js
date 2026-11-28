@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // Integration contract spans the extracted presentation and its owning screen.
-const mapScreenSource = ['../MapScreen.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+const mapScreenSource = ['../MapScreen.js', './useCleanupFlow.js', './mapScreenHooks.js', '../components/MapControls.jsx', '../components/ReportWizardModal.jsx', './useReportWizardNavigation.js', '../components/ReportWizardSteps.jsx', '../components/ReportDetailsSheet.jsx', '../styles/MapScreen.styles.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const appTabsSource = readFileSync(
   new URL('../AppTabs.js', import.meta.url),
   'utf8'
@@ -12,9 +12,9 @@ const appTabsSource = readFileSync(
 describe('new report workflow responsiveness', () => {
   it('starts reports from a visible action and confirms the selected location first', () => {
     expect(mapScreenSource).toContain(
-      "accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding user location'"
+      "accessibilityLabel={isCheckingReportLocation ? 'Checking reporting distance' : isLocatingReportLocation ? 'Finding your location'"
     );
-    expect(mapScreenSource).toContain('Finding User Location');
+    expect(mapScreenSource).toContain('Finding your location…');
     expect(mapScreenSource).toContain('mapUserLocation\n    ? reportLocationRegion');
     expect(mapScreenSource).toContain('freshLocationTimeoutMs: 4_000');
     expect(mapScreenSource).toContain('animateOnPosition: false');
@@ -34,7 +34,7 @@ describe('new report workflow responsiveness', () => {
     expect(mapScreenSource).toContain('Animated.timing(reportControlTransition');
     expect(mapScreenSource).not.toContain('showInitialMapLoading || reportPlacementActive');
     expect(appTabsSource).toContain('headerShown: false');
-    expect(mapScreenSource).toContain('Choose Report Location');
+    expect(mapScreenSource).toContain('Where is the litter?'); // website wording
 
     const confirmStart = mapScreenSource.indexOf('const confirmReportLocation = async () => {');
     const confirmEnd = mapScreenSource.indexOf('\nuseEffect(() => {', confirmStart);

@@ -1,0 +1,152 @@
+/* Sign in / sign up. White surfaces; colour only in text, icons and the one main button.
+   Doubled class names outrank the older shared .auth-dialog-simple rules in globals.css. */
+.dialog.dialog { color: #292932; }
+
+.dialog .heading { margin: 0 0 20px; padding-right: 28px; text-align: left; }
+.dialog.dialog .heading h2 { margin: 0; color: #292932; font-family: 'Playful Nunito', sans-serif; font-size: 25px; font-weight: 900; line-height: 1.15; text-wrap: balance; }
+.dialog.dialog .heading p { margin: 10px 0 0; color: #45434d; font-size: 15px; line-height: 1.45; }
+.dialog.dialog .benefit { display: flex; align-items: flex-start; gap: 10px; }
+.benefit img { flex: none; object-fit: contain; }
+
+.providers { display: grid; gap: 10px; }
+.provider {
+  width: 100%;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #292932;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.provider img { width: 20px; height: 20px; object-fit: contain; }
+.facebookIcon { width: 21px; height: 21px; flex: none; color: #1877f2; }
+
+.divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: #686477; font-size: 13px; font-weight: 700; }
+.divider span { height: 1px; flex: 1; background: #e3dff0; }
+
+.form { display: grid; gap: 16px; }
+.field { display: grid; gap: 7px; }
+.field label { color: #292932; font-size: 14px; font-weight: 800; }
+.labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+.dialog.dialog .field input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #292932;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+.dialog.dialog .field input:focus { outline: none; border-color: #5146ed; }
+
+.passwordField { position: relative; }
+.dialog.dialog .passwordField input { padding-right: 62px; }
+.show {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  min-width: 48px;
+  min-height: 40px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 10px;
+  color: #3f36c4;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.dialog.dialog .rule,
+.dialog.dialog .ruleMet { display: flex; align-items: center; gap: 6px; margin: 0; color: #686477; font-size: 13px; font-weight: 700; }
+.dialog.dialog .ruleMet { color: #176350; }
+.ruleMet svg { width: 15px; height: 15px; }
+
+.dialog.dialog .error { margin: 0; color: #a8323b; font-size: 14px; font-weight: 700; line-height: 1.45; }
+.dialog.dialog .success { margin: 0; color: #176350; font-size: 14px; font-weight: 700; }
+
+.primary {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 14px;
+  color: #fff;
+  background: #5146ed;
+  box-shadow: 0 3px 0 #3528ac;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.secondary {
+  min-height: 48px;
+  padding: 10px 20px;
+  border: 2px solid #e3dff0;
+  border-radius: 14px;
+  color: #3f36c4;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.textButton {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  color: #3f36c4;
+  background: none;
+  font: inherit;
+  font-size: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.labelRow .textButton { font-size: 13px; }
+
+.dialog.dialog .switch { margin: 18px 0 0; color: #45434d; font-size: 15px; }
+.dialog.dialog .policy { margin: 12px 0 0; color: #686477; font-size: 12px; line-height: 1.55; }
+.policy a { color: #3f36c4; font-weight: 700; text-decoration: none; }
+
+.provider:disabled,
+.primary:disabled,
+.secondary:disabled,
+.textButton:disabled { cursor: wait; opacity: .55; }
+
+@media (hover: hover) and (pointer: fine) {
+  .provider:hover:not(:disabled),
+  .secondary:hover:not(:disabled) { border-color: #a9a1ef; }
+  .primary:hover:not(:disabled) { background: #4338d8; }
+}
+
+.provider:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible,
+.textButton:focus-visible,
+.show:focus-visible,
+.policy a:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+
+/* Check your email */
+.sent { display: grid; justify-items: center; gap: 12px; padding: 12px 0 2px; text-align: center; }
+.sentIcon { width: 40px; height: 40px; color: #5146ed; }
+.dialog.dialog .sent h2 { margin: 0; color: #292932; font-family: 'Playful Nunito', sans-serif; font-size: 25px; font-weight: 900; }
+.dialog.dialog .sent p { margin: 0; color: #45434d; font-size: 15px; line-height: 1.5; }
+.dialog.dialog .sent .muted { color: #686477; font-size: 14px; }
+.sent strong { color: #292932; overflow-wrap: anywhere; }
+.sentLinks { display: flex; justify-content: center; gap: 22px; font-size: 14px; }

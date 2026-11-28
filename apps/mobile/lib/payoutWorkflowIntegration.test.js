@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-const mapScreenSource = readFileSync(new URL('../MapScreen.js', import.meta.url), 'utf8');
+const mapScreenSource = ['../MapScreen.js', './useCleanupFlow.js'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const payoutSetupSource = readFileSync(new URL('../PayoutSetupScreen.js', import.meta.url), 'utf8');
 const contributionFunctionSource = readFileSync(
   new URL('../../../supabase/functions/create-cleanup-contribution/index.ts', import.meta.url),
@@ -30,8 +30,14 @@ describe('Stripe-gated cleanup workflows', () => {
     expect(payoutSetupSource).toContain("status?.payoutsEnabled !== true");
     expect(payoutSetupSource).toContain('markPayoutWorkflowReady(workflowToken);');
     expect(payoutSetupSource).toContain('cancelPayoutWorkflow(workflowToken);');
-    expect(payoutSetupSource).toContain("'Ready to receive rewards'");
+    expect(payoutSetupSource).toContain("'Ready to receive payouts'");
     expect(payoutSetupSource).toContain("'Continue to cleanup'");
+  });
+
+  it('keeps payout onboarding in the app task so checking SMS does not discard it', () => {
+    expect(payoutSetupSource).toContain('createTask: false');
+    expect(payoutSetupSource).toContain('openBrowserAsync(link.url, PAYOUT_BROWSER_OPTIONS)');
+    expect(payoutSetupSource).toContain('openAuthSessionAsync(link.url, PAYOUT_ONBOARDING_RETURN_URL, PAYOUT_BROWSER_OPTIONS)');
   });
 
   it('enforces the funded-claim gate in the backend', () => {

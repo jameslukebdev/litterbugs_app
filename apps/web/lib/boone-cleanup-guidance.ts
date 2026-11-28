@@ -1,0 +1,24 @@
+/** Editorial research, not a live availability promise. Update after checking sources. */
+export const booneGuidanceReviewedAt = '2026-10-30';
+export const booneGuidance = [
+  { question: 'Where can I get supplies for town streets or streams?', paragraphs: [
+    'Boone’s street and stream adoption programs supply enrolled participants. These are recurring programs, not an unrestricted equipment-loan service. Start with the adoption coordinator on the relevant official program page.',
+    'For a street-program pickup, arrange the date and bag location with the town ahead of time. Stream participants must document the debris location on the field sheet and return it within 72 hours after cleanup for town collection.',
+  ], links: [{ label: 'Adopt-a-Street requirements', href: 'https://www.townofboone.net/214/Adopt-a-Street-Program' }, { label: 'Adopt-a-Stream requirements', href: 'https://www.townofboone.net/456/Adopt-a-Stream-Program' }] },
+  { question: 'What about a cleanup along a state-maintained road?', paragraphs: [
+    'Contact the NCDOT county coordinator to discuss a suitable road and the appropriate program. County maintenance offices are the contact for supplies. The state’s Litter Sweep guidance describes supplies and collection of program bags, but confirm the arrangements for your date before setting out.',
+    'Report a roadside litter problem to the NCDOT maintenance office for the county. Do not assume a town adoption agreement or a Litterbugs report arranges NCDOT collection.',
+  ], links: [{ label: 'County coordinators and maintenance offices', href: 'https://www.ncdot.gov/initiatives-policies/environmental/adoptahighway/Pages/coordinators.aspx' }, { label: 'Litter Sweep participation guidance', href: 'https://www.ncdot.gov/initiatives-policies/environmental/litter-management/Pages/litter-sweep.aspx' }, { label: 'NCDOT roadside reporting guidance', href: 'https://www.ncdot.gov/contact/Pages/roadside-beautification-questions.aspx' }] },
+  { question: 'Where should collected litter go if I am not in a town program?', paragraphs: [
+    'Call Watauga County Solid Waste & Recycling at 828-264-5305 before hauling. Explain that the material is from a cleanup, where it was collected, what it contains, and the approximate quantity. Ask which facility can accept it and whether residency requirements or charges apply.',
+    'The transfer station is at 336 Landfill Road, Boone. County guidance restricts convenience-center dumpsters to bagged household trash and requires other materials to go through the Sanitation Department’s facilities. Bulky material belongs at the transfer station. Check current hours and sorting instructions; a household allowance is not a blanket free-disposal offer for community cleanups.',
+  ], links: [{ label: 'County facilities and eligibility', href: 'https://wataugacounty.gov/App_Pages/Dept/Sanitation/home.aspx' }, { label: 'Accepted materials and sorting', href: 'https://wataugacounty.gov/App_Pages/Dept/Sanitation/materials.aspx' }, { label: 'Facility hours', href: 'https://wataugacounty.gov/App_Pages/Dept/Sanitation/hours.aspx#1' }] },
+  { question: 'Who should I contact about dumping or material I cannot safely handle?', paragraphs: [
+    'A Litterbugs report does not notify government. NC DEQ directs illegal-dump reports to the nearest county or city solid waste office, or law enforcement. In Watauga County, the Solid Waste & Recycling office can help identify the appropriate disposal or reporting route.',
+    'Do not turn suspected hazardous material into an ordinary volunteer pickup. The county lists hazardous and toxic waste among its transfer-station exclusions. Get instructions from the responsible agency before handling or transporting it. For an immediate emergency, call 911.',
+  ], links: [{ label: 'NC DEQ illegal-dumping reporting', href: 'https://www.deq.nc.gov/about/divisions/waste-management/solid-waste-section/compliance-and-monitoring/illegal-dumping' }, { label: 'County Solid Waste contacts', href: 'https://wataugacounty.gov/App_Pages/Dept/Sanitation/contact.aspx' }, { label: 'Transfer-station exclusions', href: 'https://wataugacounty.gov/App_Pages/Dept/Sanitation/materials.aspx' }] },
+  { question: 'How do I find an organized activity instead of planning one?', paragraphs: [
+    'Use MountainTrue’s volunteer calendar and filter to High Country. Read the activity description: some listings concern habitat restoration rather than litter collection. Follow the organizer’s signup instructions and confirm the location and any equipment requirements.',
+    'External activities are run by their organizers. They are separate from approved Litterbugs cleanup results and are not automatically eligible for Litterbugs rewards.',
+  ], links: [{ label: 'MountainTrue volunteer calendar', href: 'https://mountaintrue.org/get-involved/volunteer/' }] },
+];

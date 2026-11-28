@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-11-24",
+  "gmail_program_policy": {
+    "url": "https://support.google.com/mail/answer/16734397?hl=en",
+    "policy_updated": "2026-10-20",
+    "finding": "Gmail prohibits spam and unsolicited commercial mail. CAN-SPAM compliance alone is not provider approval.",
+    "passages": [
+      "Don\u2019t use Gmail to distribute spam or unsolicited commercial mail. You are not allowed to use Gmail to send email in violation of the CAN-SPAM Act or other anti-spam laws; to send unauthorized email via open, third-party servers; or to distribute the email addresses of any person without their consent.You are not allowed to automate the Gmail interface, whether to send, delete, or filter emails, in a manner that misleads or deceives users.",
+      "Please keep in mind that your definition of \u201cunsolicited\u201d or \u201cunwanted\u201d mail may differ from your email recipients\u2019 perception. Exercise judgment when sending email to a large number of recipients, even if the recipients elected to receive emails from you in the past. When Gmail users mark emails as spam, it increases the likelihood that future messages you send will also be classified as spam by our anti-abuse systems."
+    ]
+  },
+  "sender_guidelines": {
+    "url": "https://support.google.com/mail/answer/81126?hl=en",
+    "finding": "Recommendations: recipients opt in; confirm address; avoid automatic opt-in. 5,000/day marketing sender requirements are separate from the prohibition on unsolicited mail."
+  },
+  "limits": {
+    "url": "https://support.google.com/mail/answer/22839?hl=en",
+    "finding": "Consumer Gmail documents more than 500 recipients in one message and/or more than 500 emails/day as limit triggers; the 200-person sample is below that per-message threshold but no consent/delivery assurance."
+  },
+  "privacy": {
+    "url": "https://litterbugs.app/privacy",
+    "fetched_live": true,
+    "finding": "Describes account email collection, operational notifications and providers; does not describe weekly marketing, default subscription or email unsubscribe. Local effective date Nov 13, 2026. No live edits."
+  },
+  "decision": "Preview only as requested: existing and new accounts subscribed by default; no newsletter wording on signup; added separate draft disclosure. Not cleared for live Gmail marketing."
+}

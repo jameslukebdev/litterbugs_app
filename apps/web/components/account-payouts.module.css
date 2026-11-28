@@ -1,0 +1,112 @@
+/* Account → Payments & payouts: one Stripe payout panel (setup on the page, then embedded payouts). */
+.getPaid {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 5vw, 24px);
+}
+
+.getPaid h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.getPaid p {
+  margin: 0;
+}
+
+.bankSetupPanel {
+  order: 1;
+  flex-basis: 100%;
+  min-width: 0;
+}
+
+.bankSetupPanel > :global(.payout-flow) {
+  max-width: 560px;
+}
+
+.accountPayments {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.bankStatus.bankStatus {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border: 1px solid #f2dc8a;
+  border-radius: 999px;
+  background: #fff4cc;
+  color: #5c4708;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.bankStatus[data-ready='true'] {
+  border-color: #8ed7c5;
+  background: #b9e9dd;
+  color: #125443;
+}
+
+.setupRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.eligibility {
+  display: flex;
+  flex-basis: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  color: #45434d;
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.eligibility input.eligibilityBox,
+.eligibility input[type='checkbox'] {
+  flex: none;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: #5146ed;
+}
+
+.setupRow > .bankSetupPanel {
+  flex-basis: 100%;
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid #e3dff0;
+}
+
+.dashboard {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  min-height: 120px;
+  padding-top: 14px;
+  border-top: 1px solid #e3dff0;
+}
+
+.dashboardError {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #e3dff0;
+}
+
+.dashboardError p {
+  color: #a02935;
+  font-weight: 700;
+}

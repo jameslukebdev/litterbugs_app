@@ -1,0 +1,35 @@
+/* Filter choices: white chips; the chosen one gets a purple outline and text (no fill). */
+.group { min-width: 0; margin: 0; padding: 0; border: 0; }
+.group legend { margin: 0 0 8px; padding: 0; color: #292932; font-size: 14px; font-weight: 800; }
+.group:disabled { opacity: .5; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.group .choice {
+  position: relative;
+  min-height: 42px;
+  display: inline-flex;
+  flex-direction: row;
+  margin: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid #e3dff0;
+  border-radius: 999px;
+  color: #45434d;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.choice input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.choice img { flex: none; object-fit: contain; }
+.group .choice:has(input:checked) { border-color: #5146ed; color: #3f36c4; font-weight: 800; }
+.choice:has(input:focus-visible) { outline: 3px solid #5146ed; outline-offset: 2px; }
+.group:disabled .choice { cursor: not-allowed; }
+@media (hover: hover) and (pointer: fine) {
+  .group:not(:disabled) .choice:hover { border-color: #c9c2f2; }
+}
+
+/* Footer of the filter sheet: Reset and Show results side by side */
+.actions.actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 6px; }
+.actions.actions > button { min-height: 48px; border-radius: 14px; font-weight: 800; }
+.actions.actions > :global(.secondary-button) { border: 2px solid #e3dff0; color: #292932; background: #fff; }

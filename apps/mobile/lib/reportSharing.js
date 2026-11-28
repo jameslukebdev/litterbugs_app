@@ -44,6 +44,8 @@ function reportNotes(report) {
 export function isReportShareable(report, now = new Date()) {
   if (report?.is_sample || report?.cancelled_at || report?.expired_at) return false;
   if (report?.cleanup_state === 'completed') return true;
+  // As on the website: a report someone is cleaning can still be shared.
+  if (['claimed', 'completion_submitted', 'changes_requested'].includes(report?.cleanup_state)) return true;
   if (report?.cleanup_state !== 'available') return false;
   if (!report?.expires_at) return true;
 

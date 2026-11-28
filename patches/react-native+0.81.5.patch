@@ -1,0 +1,52 @@
+diff --git a/node_modules/react-native/React/Fabric/Mounting/ComponentViews/LegacyViewManagerInterop/RCTLegacyViewManagerInteropComponentView.mm b/node_modules/react-native/React/Fabric/Mounting/ComponentViews/LegacyViewManagerInterop/RCTLegacyViewManagerInteropComponentView.mm
+--- a/node_modules/react-native/React/Fabric/Mounting/ComponentViews/LegacyViewManagerInterop/RCTLegacyViewManagerInteropComponentView.mm
++++ b/node_modules/react-native/React/Fabric/Mounting/ComponentViews/LegacyViewManagerInterop/RCTLegacyViewManagerInteropComponentView.mm
+@@ -170,11 +170,9 @@
+ 
+ - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
+ {
+-  if (_adapter && index == _adapter.paperView.reactSubviews.count) {
+-    // This is a new child view that is being added to the end of the children array.
+-    // After the children is added, we need to call didUpdateReactSubviews to make sure that it is rendered.
+-    // Without this change, the new child will not be rendered right away because the didUpdateReactSubviews is not
+-    // called and the `finalizeUpdate` is not invoked.
++  if (_adapter) {
++    // Mount every insertion while the native parent exists. Queuing a middle
++    // insertion can leave it pending until an unrelated parent prop changes.
+     if ([childComponentView isKindOfClass:[RCTLegacyViewManagerInteropComponentView class]]) {
+       UIView *target = ((RCTLegacyViewManagerInteropComponentView *)childComponentView).contentView;
+       [_adapter.paperView insertReactSubview:target atIndex:index];
+@@ -192,8 +190,15 @@
+ 
+ - (void)unmountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
+ {
+-  if (_adapter && index < _adapter.paperView.reactSubviews.count) {
+-    [_adapter.paperView removeReactSubview:_adapter.paperView.reactSubviews[index]];
++  UIView *target = childComponentView;
++  if ([childComponentView isKindOfClass:[RCTLegacyViewManagerInteropComponentView class]]) {
++    UIView *content = ((RCTLegacyViewManagerInteropComponentView *)childComponentView).contentView;
++    if (content) {
++      target = content;
++    }
++  }
++  if (_adapter) {
++    [_adapter.paperView removeReactSubview:target];
+   } else {
+     [_viewsToBeUnmounted addObject:childComponentView];
+   }
+@@ -257,7 +262,14 @@
+   [_viewsToBeMounted removeAllObjects];
+ 
+   for (UIView *view in _viewsToBeUnmounted) {
+-    [_adapter.paperView removeReactSubview:view];
++    UIView *unmountTarget = view;
++    if ([view isKindOfClass:[RCTLegacyViewManagerInteropComponentView class]]) {
++      UIView *content = ((RCTLegacyViewManagerInteropComponentView *)view).contentView;
++      if (content) {
++        unmountTarget = content;
++      }
++    }
++    [_adapter.paperView removeReactSubview:unmountTarget];
+   }
+ 
+   [_viewsToBeUnmounted removeAllObjects];

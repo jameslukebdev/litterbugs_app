@@ -32,9 +32,9 @@ export function CleanupFeedback({ cleanupId }: { cleanupId: string }) {
     return () => { cancelled = true; };
   }, [cleanupId, refresh, retry]);
   return <section className="cleanup-feedback" aria-label="Cleanup correction feedback">
-    <h3>What needs changing</h3>
+    <h3><img src="/brand/ranks/caterpillar.svg" alt="" aria-hidden="true" width={20} height={20} />What needs changing</h3>
     {error ? <><p role="alert">Feedback could not be loaded.</p><button className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry feedback</button></> : !feedback ? <p role="status">Loading feedback…</p> : <>
-      <ul>{feedback.reasons.map(reason => <li key={reason}>{cleanupChangeReasonLabel(reason)}</li>)}</ul>
+      <ul className="cleanup-feedback-reasons">{feedback.reasons.map(reason => <li key={reason}>{cleanupChangeReasonLabel(reason)}</li>)}</ul>
       {feedback.note && <p className="cleanup-legal-copy">{feedback.note}</p>}
       {!!feedback.photos.length && <details><summary>Previous evidence</summary><div className="cleanup-evidence-grid">{feedback.photos.map((src, index) => <img key={src} src={src} alt={`Previously submitted cleanup photo ${index + 1}`} />)}</div></details>}
       <p>Update the photos and description below before the correction deadline.</p>

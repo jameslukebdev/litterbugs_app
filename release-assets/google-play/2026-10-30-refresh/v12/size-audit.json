@@ -1,0 +1,133 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "file": "01-make-money-reporting.png",
+      "source": [
+        1122,
+        1402
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "02-make-money-cleaning.png",
+      "source": [
+        488,
+        842
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "03-donate.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "04-map.png",
+      "source": [
+        485,
+        852
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "05-reports.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "06-before-after.png",
+      "source": [
+        475,
+        671
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "07-share.png",
+      "source": [
+        1080,
+        2340
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    },
+    {
+      "file": "08-track-your-litter.png",
+      "source": [
+        487,
+        841
+      ],
+      "export": [
+        1080,
+        1920
+      ],
+      "phoneFrame": [
+        680,
+        1380
+      ],
+      "screenContentVerified": true
+    }
+  ]
+}

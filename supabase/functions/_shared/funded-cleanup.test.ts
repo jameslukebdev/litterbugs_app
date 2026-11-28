@@ -2,9 +2,105 @@ import {
   createStripeOnboardingState,
   errorMessage,
   hasExactOriginalPhotoReuse,
+  legacyRecipientProfileReset,
+  LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION,
+  recipientProfileUpdate,
   secureSecretEqual,
+  stripeRecipientState,
+  type StripeRecipientAccount,
   verifyStripeOnboardingState,
 } from "./funded-cleanup.ts";
+
+const activeRecipient = (entries: NonNullable<StripeRecipientAccount["requirements"]>["entries"] = []): StripeRecipientAccount => ({
+  id: "acct_test", requirements: { entries }, configuration: { recipient: { capabilities: {
+    stripe_balance: { stripe_transfers: { status: "active" }, payouts: { status: "active" } },
+  } } },
+});
+
+Deno.test("future volume-threshold requirements do not block enabled payouts", () => {
+  const result = stripeRecipientState(activeRecipient([{
+    awaiting_action_from: "user", description: "identity.individual.id_numbers.us_ssn_last_4",
+    minimum_deadline: { status: "eventually_due" },
+  }]));
+  if (!result.payoutsEnabled || result.onboardingStatus !== "enabled" || result.requirementsDue.length) {
+    throw new Error("An eventually-due SSN requirement incorrectly blocked an active recipient");
+  }
+});
+
+Deno.test("currently-due information remains actionable without overriding active capabilities", () => {
+  const result = stripeRecipientState(activeRecipient([{
+    awaiting_action_from: "user", description: "identity.individual.id_numbers.us_ssn_last_4",
+    minimum_deadline: { status: "currently_due" },
+  }, { awaiting_action_from: "stripe", description: "Stripe review" }]));
+  if (!result.payoutsEnabled || result.requirementsDue.length !== 1) {
+    throw new Error("Current remediation guidance or Stripe's active capabilities were lost");
+  }
+});
+
+Deno.test("missing or restricted transfer and payout capabilities always block payouts", () => {
+  for (const capability of ["payouts", "stripe_transfers"] as const) {
+    for (const status of [undefined, "pending", "restricted"]) {
+      const account = activeRecipient([{
+        awaiting_action_from: "user", description: "external_account",
+        minimum_deadline: { status: "past_due" },
+      }]);
+      account.configuration!.recipient!.capabilities!.stripe_balance![capability] = { status };
+      const result = stripeRecipientState(account);
+      if (result.payoutsEnabled || !result.requirementsDue.includes("external_account")) {
+        throw new Error("Provider-restricted capability was incorrectly enabled");
+      }
+    }
+  }
+  if (stripeRecipientState({ id: "acct_missing" }).payoutsEnabled) throw new Error("Missing capabilities were enabled");
+});
+
+Deno.test("activity prefill satisfies missing profile requirements without inventing a website", () => {
+  const update = recipientProfileUpdate({ id: "acct_test", identity: { entity_type: "individual" },
+    requirements: { entries: [{ awaiting_action_from: "user", description: "defaults.profile.business_url" }] },
+  });
+  if (update.product_description !== LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION || "url" in update) {
+    throw new Error("Missing activity should be described without a platform website");
+  }
+});
+
+Deno.test("activity prefill preserves member data and redacted profiles", () => {
+  const requirement = { requirements: { entries: [{ awaiting_action_from: "user" as const, description: "defaults.profile.business_url" }] } };
+  for (const account of [
+    { id: "acct_custom", ...requirement, defaults: { profile: { product_description: "My own description" } } },
+    { id: "acct_website", ...requirement, defaults: { profile: { business_url: "https://example.com/member" } } },
+    { id: "acct_redacted", defaults: { profile: { product_description: null, business_url: null } } },
+    { id: "acct_company", ...requirement, identity: { entity_type: "company" as const } },
+  ]) {
+    if (Object.keys(recipientProfileUpdate(account)).length) throw new Error("Member or redacted profile would be changed");
+  }
+});
+
+Deno.test("recipient onboarding removes only the old platform-supplied profile fields", () => {
+  const reset = legacyRecipientProfileReset({ id: "acct_test", defaults: { profile: {
+    business_url: "https://litterbugs.app/cleanup-policy",
+    product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
+  } } });
+  if (JSON.stringify(reset) !== JSON.stringify({ url: "", product_description: "" })) {
+    throw new Error("Legacy platform profile was not cleared");
+  }
+  const supplied = legacyRecipientProfileReset({ id: "acct_test", defaults: { profile: {
+    business_url: "https://example.com/member", product_description: "My own cleanup service description",
+  } } });
+  if (Object.keys(supplied).length) throw new Error("Member-supplied profile would be overwritten");
+  if (Object.keys(legacyRecipientProfileReset({ id: "acct_test" })).length) {
+    throw new Error("Empty profile would be changed");
+  }
+});
+
+Deno.test("recipient onboarding preserves custom fields when only one legacy field remains", () => {
+  const reset = legacyRecipientProfileReset({ id: "acct_test", defaults: { profile: {
+    business_url: "https://example.com/member",
+    product_description: "Individual litter reporting and cleanup services rewarded after verified cleanups through the Litterbugs community cleanup platform.",
+  } } });
+  if (JSON.stringify(reset) !== JSON.stringify({ product_description: "" })) {
+    throw new Error("Custom website was not preserved");
+  }
+});
 import {
   claimedOperationRow,
   payoutSourceTransaction,

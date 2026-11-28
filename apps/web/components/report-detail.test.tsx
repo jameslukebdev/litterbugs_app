@@ -5,6 +5,7 @@ import type { Report } from '@litterbugs/report-contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ReportDetail } from './report-detail';
+vi.mock('@/components/report-site-activity', () => ({ ReportSiteActivity: () => null }));
 
 const createSignedUrl = vi.fn(async (path: string) => ({
   data: { signedUrl: `https://storage.example/${path}` },
@@ -69,6 +70,36 @@ afterEach(() => {
 });
 
 describe('ReportDetail photos', () => {
+  it('uses a separate history step for photos and returns to the open report on Back', async () => {
+    window.history.replaceState({ litterbugsReportNavigation: true }, '', '/?report=report-id');
+    const onClose = vi.fn();
+    render(<ReportDetail report={{ ...report, photo_paths: ['user/report/one.jpg'] }} isOwner={false} onClose={onClose} />);
+    fireEvent.load(screen.getByAltText('Report photo 1 of 1'));
+    fireEvent.click(screen.getByRole('button', { name: 'View full photo' }));
+    expect(screen.getByRole('dialog', { name: 'Report photo viewer' })).toBeTruthy();
+    expect(window.history.state.litterbugsReportNavigation).toBe(true);
+    expect(window.location.search).toBe('?report=report-id');
+    window.history.back();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Report photo viewer' })).toBeNull());
+    expect(screen.getByRole('heading', { name: 'Photo report' })).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+    window.history.forward();
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Report photo viewer' })).toBeTruthy());
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Report photo viewer' })).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Report photo viewer' })).toBeNull());
+    expect(window.history.state.litterbugsPhotoReport).toBeUndefined();
+    expect(onClose).not.toHaveBeenCalled();
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('labels original evidence and places cleanup results before old report notes', () => {
+    render(<ReportDetail report={{ ...report, cleanup_state: 'completed', photo_paths: ['user/report/one.jpg'], notes_other: 'Original litter notes' }} isOwner={false} onClose={vi.fn()} />);
+    expect(screen.getByText('Before cleanup')).toBeTruthy();
+    const completion = screen.getByRole('heading', { name: 'Cleanup complete' });
+    const notes = screen.getByText('Original litter notes');
+    expect(completion.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('uses the compatibility endpoint for an HEIC photo without changing Storage', async () => {
     render(
       <ReportDetail
@@ -121,7 +152,24 @@ describe('ReportDetail photos', () => {
 
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back to map' })).toBeTruthy();
+  });
+
+  it('confirms on the page before deleting a report', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm');
+    render(<ReportDetail report={report} isOwner onClose={vi.fn()} onEdit={vi.fn()} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('heading', { name: 'Delete this report?' })).toBeTruthy();
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(screen.queryByRole('heading', { name: 'Delete this report?' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete report' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('shows the cleaner-facing reward and cleanup status', () => {
@@ -135,7 +183,7 @@ describe('ReportDetail photos', () => {
       />,
     );
 
-    expect(screen.getByText('$125.00 reward')).toBeTruthy();
+    expect(screen.getByText('in its cleanup fund').textContent).toBe('$125.00 in its cleanup fund');
     expect(screen.getByText('Cleanup in progress')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });
@@ -173,7 +221,7 @@ describe('ReportDetail photos', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Share Your Impact' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Share cleanup' })).toBeTruthy();
   });
 
   it('opens as a modal, focuses close, and closes on Escape', () => {
@@ -189,7 +237,7 @@ describe('ReportDetail photos', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: 'Photo report' });
-    const closeButton = screen.getByRole('button', { name: 'Back' });
+    const closeButton = screen.getByRole('button', { name: 'Back to map' });
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(closeButton);
 
@@ -238,14 +286,14 @@ describe('ReportDetail photos', () => {
     expect(screen.getByRole('button', { name: /Email/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /WhatsApp/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Facebook/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Prepare for Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Instagram/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /^X/ })).toBeTruthy();
 
     expect(screen.getByRole('link', { name: /WhatsApp/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/whatsapp-glyph.png');
     expect(screen.getByRole('link', { name: /Facebook/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/facebook-logo.png');
-    expect(screen.getByRole('button', { name: /Prepare for Instagram/ }).querySelector('img')?.getAttribute('src'))
+    expect(screen.getByRole('button', { name: /Instagram/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/instagram-glyph.png');
     expect(screen.getByRole('link', { name: /^X/ }).querySelector('img')?.getAttribute('src'))
       .toBe('/brand/social/x-logo.png');
@@ -270,7 +318,8 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: /Copy link/ }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
     expect(writeText.mock.calls[1][0]).toBe('http://localhost:3000/reports/report-id');
-    expect(screen.getByText('Link copied. Choose a destination or close this window.')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Link copied.');
+    expect(screen.getByRole('button', { name: /Copied/ })).toBeTruthy();
     expect(onNotify).not.toHaveBeenCalled();
   });
 
@@ -292,9 +341,9 @@ describe('ReportDetail photos', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
-    expect(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).toBeTruthy();
-    expect(within(screen.getByRole('dialog', { name: 'Share your cleanup impact' })).getByText('Cleanup complete')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Share cleanup' }));
+    expect(screen.getByRole('dialog', { name: 'Share this cleanup' })).toBeTruthy();
+    expect(within(screen.getByRole('dialog', { name: 'Share this cleanup' })).getByText('Cleaned up')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close share options' }));
 
     Object.defineProperty(window, 'matchMedia', {
@@ -310,7 +359,7 @@ describe('ReportDetail photos', () => {
         onDelete={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Share Your Impact' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Share cleanup' }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledWith({
       title: 'Photo report',
@@ -374,8 +423,7 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    const instagramButton = screen.getByRole('button', { name: /Prepare for Instagram/ });
-    expect(instagramButton.textContent).toContain('Download the branded card and copy its caption');
+    const instagramButton = screen.getByRole('button', { name: /Instagram/ });
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     expect(downloadLink?.getAttribute('href')).toBe('http://localhost:3000/reports/report-id/share-image');
     expect(downloadLink?.getAttribute('download')).toBe('litterbugs-photo-report.png');
@@ -443,7 +491,7 @@ describe('ReportDetail photos', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     const downloadLink = document.querySelector<HTMLAnchorElement>('a[download]');
     vi.spyOn(downloadLink as HTMLAnchorElement, 'click').mockImplementation(() => undefined);
-    fireEvent.click(screen.getByRole('button', { name: /Prepare for Instagram/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(nativeShare).not.toHaveBeenCalled();
@@ -476,7 +524,7 @@ describe('ReportDetail photos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     await waitFor(() => expect(canShare).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(fetchImage).toHaveBeenCalledWith('http://localhost:3000/reports/report-id/share-image');
@@ -506,7 +554,7 @@ describe('ReportDetail photos', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Share' }));
-    fireEvent.click(screen.getByRole('button', { name: /Share with another app/ }));
+    fireEvent.click(screen.getByRole('button', { name: /More apps/ }));
 
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('dialog', { name: 'Share this cleanup report' })).toBeTruthy();
@@ -517,7 +565,7 @@ describe('ReportDetail photos', () => {
 it('shows a closed historical report without inviting a new cleanup claim', () => {
   render(<ReportDetail report={{ ...report, expired_at: '2026-08-31', expires_at: '2026-08-31' }} isOwner={false} onClose={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
   expect(screen.getByText('Report closed')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Sign in to clean' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Clean' })).toBeNull();
 });
 
 
@@ -544,7 +592,7 @@ it.each([false, true])('restores desktop return focus without stealing an indepe
   const origin = screen.getByRole('button', { name: 'Open report card' });
   origin.focus();
   rerender(view(true));
-  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Back' }));
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Back to map' }));
   const other = screen.getByRole('button', { name: 'Another report card' });
   if (movedElsewhere) other.focus();
   rerender(view(false));
@@ -620,11 +668,11 @@ it('retains the photo in the expanded viewer while the next image loads', () => 
   expect(document.querySelector('.photo-viewer-current')?.classList.contains('report-photo-loading')).toBe(false);
 });
 
-it('keeps the title and original photo ahead of async completed-cleanup details', async () => {
+it('reserves cleanup evidence space after the original photo while details load', async () => {
   const view = render(<ReportDetail report={{ ...report, cleanup_state: 'completed', photo_paths: ['user/report/one.jpg'] }} isOwner={false} onClose={vi.fn()} />);
   expect(view.container.querySelector('.report-detail-header .completed-cleanup-story')).toBeNull();
-  expect(screen.getByText('Loading cleanup details…').classList.contains('sr-only')).toBe(true);
-  expect(view.container.querySelector('.completed-cleanup-story')).toBeNull();
+  expect(screen.getByText('Loading cleanup details…').getAttribute('role')).toBe('status');
+  expect(view.container.querySelector('.completed-cleanup-story')?.getAttribute('aria-busy')).toBe('true');
   await screen.findByText('Cleanup details unavailable.');
   const photo = view.container.querySelector('.report-detail-visual')!;
   const story = view.container.querySelector('.completed-cleanup-story')!;
@@ -648,6 +696,12 @@ describe('mobile report sheet dismissal', () => {
     fireEvent(target, new Event(cancel ? 'touchcancel' : 'touchend', { bubbles: true }));
   }
 
+  function pointer(target: Element, type: string, x: number, y: number) {
+    const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+    Object.defineProperty(event, 'pointerId', { value: 1 });
+    fireEvent(target, event);
+  }
+
   it('focuses the report without selecting the handle and keeps the tap alternative', () => {
     const { panel, handle, onClose } = openSheet();
     expect(document.activeElement).toBe(panel);
@@ -660,10 +714,10 @@ describe('mobile report sheet dismissal', () => {
   it('follows a downward drag and dismisses after the slide-out', () => {
     vi.useFakeTimers();
     const { panel, handle, onClose } = openSheet();
-    fireEvent.touchStart(handle, { touches: [{ clientX: 100, clientY: 100 }] });
-    fireEvent.touchMove(handle, { touches: [{ clientX: 105, clientY: 220 }] });
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', 105, 220);
     expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('120px');
-    fireEvent.touchEnd(handle);
+    pointer(handle, 'pointerup', 105, 220);
     fireEvent.click(handle); // A synthesized click after dragging must not close twice.
     expect(onClose).not.toHaveBeenCalled();
     vi.advanceTimersByTime(200);
@@ -672,13 +726,15 @@ describe('mobile report sheet dismissal', () => {
 
   it.each([
     ['short drag', 100, 140, false],
-    ['horizontal swipe', 240, 120, false],
+    ['horizontal swipe', 250, 200, false],
     ['upward scroll', 100, 0, false],
     ['cancelled drag', 100, 240, true],
   ])('does not dismiss for a %s', (_name, x, y, cancel) => {
     vi.useFakeTimers();
     const { panel, handle, onClose } = openSheet();
-    swipe(handle, 100, 100, x as number, y as number, cancel as boolean);
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', x as number, y as number);
+    pointer(handle, cancel ? 'pointercancel' : 'pointerup', x as number, y as number);
     vi.advanceTimersByTime(250);
     expect(onClose).not.toHaveBeenCalled();
     expect(panel.style.getPropertyValue('--sheet-drag-y')).toBe('');
@@ -704,11 +760,19 @@ describe('mobile report sheet dismissal', () => {
     const { handle, onClose } = openSheet();
     swipe(screen.getByRole('button', { name: 'Share' }), 100, 100, 100, 250);
     Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: false })) });
-    swipe(handle, 100, 100, 100, 250);
+    pointer(handle, 'pointerdown', 100, 100);
+    pointer(handle, 'pointermove', 100, 250);
+    pointer(handle, 'pointerup', 100, 250);
     vi.advanceTimersByTime(250);
     expect(onClose).not.toHaveBeenCalled();
     cleanup();
     render(<ReportDetail embedded report={report} isOwner={false} onClose={onClose} />);
     expect(screen.queryByRole('button', { name: 'Close report and return to map' })).toBeNull();
   });
+});
+
+it.each(['fund', 'clean'])('brings the existing participation controls into focus for %s without opening a checkout or claiming', intent => {
+  render(<ReportDetail report={report} entryIntent={intent} inline isOwner={false} onClose={vi.fn()} />);
+  expect(document.activeElement).toBe(screen.getByRole('contentinfo', { name: 'Cleanup and funding options' }));
+  expect(screen.queryByRole('dialog', { name: /fund/i })).toBeNull();
 });

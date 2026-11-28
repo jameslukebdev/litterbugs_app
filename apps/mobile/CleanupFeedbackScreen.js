@@ -4,17 +4,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BrandedLoadingState from './BrandedLoadingState';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, ErrorText, PrimaryButton, SecondaryButton, TextLink } from './components/ui';
 
 import { loadCleanupFeedbackContext } from './lib/cleanupFeedback';
 import { cleanupChangeReasonLabel } from './lib/cleanupReviewValidation';
 import { permanentUserId } from './lib/reportAccess';
 import { useSession } from './lib/session';
+import { colors, fonts } from './lib/theme';
 
 const formatDateTime = (value) => {
   if (!value) return 'Deadline unavailable';
@@ -48,19 +49,14 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
 
 
   if (loading && !context) {
-    return <BrandedLoadingState title="Loading feedback…" message="Gathering the requested cleanup changes." />;
+    return <LoadingBee label="Loading feedback" style={styles.container} />;
   }
 
   if (!context) {
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
-        <Text style={styles.centerTitle}>Feedback unavailable</Text>
-        <Text style={styles.centerText}>{loadError}</Text>
-        <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>Retry</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go back</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Feedback unavailable" text={loadError} action={{ label: 'Try again', onPress: retryContext }} />
+        <TextLink label="Go back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
@@ -83,21 +79,16 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
     >
       {loadError ? (
         <View>
-          <Text accessibilityRole="alert" style={styles.errorText}>{loadError}</Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}>
-            <Text style={styles.secondaryButtonText}>Try again</Text>
-          </TouchableOpacity>
+          <ErrorText style={styles.errorText}>{loadError}</ErrorText>
+          <TextLink align="start" label="Try again" onPress={retryContext} />
         </View>
       ) : null}
-      <View style={styles.statusIcon}>
-        <Ionicons name="refresh-circle-outline" size={36} color="#8A6400" />
-      </View>
-      <Text style={styles.eyebrow}>CHANGES REQUESTED</Text>
+      <Text style={styles.eyebrow}>Changes requested</Text>
       <Text style={styles.title}>Review reporter feedback</Text>
       <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
 
       <View style={styles.deadlineCard}>
-        <Ionicons name="time-outline" size={22} color="#755900" />
+        <Ionicons name="time-outline" size={22} color={colors.yellow} />
         <View style={styles.deadlineCopy}>
           <Text style={styles.deadlineLabel}>Update submission by</Text>
           <Text style={styles.deadlineValue}>{formatDateTime(context.attempt.correction_due_at)}</Text>
@@ -108,12 +99,12 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
         <Text style={styles.sectionTitle}>Requested updates</Text>
         {(context.review.reason_codes ?? []).map((reason) => (
           <View key={reason} style={styles.reasonRow}>
-            <Ionicons name="ellipse-outline" size={18} color="#8A6400" />
+            <Ionicons name="ellipse-outline" size={18} color={colors.yellow} />
             <Text style={styles.reasonText}>{cleanupChangeReasonLabel(reason)}</Text>
           </View>
         ))}
 
-        <Text style={styles.noteLabel}>REPORTER NOTE</Text>
+        <Text style={styles.noteLabel}>Reporter note</Text>
         <Text style={context.review.note ? styles.note : styles.emptyNote}>
           {context.review.note || 'No additional note was provided.'}
         </Text>
@@ -121,50 +112,40 @@ export default function CleanupFeedbackScreen({ navigation, route }) {
       </View>
 
       <View style={styles.historyNotice}>
-        <Ionicons name="documents-outline" size={21} color="#536068" />
+        <Ionicons name="documents-outline" size={21} color={colors.body} />
         <Text style={styles.historyText}>
           Your earlier photos and this feedback stay in the cleanup history when you submit an update.
         </Text>
       </View>
 
-      <TouchableOpacity accessibilityRole="button" disabled={loading || Boolean(contextError)} style={[styles.primaryButton, (loading || contextError) && { opacity: 0.5 }]} onPress={updateSubmission}>
-        <Ionicons name="camera-outline" size={21} color="#FFFFFF" />
-        <Text style={styles.primaryButtonText}>Update submission</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.secondaryButton} onPress={viewReport}>
-        <Text style={styles.secondaryButtonText}>View report</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Update submission" disabled={loading || Boolean(contextError)} onPress={updateSubmission} style={styles.primaryButton} />
+      <SecondaryButton label="View report" onPress={viewReport} style={styles.secondaryButton} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  errorText: { color: '#B42318', fontSize: 15, lineHeight: 22 },
+  container: { flex: 1, backgroundColor: colors.white },
+  errorText: { marginTop: 0 },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
-  centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  statusIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#FFF8E8' },
-  eyebrow: { marginTop: 18, color: '#8A6400', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
-  deadlineCard: { marginTop: 20, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 15, backgroundColor: '#FFF9DD' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  eyebrow: { marginTop: 4, color: colors.yellow, fontSize: 14, fontWeight: '700' },
+  title: { marginTop: 7, color: colors.ink, fontSize: 24, lineHeight: 31, fontFamily: fonts.heading },
+  reportTitle: { marginTop: 7, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  deadlineCard: { marginTop: 20, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 15, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
   deadlineCopy: { flex: 1 },
-  deadlineLabel: { color: '#755900', fontSize: 12, fontWeight: '600', textTransform: 'none' },
-  deadlineValue: { marginTop: 3, color: '#594500', fontSize: 16, fontWeight: '600' },
-  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  sectionTitle: { color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  deadlineLabel: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  deadlineValue: { marginTop: 3, color: colors.yellow, fontSize: 16, fontWeight: '700' },
+  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontWeight: '600' },
   reasonRow: { marginTop: 13, flexDirection: 'row', alignItems: 'center', gap: 9 },
-  reasonText: { flex: 1, color: '#30363B', fontSize: 15, fontWeight: '700' },
-  noteLabel: { marginTop: 20, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  note: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
-  emptyNote: { marginTop: 7, color: '#7A848A', fontSize: 15, fontStyle: 'italic' },
-  requestedAt: { marginTop: 16, color: '#7A848A', fontSize: 12 },
-  historyNotice: { marginTop: 16, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 14, backgroundColor: '#F3F6F3' },
-  historyText: { flex: 1, color: '#536068', fontSize: 13, lineHeight: 19 },
-  primaryButton: { minHeight: 54, marginTop: 22, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
+  reasonText: { flex: 1, color: colors.ink, fontSize: 15, fontWeight: '700' },
+  noteLabel: { marginTop: 20, color: colors.muted, fontSize: 13, fontWeight: '600' },
+  note: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
+  emptyNote: { marginTop: 7, color: colors.muted, fontSize: 15, fontStyle: 'italic' },
+  requestedAt: { marginTop: 16, color: colors.muted, fontSize: 12 },
+  historyNotice: { marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  historyText: { flex: 1, color: colors.body, fontSize: 13, lineHeight: 19 },
+  primaryButton: { marginTop: 22 },
+  secondaryButton: { marginTop: 12 },
 });

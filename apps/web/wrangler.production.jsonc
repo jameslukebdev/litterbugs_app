@@ -1,0 +1,60 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "litterbugs-web-production",
+  "account_id": "faccfcc33a9c5b3800416063b6f8bfa5",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Keep the noindex hostname available for staging and smoke checks.
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "routes": [
+    { "pattern": "litterbugs.app/*", "zone_name": "litterbugs.app" },
+    { "pattern": "beta.litterbugs.app", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "litterbugs-web-production"
+    }
+  ],
+  "limits": {
+    // The existing photo share card can take more than one CPU second to render.
+    "cpu_ms": 5000
+  },
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "LITTERBUGS_DEPLOYMENT_ENV": "production",
+    "NEXT_PUBLIC_SITE_URL": "https://litterbugs.app",
+    "WEBSITE_ANALYTICS_ENABLED": "true",
+    "LITTERBUGS_IMAGE_RUNTIME": "cloudflare",
+    "REPORT_MEDIA_MALWARE_SCANNER_ENABLED": "true",
+    "REPORT_MEDIA_MALWARE_SCANNER_PROVIDER": "cloudmersive",
+    "GEMINI_RELAY_URL": "https://photo-content-20261113---litterbugs-gemini-relay-qhwmumj2fa-uc.a.run.app"
+  },
+  "secrets": {
+    "required": [
+      "REPORT_MEDIA_MALWARE_SCANNER_API_KEY",
+      "GEMINI_RELAY_SHARED_SECRET",
+      "SUPABASE_SECRET_KEY",
+      "WEBSITE_CLARITY_ID",
+      "WEBSITE_GA_MEASUREMENT_ID",
+      "WEBSITE_POSTHOG_HOST",
+      "WEBSITE_POSTHOG_KEY",
+      "ADMIN_ANALYTICS_GOOGLE_OAUTH",
+      "ADMIN_ANALYTICS_HOSTED_CONNECTIONS",
+      "ADMIN_ANALYTICS_CLARITY_TOKEN",
+      "ADMIN_ANALYTICS_POSTHOG_KEY"
+    ]
+  },
+  "images": {
+    "binding": "IMAGES"
+  }
+}

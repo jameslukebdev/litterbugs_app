@@ -1,0 +1,887 @@
+{
+  "date": "2026-11-09",
+  "property": "sc-domain:litterbugs.app",
+  "live": {
+    "totalSitemapUrls": 48,
+    "reportCount": 30,
+    "photos": 39,
+    "robotSitemaps": [
+      "https://litterbugs.app/sitemap.xml"
+    ],
+    "issues": [],
+    "missingDirectoryLinks": [],
+    "directories": [
+      {
+        "url": "https://litterbugs.app/reports",
+        "status": 200,
+        "reportLinkCount": 12
+      },
+      {
+        "url": "https://litterbugs.app/reports?page=2",
+        "status": 200,
+        "reportLinkCount": 3
+      },
+      {
+        "url": "https://litterbugs.app/reports/history",
+        "status": 200,
+        "reportLinkCount": 4
+      },
+      {
+        "url": "https://litterbugs.app/cleanups",
+        "status": 200,
+        "reportLinkCount": 11
+      },
+      {
+        "url": "https://litterbugs.app/communities/us/nc/boone",
+        "status": 200,
+        "reportLinkCount": 12
+      }
+    ],
+    "photoChecks": [
+      {
+        "url": "https://litterbugs.app/reports/f180ef72-7701-413c-8912-fbc2df317cee/photo/before",
+        "status": 200,
+        "type": "image/jpeg",
+        "bytes": 259972
+      },
+      {
+        "url": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040/photo/before",
+        "status": 200,
+        "type": "image/jpeg",
+        "bytes": 357268
+      },
+      {
+        "url": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040/photo/after",
+        "status": 200,
+        "type": "image/jpeg",
+        "bytes": 322175
+      }
+    ],
+    "reportPages": [
+      {
+        "url": "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6",
+        "status": 200,
+        "title": "Litter Report — Litter report history | Litterbugs",
+        "mainWords": 89,
+        "reportPhotos": [
+          "/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/07c9ac7e-bc36-4fc3-989b-81cbf0fc92d9",
+        "status": 200,
+        "title": "Trash in creek near drainage behind circle k — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 147,
+        "reportPhotos": [
+          "/reports/07c9ac7e-bc36-4fc3-989b-81cbf0fc92d9/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/0e39be7a-ef52-450c-a415-3f0236ad92e6",
+        "status": 200,
+        "title": "Trash all over woods behind New River Grill/New Market Center — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 181,
+        "reportPhotos": [
+          "/reports/0e39be7a-ef52-450c-a415-3f0236ad92e6/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/16c6df5b-8a92-4f7f-a4cd-22935a6c9c37",
+        "status": 200,
+        "title": "Greenwood Lot — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 195,
+        "reportPhotos": [
+          "/reports/16c6df5b-8a92-4f7f-a4cd-22935a6c9c37/photo/before",
+          "/reports/16c6df5b-8a92-4f7f-a4cd-22935a6c9c37/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/1e7f1168-46d4-4e10-9ab3-d781d9314ab0",
+        "status": 200,
+        "title": "Shopping carts — Litter report | Litterbugs",
+        "mainWords": 57,
+        "reportPhotos": [
+          "/reports/1e7f1168-46d4-4e10-9ab3-d781d9314ab0/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/2399f96b-2a47-442f-beff-7a1453a2b1e2",
+        "status": 200,
+        "title": "Trash near road and in gutter near Boone auction place — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 155,
+        "reportPhotos": [
+          "/reports/2399f96b-2a47-442f-beff-7a1453a2b1e2/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702",
+        "status": 200,
+        "title": "Trash on Castle Ford — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 191,
+        "reportPhotos": [
+          "/reports/25b202b4-b36f-47b8-b50d-a77de060d702/photo/before",
+          "/reports/25b202b4-b36f-47b8-b50d-a77de060d702/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019",
+        "status": 200,
+        "title": "Trash at Beacon Heights Trail Head — Completed cleanup | Litterbugs",
+        "mainWords": 106,
+        "reportPhotos": [
+          "/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019/photo/before",
+          "/reports/3906e5ce-cd04-4ccf-8e9f-4fa754546019/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/42dd5736-8b33-41a0-951c-2d5db84e113a",
+        "status": 200,
+        "title": "Basura en el patio — Litter report history | Litterbugs",
+        "mainWords": 96,
+        "reportPhotos": []
+      },
+      {
+        "url": "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6",
+        "status": 200,
+        "title": "Litter along Ridge Road on other side of guardrail — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 200,
+        "reportPhotos": [
+          "/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6/photo/before",
+          "/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/68256b51-06ad-4bf1-8e9f-a7a42e2e4631",
+        "status": 200,
+        "title": "Lots of trash near steps to Greenwood Lot — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 186,
+        "reportPhotos": [
+          "/reports/68256b51-06ad-4bf1-8e9f-a7a42e2e4631/photo/before",
+          "/reports/68256b51-06ad-4bf1-8e9f-a7a42e2e4631/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/79a64227-1573-43e8-a309-fd5e4bceb29f",
+        "status": 200,
+        "title": "Trash along hillside at Tractor 🚜 Supply — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 157,
+        "reportPhotos": [
+          "/reports/79a64227-1573-43e8-a309-fd5e4bceb29f/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/7a159346-d9e0-4261-aaae-b71a56738dea",
+        "status": 200,
+        "title": "Trash in front of Toyota Dealership. — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 161,
+        "reportPhotos": [
+          "/reports/7a159346-d9e0-4261-aaae-b71a56738dea/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/7b20f1ec-41a8-4eba-be86-f3608250638e",
+        "status": 200,
+        "title": "Trash along creek above Watauga Library — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 212,
+        "reportPhotos": [
+          "/reports/7b20f1ec-41a8-4eba-be86-f3608250638e/photo/before",
+          "/reports/7b20f1ec-41a8-4eba-be86-f3608250638e/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/7dccfd3a-3ced-4af9-9816-339c16559a54",
+        "status": 200,
+        "title": "Litter along entrance to industrial drive — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 177,
+        "reportPhotos": [
+          "/reports/7dccfd3a-3ced-4af9-9816-339c16559a54/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/80fa643d-b494-4975-96e8-99eb6dcbe714",
+        "status": 200,
+        "title": "Litter along Winkler’s Creek Greenway and 321 Pedestrian Underpass — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 160,
+        "reportPhotos": [
+          "/reports/80fa643d-b494-4975-96e8-99eb6dcbe714/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/89b69641-d5f2-4604-8228-e503fbb3a37d",
+        "status": 200,
+        "title": "Bottles strewn about at Linville intersection — Completed cleanup | Litterbugs",
+        "mainWords": 118,
+        "reportPhotos": [
+          "/reports/89b69641-d5f2-4604-8228-e503fbb3a37d/photo/before",
+          "/reports/89b69641-d5f2-4604-8228-e503fbb3a37d/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/94ff2afa-939f-4f32-bd25-850f45ebbd44",
+        "status": 200,
+        "title": "Crazy amount of litter at intersection — Litter report | Litterbugs",
+        "mainWords": 73,
+        "reportPhotos": [
+          "/reports/94ff2afa-939f-4f32-bd25-850f45ebbd44/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/a0a47f46-8d85-4c13-8d37-50f8c4c0b525",
+        "status": 200,
+        "title": "Basura en el parque — Completed cleanup | Litterbugs",
+        "mainWords": 110,
+        "reportPhotos": [
+          "/reports/a0a47f46-8d85-4c13-8d37-50f8c4c0b525/photo/before",
+          "/reports/a0a47f46-8d85-4c13-8d37-50f8c4c0b525/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/af670681-64a8-451c-8d7e-8d7701912506",
+        "status": 200,
+        "title": "More cleanup needed near Pinnacle storage. — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 200,
+        "reportPhotos": [
+          "/reports/af670681-64a8-451c-8d7e-8d7701912506/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+        "status": 200,
+        "title": "Ridge Road cleanup part 2 - more cleanup needed — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 261,
+        "reportPhotos": [
+          "/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3/photo/before",
+          "/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/cc0f660d-4af4-4db0-8f29-f6ec0bd3b07e",
+        "status": 200,
+        "title": "Ridge Road cleanup part 3 - one last pile — Litter report history near Boone, North Carolina | Litterbugs",
+        "mainWords": 192,
+        "reportPhotos": [
+          "/reports/cc0f660d-4af4-4db0-8f29-f6ec0bd3b07e/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+        "status": 200,
+        "title": "Litter at corner of Howard’s Creek Road near C&T — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 152,
+        "reportPhotos": [
+          "/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/d4a3dc34-edc1-4492-b6ac-e6dd82375a5c",
+        "status": 200,
+        "title": "Trash by the tracks — Litter report | Litterbugs",
+        "mainWords": 75,
+        "reportPhotos": [
+          "/reports/d4a3dc34-edc1-4492-b6ac-e6dd82375a5c/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/dd2bcb17-f7f9-4b3e-b0bf-4ad31e7cbe95",
+        "status": 200,
+        "title": "Basura en la calle — Litter report | Litterbugs",
+        "mainWords": 81,
+        "reportPhotos": [
+          "/reports/dd2bcb17-f7f9-4b3e-b0bf-4ad31e7cbe95/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/e08939ae-3404-4e43-81f6-f4a2e1c77c4d",
+        "status": 200,
+        "title": "Trash scattered along hillside and near drainage next to pinnacle storage — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 253,
+        "reportPhotos": [
+          "/reports/e08939ae-3404-4e43-81f6-f4a2e1c77c4d/photo/before",
+          "/reports/e08939ae-3404-4e43-81f6-f4a2e1c77c4d/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/e9beb87f-4c94-4565-abb0-01f384ca424d",
+        "status": 200,
+        "title": "Bags and trash — Litter report | Litterbugs",
+        "mainWords": 61,
+        "reportPhotos": [
+          "/reports/e9beb87f-4c94-4565-abb0-01f384ca424d/photo/before"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "status": 200,
+        "title": "Trash along perimeters of historic winkler cemetery — Completed cleanup near Boone, North Carolina | Litterbugs",
+        "mainWords": 223,
+        "reportPhotos": [
+          "/reports/ea46b81e-7000-4f5f-82af-64a6c624e040/photo/before",
+          "/reports/ea46b81e-7000-4f5f-82af-64a6c624e040/photo/after"
+        ]
+      },
+      {
+        "url": "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6",
+        "status": 200,
+        "title": "Sand trash — Litter report history | Litterbugs",
+        "mainWords": 88,
+        "reportPhotos": []
+      },
+      {
+        "url": "https://litterbugs.app/reports/f180ef72-7701-413c-8912-fbc2df317cee",
+        "status": 200,
+        "title": "Roby Greene Rd off of Castle Ford rd — Litter report near Boone, North Carolina | Litterbugs",
+        "mainWords": 159,
+        "reportPhotos": [
+          "/reports/f180ef72-7701-413c-8912-fbc2df317cee/photo/before"
+        ]
+      }
+    ],
+    "addedReports": [
+      "https://litterbugs.app/reports/f180ef72-7701-413c-8912-fbc2df317cee"
+    ],
+    "removedReports": [],
+    "completedCleanups": 11
+  },
+  "inspection": {
+    "inspectedAt": "2026-11-09T13:58:08.955Z",
+    "scope": "12 previously excluded report URLs, the newly published report, and the Winkler cemetery cleanup",
+    "dataStatus": "complete",
+    "summary": {
+      "requested": 14,
+      "unique": 14,
+      "attempted": 14,
+      "inspected": 14,
+      "failed": 0,
+      "quotaBlocked": 0,
+      "deferred": 0,
+      "currentIssues": 1,
+      "changed": 11,
+      "regressions": 0,
+      "recoveries": 11,
+      "alerts": 0
+    },
+    "items": [
+      {
+        "url": "https://litterbugs.app/reports/0e39be7a-ef52-450c-a415-3f0236ad92e6",
+        "inspectedAt": "2026-11-09T13:56:38.542Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:18:19Z",
+        "googleCanonical": "https://litterbugs.app/reports/0e39be7a-ef52-450c-a415-3f0236ad92e6",
+        "previousCoverage": "URL is unknown to Google"
+      },
+      {
+        "url": "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702",
+        "inspectedAt": "2026-11-09T13:56:45.098Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:26:44Z",
+        "googleCanonical": "https://litterbugs.app/reports/25b202b4-b36f-47b8-b50d-a77de060d702",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/42dd5736-8b33-41a0-951c-2d5db84e113a",
+        "inspectedAt": "2026-11-09T13:56:51.404Z",
+        "indexStatus": "excluded",
+        "coverageState": "Discovered - currently not indexed",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/7b20f1ec-41a8-4eba-be86-f3608250638e",
+        "inspectedAt": "2026-11-09T13:56:57.642Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:18:20Z",
+        "googleCanonical": "https://litterbugs.app/reports/7b20f1ec-41a8-4eba-be86-f3608250638e",
+        "previousCoverage": "URL is unknown to Google"
+      },
+      {
+        "url": "https://litterbugs.app/reports/94ff2afa-939f-4f32-bd25-850f45ebbd44",
+        "inspectedAt": "2026-11-09T13:57:04.083Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:28:40Z",
+        "googleCanonical": "https://litterbugs.app/reports/94ff2afa-939f-4f32-bd25-850f45ebbd44",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/a0a47f46-8d85-4c13-8d37-50f8c4c0b525",
+        "inspectedAt": "2026-11-09T13:57:10.524Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:32:26Z",
+        "googleCanonical": "https://litterbugs.app/reports/a0a47f46-8d85-4c13-8d37-50f8c4c0b525",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/af670681-64a8-451c-8d7e-8d7701912506",
+        "inspectedAt": "2026-11-09T13:57:17.011Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:19:34Z",
+        "googleCanonical": "https://litterbugs.app/reports/af670681-64a8-451c-8d7e-8d7701912506",
+        "previousCoverage": "URL is unknown to Google"
+      },
+      {
+        "url": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+        "inspectedAt": "2026-11-09T13:57:23.187Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:33:34Z",
+        "googleCanonical": "https://litterbugs.app/reports/ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/cc0f660d-4af4-4db0-8f29-f6ec0bd3b07e",
+        "inspectedAt": "2026-11-09T13:57:29.743Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:34:30Z",
+        "googleCanonical": "https://litterbugs.app/reports/cc0f660d-4af4-4db0-8f29-f6ec0bd3b07e",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+        "inspectedAt": "2026-11-09T13:57:36.301Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:33:37Z",
+        "googleCanonical": "https://litterbugs.app/reports/ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/dd2bcb17-f7f9-4b3e-b0bf-4ad31e7cbe95",
+        "inspectedAt": "2026-11-09T13:57:43.231Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:34:33Z",
+        "googleCanonical": "https://litterbugs.app/reports/dd2bcb17-f7f9-4b3e-b0bf-4ad31e7cbe95",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6",
+        "inspectedAt": "2026-11-09T13:57:49.766Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-08T21:52:46Z",
+        "googleCanonical": "https://litterbugs.app/reports/ed1500be-2555-4504-9421-6a72451c3ea6",
+        "previousCoverage": "Discovered - currently not indexed"
+      },
+      {
+        "url": "https://litterbugs.app/reports/f180ef72-7701-413c-8912-fbc2df317cee",
+        "inspectedAt": "2026-11-09T13:57:56.070Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-09T07:30:42Z",
+        "googleCanonical": "https://litterbugs.app/reports/f180ef72-7701-413c-8912-fbc2df317cee"
+      },
+      {
+        "url": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "inspectedAt": "2026-11-09T13:58:02.500Z",
+        "indexStatus": "indexed",
+        "coverageState": "Submitted and indexed",
+        "lastCrawlTime": "2026-11-06T01:21:43Z",
+        "googleCanonical": "https://litterbugs.app/reports/ea46b81e-7000-4f5f-82af-64a6c624e040",
+        "previousCoverage": "Submitted and indexed",
+        "previousCrawl": "2026-11-06T01:21:43Z"
+      }
+    ]
+  },
+  "traffic": {
+    "week": {
+      "dates": [
+        "2026-11-01",
+        "2026-11-07"
+      ],
+      "date": {
+        "clicks": 2,
+        "impressions": 25,
+        "count": 7
+      },
+      "page": {
+        "clicks": 2,
+        "impressions": 31,
+        "count": 7,
+        "rows": [
+          {
+            "url": "https://litterbugs.app/",
+            "clicks": 2,
+            "impressions": 14
+          },
+          {
+            "url": "https://litterbugs.app/about",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/communities/us/nc/boone",
+            "clicks": 0,
+            "impressions": 5
+          },
+          {
+            "url": "https://litterbugs.app/get-app",
+            "clicks": 0,
+            "impressions": 7
+          },
+          {
+            "url": "https://litterbugs.app/locations",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/report-litter",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports",
+            "clicks": 0,
+            "impressions": 1
+          }
+        ]
+      },
+      "query": {
+        "clicks": 0,
+        "impressions": 7,
+        "count": 1,
+        "rows": [
+          {
+            "query": "litterbugs",
+            "clicks": 0,
+            "impressions": 7
+          }
+        ]
+      }
+    },
+    "previousWeek": {
+      "dates": [
+        "2026-10-25",
+        "2026-10-31"
+      ],
+      "date": {
+        "clicks": 4,
+        "impressions": 11,
+        "count": 7
+      },
+      "page": {
+        "clicks": 4,
+        "impressions": 31,
+        "count": 16,
+        "rows": [
+          {
+            "url": "https://litterbugs.app/",
+            "clicks": 4,
+            "impressions": 8
+          },
+          {
+            "url": "https://litterbugs.app/about",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/account/legal",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/account/privacy",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/cleaner",
+            "clicks": 0,
+            "impressions": 3
+          },
+          {
+            "url": "https://litterbugs.app/cleanup-policy",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/get-app",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/how-it-works",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/privacy",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/report",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/07c9ac7e-bc36-4fc3-989b-81cbf0fc92d9",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/safety",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/support",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/terms",
+            "clicks": 0,
+            "impressions": 4
+          }
+        ]
+      },
+      "query": {
+        "clicks": 0,
+        "impressions": 2,
+        "count": 2,
+        "rows": [
+          {
+            "query": "litter bugs",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "query": "litterbugs",
+            "clicks": 0,
+            "impressions": 1
+          }
+        ]
+      }
+    },
+    "fourWeeks": {
+      "dates": [
+        "2026-10-11",
+        "2026-11-07"
+      ],
+      "date": {
+        "clicks": 8,
+        "impressions": 57,
+        "count": 28
+      },
+      "page": {
+        "clicks": 8,
+        "impressions": 94,
+        "count": 22,
+        "rows": [
+          {
+            "url": "https://litterbugs.app/",
+            "clicks": 7,
+            "impressions": 37
+          },
+          {
+            "url": "https://litterbugs.app/cleanup-policy",
+            "clicks": 1,
+            "impressions": 4
+          },
+          {
+            "url": "https://litterbugs.app/about",
+            "clicks": 0,
+            "impressions": 5
+          },
+          {
+            "url": "https://litterbugs.app/account/connect",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/account/legal",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/account/privacy",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/cleaner",
+            "clicks": 0,
+            "impressions": 4
+          },
+          {
+            "url": "https://litterbugs.app/cleanup-safety/acknowledgment",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/communities/us/nc/boone",
+            "clicks": 0,
+            "impressions": 5
+          },
+          {
+            "url": "https://litterbugs.app/get-app",
+            "clicks": 0,
+            "impressions": 9
+          },
+          {
+            "url": "https://litterbugs.app/how-it-works",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/locations",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/privacy",
+            "clicks": 0,
+            "impressions": 4
+          },
+          {
+            "url": "https://litterbugs.app/report",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/report-litter",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/04001e36-1dcf-4bf7-b3b6-208ae50288f6",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/07c9ac7e-bc36-4fc3-989b-81cbf0fc92d9",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/reports/62fbcc67-1f15-429f-bb12-46058c6cfdf6",
+            "clicks": 0,
+            "impressions": 3
+          },
+          {
+            "url": "https://litterbugs.app/safety",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/support",
+            "clicks": 0,
+            "impressions": 3
+          },
+          {
+            "url": "https://litterbugs.app/terms",
+            "clicks": 0,
+            "impressions": 6
+          }
+        ]
+      },
+      "query": {
+        "clicks": 0,
+        "impressions": 14,
+        "count": 2,
+        "rows": [
+          {
+            "query": "litter bugs",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "query": "litterbugs",
+            "clicks": 0,
+            "impressions": 12
+          }
+        ]
+      }
+    },
+    "previousFourWeeks": {
+      "dates": [
+        "2026-09-13",
+        "2026-10-10"
+      ],
+      "date": {
+        "clicks": 1,
+        "impressions": 9,
+        "count": 28
+      },
+      "page": {
+        "clicks": 1,
+        "impressions": 11,
+        "count": 6,
+        "rows": [
+          {
+            "url": "https://litterbugs.app/",
+            "clicks": 1,
+            "impressions": 5
+          },
+          {
+            "url": "https://litterbugs.app/about",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/account/connect",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/cleaner",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "url": "https://litterbugs.app/how-it-works",
+            "clicks": 0,
+            "impressions": 2
+          },
+          {
+            "url": "https://litterbugs.app/report",
+            "clicks": 0,
+            "impressions": 1
+          }
+        ]
+      },
+      "query": {
+        "clicks": 0,
+        "impressions": 4,
+        "count": 2,
+        "rows": [
+          {
+            "query": "litter bugs",
+            "clicks": 0,
+            "impressions": 1
+          },
+          {
+            "query": "litterbugs",
+            "clicks": 0,
+            "impressions": 3
+          }
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "HTTP checks covered all 30 sitemap report detail URLs and five directory routes, with image bodies checked for the new report and Winkler cemetery only.",
+    "URL Inspection is a saved Google snapshot for 14 selected URLs. Current soft-404 live tests were not rerun. The repaired patio page passed the November 8 live test but remains discovered and not indexed in the November 9 snapshot.",
+    "Finalized Google web search through November 7. Date totals are property aggregates, page totals use a different grain, and reported query rows omit anonymized terms. No inference about long-term trends or unseen terms."
+  ]
+}

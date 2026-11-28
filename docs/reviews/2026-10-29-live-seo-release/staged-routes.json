@@ -1,0 +1,148 @@
+[
+  {
+    "path": "/",
+    "status": "200",
+    "h1": [
+      "See litter?Get paid to report it."
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app"
+    ]
+  },
+  {
+    "path": "/locations",
+    "status": "200",
+    "h1": [
+      "Find litter cleanups near you"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/locations"
+    ]
+  },
+  {
+    "path": "/locations/us-nc-boone",
+    "status": "200",
+    "h1": [
+      "Litter reports and cleanupsnear Boone"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/locations/us-nc-boone"
+    ]
+  },
+  {
+    "path": "/cleanups",
+    "status": "200",
+    "h1": [
+      "Completed litter cleanups."
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/cleanups"
+    ]
+  },
+  {
+    "path": "/fund-a-cleanup",
+    "status": "200",
+    "h1": [
+      "Help pay for a cleaner place."
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/fund-a-cleanup"
+    ]
+  },
+  {
+    "path": "/report-litter",
+    "status": "200",
+    "h1": [
+      "Report litter. Start something."
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/report-litter"
+    ]
+  },
+  {
+    "path": "/cleaner",
+    "status": "200",
+    "h1": [
+      "Find your next cleanup."
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/cleaner"
+    ]
+  },
+  {
+    "path": "/get-app",
+    "status": "200",
+    "h1": [
+      "Take Litterbugs with you"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/get-app"
+    ]
+  },
+  {
+    "path": "/help",
+    "status": "200",
+    "h1": [
+      "We\u2019re here to help"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/help"
+    ]
+  },
+  {
+    "path": "/about",
+    "status": "200",
+    "h1": [
+      "About Litterbugs"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/about"
+    ]
+  },
+  {
+    "path": "/support",
+    "status": "200",
+    "h1": [
+      "Support Litterbugs"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/support"
+    ]
+  },
+  {
+    "path": "/map",
+    "status": "200",
+    "h1": [
+      "Litter reports"
+    ],
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/map"
+    ]
+  },
+  {
+    "path": "/sitemap.xml",
+    "status": "200",
+    "h1": [],
+    "error": false,
+    "canonical": []
+  },
+  {
+    "path": "/robots.txt",
+    "status": "200",
+    "h1": [],
+    "error": false,
+    "canonical": []
+  }
+]

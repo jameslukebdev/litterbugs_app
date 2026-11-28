@@ -31,8 +31,9 @@ vi.mock('@/lib/saved-cleanup-draft', () => ({ clearAccountCleanupDrafts: vi.fn(a
 vi.mock('@/lib/saved-report-draft', () => ({ clearPublishedReport: clearDraft, reportDraftLocation: vi.fn(async () => undefined) }));
 
 vi.mock('@/components/payout-setup-action', () => ({
-  PayoutSetupAction: () => null,
+  PayoutSetupAction: ({ buttonLabel = 'Payout settings' }: { buttonLabel?: string }) => <button>{buttonLabel}</button>,
 }));
+vi.mock('./payout-dashboard', () => ({ default: () => <section aria-label="Stripe payouts preview" /> }));
 
 const expiredReport: Report = {
   is_published: true,
@@ -177,10 +178,10 @@ describe('AccountDialog expired report decisions', () => {
       location: 'Asheville, NC',
     })));
     expect(onProfileChanged).toHaveBeenCalled();
-    expect(await screen.findByText(/website and app account are now up to date/i)).toBeTruthy();
+    expect(await screen.findByText(/^Profile saved\.$/)).toBeTruthy();
     expect(screen.queryByText('7')).toBeNull();
     expect(screen.getByLabelText('Reports submitted').textContent).toContain('0');
-    expect(screen.getByText('Reports')).toBeTruthy();
+    expect(screen.getByLabelText('Reports submitted').textContent).toContain('reports');
   });
 
   it('loads and unblocks the same blocked accounts used by the mobile app', async () => {
@@ -214,34 +215,40 @@ describe('AccountDialog expired report decisions', () => {
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Payments' }));
-    expect(screen.getByText('$2.50 fee · $27.50 total')).toBeTruthy();
+    expect(screen.getByText('$25.00 contribution · $2.50 fee')).toBeTruthy();
+    expect(screen.getByLabelText('$27.50 total')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back to profile' }));
     fireEvent.click(screen.getByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
-    expect(await screen.findByRole('heading', { name: 'Renew or close reports' })).toBeTruthy();
-    expect(screen.getByText('$125.00 reward', { exact: false })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Keep this report open?' })).toBeTruthy();
+    expect(screen.getByText('$125.00 in its cleanup fund', { exact: false })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Renew 30 days' }));
 
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('renew_report', {
       target_report_id: expiredReport.id,
     }));
     expect(await screen.findByText(/renewed for 30 days/i)).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Renew or close reports' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Keep this report open?' })).toBeNull();
   });
 
   it('requires confirmation before closing and queuing full refunds', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'My activity' }));
     fireEvent.click(screen.getByRole('button', { name: 'My reports' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Close and refund' }));
-
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/including the service fee/i));
+    // Asks on the page first; Keep it open backs out without closing anything.
+    expect(screen.getByText(/including the service fee/i)).toBeTruthy();
+    expect(rpc).not.toHaveBeenCalledWith('close_expired_report', expect.anything());
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it open' }));
+    expect(rpc).not.toHaveBeenCalledWith('close_expired_report', expect.anything());
+    fireEvent.click(screen.getByRole('button', { name: 'Close and refund' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close and refund' }));
     await waitFor(() => expect(rpc).toHaveBeenCalledWith('close_expired_report', {
       target_report_id: expiredReport.id,
     }));
-    expect(await screen.findByText(/full contribution refunds have been queued/i)).toBeTruthy();
+    expect(await screen.findByText(/gets a full refund, including the service fee/i)).toBeTruthy();
+    expect(screen.getByText('Report closed')).toBeTruthy();
   });
 });
 
@@ -254,10 +261,20 @@ describe('saved report cleanup after account deletion', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
     return onSignedOut;
   }
+  /** Opens the on-page confirmation, types DELETE and confirms. */
+  function confirmDelete() {
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    const confirmButton = screen.getByRole('button', { name: 'Delete account' }) as HTMLButtonElement;
+    expect(screen.getByRole('heading', { name: 'Delete your account?' })).toBeTruthy();
+    expect(confirmButton.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText(/to confirm/), { target: { value: 'delete' } });
+    expect(confirmButton.disabled).toBe(false);
+    fireEvent.click(confirmButton);
+  }
   it('clears only the deleted account’s draft and journal after confirmed deletion', async () => {
     invoke.mockResolvedValue({ data: { deleted: true }, error: null });
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    confirmDelete();
     await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
     expect(clearDraft).toHaveBeenCalledExactlyOnceWith('member-id');
     expect(clearDraft.mock.invocationCallOrder[0]).toBeGreaterThan(invoke.mock.invocationCallOrder[0]);
@@ -266,23 +283,35 @@ describe('saved report cleanup after account deletion', () => {
   it('preserves local photos when account deletion fails', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('Network failure') });
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    await screen.findByText(/Couldn’t delete account/);
+    confirmDelete();
+    await screen.findByText(/Couldn’t delete your account/);
     expect(clearDraft).not.toHaveBeenCalled();expect(onSignedOut).not.toHaveBeenCalled();
   });
   it('reports failed local cleanup without claiming the deleted account still exists', async () => {
     invoke.mockResolvedValue({ data: { deleted: true }, error: null });
     clearDraft.mockRejectedValue(new Error('Browser storage unavailable'));
     const onSignedOut = await account();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Your account was deleted'));
+    confirmDelete();
+    expect(await screen.findByRole('heading', { name: 'Your account is deleted' })).toBeTruthy();
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(onSignedOut).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onSignedOut).toHaveBeenCalled();
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+  it('keeps the account when the deletion is cancelled', async () => {
+    const onSignedOut = await account();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Keep my account' }));
+    expect(screen.queryByRole('heading', { name: 'Delete your account?' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+    expect(invoke).not.toHaveBeenCalled(); expect(onSignedOut).not.toHaveBeenCalled();
   });
   it('retains drafts on ordinary sign-out', async () => {
     const onSignedOut = await account();
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     await waitFor(() => expect(onSignedOut).toHaveBeenCalled());
+    expect(window.confirm).not.toHaveBeenCalled();
     expect(clearDraft).not.toHaveBeenCalled();expect(invoke).not.toHaveBeenCalled();
   });
 });
@@ -350,7 +379,7 @@ it('keeps activity navigation before saved work in document and keyboard order',
 it('identifies unconfirmed contributions separately from cleanup earnings', async () => {
   dashboard.paymentStatus = 'payment_pending';
   render(<AccountPage destination="payments" userId="member-id" />);
-  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*Report expired-.*25.00 contribution.*Payment unconfirmed/ });
+  const receipt = await screen.findByRole('link', { name: /Creek cleanup.*25.00 contribution.*Payment not finished/ });
   expect(receipt.getAttribute('href')).toBe('/account/payments/contribution-id');
   expect(screen.queryByText(/^Processing/)).toBeNull();
   const contributions = screen.getByRole('heading', { name: 'Your contributions' });
@@ -386,7 +415,9 @@ describe('quiet profile loading', () => {
     expect(await screen.findByRole('heading', { name: 'Member' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Resume your work' })).toBeNull();
     expect(screen.queryByText(/No actions are due/)).toBeNull();
-    expect(screen.getByRole('navigation', { name: 'Profile sections' })).toBeTruthy();
+    // The account page's own section tabs replace the in-panel section links.
+    expect(screen.queryByRole('navigation', { name: 'Profile sections' })).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Your account' })).toBeTruthy();
   });
 });
 
@@ -396,7 +427,7 @@ it('does not render settings or missing-email copy beneath a temporary loading b
   expect(screen.getByRole('status', { name: 'Loading account section' })).toBeTruthy();
   expect(screen.queryByText('Email unavailable for this account')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Delete account' })).toBeNull();
-  expect(await screen.findByRole('heading', { name: 'Account settings' })).toBeTruthy();
+  expect(await screen.findByRole('button', { name: 'Reset password' })).toBeTruthy();
   expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
 });
 it('reveals activity and saved work together while keeping the tabs available', async () => {
@@ -410,4 +441,96 @@ it('reveals activity and saved work together while keeping the tabs available', 
   expect(screen.getByRole('heading', { name: 'Current cleanups' })).toBeTruthy();
   expect(screen.getByRole('region', { name: 'Resume your work' })).toBeTruthy();
   expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
+});
+
+it('shows one focused editor and restores the unchanged overview on Cancel', async () => {
+  render(<AccountPage destination="" userId="member-id" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  const heading = screen.getByRole('heading', { name: 'Edit profile', level: 1 });
+  expect(document.activeElement).toBe(heading);
+  expect(screen.queryByRole('heading', { name: 'Profile' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Member' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Edit your profile' })).toBeNull();
+  expect(document.querySelectorAll('.account-avatar')).toHaveLength(1);
+  expect(screen.queryByRole('navigation', { name: 'Profile sections' })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'Community activity' })).toBeNull();
+  fireEvent.change(screen.getByRole('textbox', { name: /^Display name/ }), { target: { value: 'Unsaved name' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('heading', { name: 'Profile', level: 1 })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Member' })).toBeTruthy();
+  expect(screen.queryByRole('region', { name: 'Profile editor' })).toBeNull();
+  expect(profileUpdate).not.toHaveBeenCalled();
+});
+
+it('uses the same focused editor when opened from Settings', async () => {
+  render(<AccountPage destination="settings" userId="member-id" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  expect(screen.getByRole('heading', { name: 'Edit profile', level: 1 })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: 'Account settings' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('heading', { name: 'Settings', level: 1 })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Reset password' })).toBeTruthy();
+});
+
+vi.mock('@/lib/prepare-browser-photo', () => ({ prepareBrowserPhoto: vi.fn(async (file: File) => file) }));
+vi.mock('@/lib/secure-media-upload', () => ({ uploadSecureBrowserMedia: vi.fn(async () => 'member-id/avatar/prepared.jpg') }));
+
+it('photo selection previews, empty selection retains it, then Save persists its uploaded path', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:review-photo'); URL.revokeObjectURL = vi.fn();
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+  const input = screen.getByLabelText('Choose photo');
+  expect(input.tagName).toBe('INPUT'); expect(input.getAttribute('type')).toBe('file');
+  fireEvent.change(input, {target:{files:[new File(['photo'], 'review.jpg', {type:'image/jpeg'})]}});
+  await screen.findByText('Choose another photo');
+  expect(document.querySelector('img[src="blob:review-photo"]')).toBeTruthy();
+  fireEvent.change(input, {target:{files:[]}});
+  expect(screen.getByText('Choose another photo')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', {name:'Save profile'}));
+  await screen.findByText('Profile saved.');
+  expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({avatar_path:'member-id/avatar/prepared.jpg'}));
+});
+it('canceling the picker without a file allows profile saving without an avatar', async () => {
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', {name:'Edit profile'}));
+  fireEvent.change(screen.getByLabelText('Choose photo'), {target:{files:[]}});
+  expect(screen.getByText('Choose photo')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', {name:'Save profile'}));
+  await screen.findByText('Profile saved.');
+  expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({avatar_path:null}));
+});
+it('Cancel profile discards selected photo without a profile update', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:review-photo'); URL.revokeObjectURL = vi.fn();
+  render(<AccountDialog onClose={vi.fn()} onSignedOut={vi.fn()} onOpenReport={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', {name:'Edit profile'}));
+  fireEvent.change(screen.getByLabelText('Choose photo'), {target:{files:[new File(['photo'], 'review.jpg', {type:'image/jpeg'})]}});
+  await screen.findByText('Choose another photo');
+  fireEvent.click(screen.getByRole('button', {name:'Cancel'}));
+  expect(profileUpdate).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', {name:'Edit profile'}));
+  expect(screen.getByText('Choose photo')).toBeTruthy();
+});
+
+describe('Payments & payouts: one Stripe payout panel', () => {
+  it('shows payouts inside Litterbugs, with no sample earnings, wallets or second dashboard', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady />);
+    const payouts = await screen.findByRole('region', { name: 'Payouts' });
+    expect(payouts.textContent).toContain('Connected through Stripe');
+    expect(await screen.findByRole('region', { name: 'Stripe payouts preview' })).toBeTruthy();
+    expect(screen.queryByText(/Venmo|PayPal|Neighborhood cleanup/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Stripe dashboard/ })).toBeNull();
+  });
+  it('asks for one eligibility confirmation beside one Stripe bank setup button', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady={false} />);
+    expect(await screen.findByText('No bank or card yet')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Add bank or debit card' })).toHaveLength(1);
+    expect(screen.getByRole('checkbox', { name: /at least 18/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Payout settings' })).toBeNull();
+  });
+  it('lets a returning cleaner finish setup without confirming eligibility again', async () => {
+    render(<AccountPage destination="payments" userId="member-id" bankReady={false} payoutSetup={{ started: true, ageConfirmed: true }} />);
+    expect(await screen.findByText('Setup not finished')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add bank or debit card' })).toBeTruthy();
+    expect(screen.queryByRole('checkbox', { name: /at least 18/ })).toBeNull();
+  });
 });

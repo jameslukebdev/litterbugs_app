@@ -1,0 +1,39 @@
+.activity { margin-top:24px; color:var(--text,#292832); }
+.actions { display:grid; gap:12px; }
+.again { display:inline-flex; width:100%; align-items:center; justify-content:center; gap:9px; min-height:48px; padding:10px 16px; border:2px solid #9bbbf3; border-radius:16px; background:#f2f7ff; color:#2e539e; font:inherit; font-weight:800; line-height:1.25; cursor:pointer; box-shadow:none; }
+.again:hover { background:#e5efff; border-color:#84aaeb; color:#234485; }
+.again:focus-visible { outline:3px solid #84aaeb; outline-offset:3px; }
+.reportBug { flex:none; width:26px; height:26px; background:url('/brand/ranks/dragonfly.svg') no-repeat center / contain; }
+.timeline { margin-top:24px; scroll-margin-top:24px; }
+.activity > .timeline:first-child { margin-top:0; }
+.heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 16px; justify-content:space-between; margin-bottom:14px; }
+.heading h2 { margin:0; font-size:22px; }
+.heading>span { font-size:13px; color:#73717d; }
+.rounds,.events { list-style:none; margin:0; padding:0; }
+.rounds>li { border-top:1px solid #e9e7ed; }
+.round { display:flex; align-items:center; gap:10px; min-height:76px; padding:14px 0; cursor:pointer; }
+.round::-webkit-details-marker,.evidence>summary::-webkit-details-marker { display:none; }
+.round>span:first-child { flex:1; min-width:0; }
+.round strong { font-size:14px; }
+.round small { display:block; font-size:13px; line-height:1.5; margin-top:4px; color:#73717d; }
+.round>svg { flex-shrink:0; color:#73717d; }
+details[open]>.round>svg,details[open].evidence>summary>svg { transform:rotate(180deg); }
+.cleaned,.current { flex-shrink:0; border-radius:99px; border:1px solid #8ed7c5; background:#b9e9dd; color:#25483e; padding:4px 9px; font-size:12px; }
+.current { background:#fff0f1; border-color:#f4c8cc; color:#ac3541; }
+.events { display:grid; gap:14px; margin:0 0 18px 5px; padding-left:20px; border-left:2px solid #e3eee9; }
+.events>li { position:relative; display:grid; gap:5px; font-size:16px; line-height:1.5; }
+.events>li::before { content:''; position:absolute; width:10px; height:10px; border:2px solid #8ed7c5; border-radius:50%; background:white; left:-28px; top:6px; }
+.events time { font-size:13px; color:#73717d; }
+.evidence>summary { display:flex; align-items:center; gap:8px; cursor:pointer; }
+.evidence>div { margin-top:12px; }
+.evidence p { font-size:14px; line-height:1.5; }
+.photos { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.photos a { position:relative; }
+.photos img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:12px; display:block; }
+.photos span { position:absolute; bottom:7px; left:7px; background:white; padding:3px 8px; border-radius:99px; color:#292832; font-size:12px; }
+.reportLink { display:inline-block; margin:0 0 16px 25px; font-size:13px; color:#5744d9; }
+.notice { display:flex; align-items:center; gap:12px; background:#f1edff; border:1px solid #ded6ff; border-radius:12px; padding:14px; margin-bottom:16px; font-size:14px; }
+.notice button { margin-left:auto; display:flex; background:none; border:0; padding:6px; color:inherit; cursor:pointer; }
+.retry { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:20px; }
+.activity button:focus-visible,.activity summary:focus-visible { outline:3px solid #a99cf2; outline-offset:4px; }
+@media(max-width:440px) { .round { gap:8px; }.round strong { font-size:13px; }.current,.cleaned { font-size:11px; padding:4px 7px; } }

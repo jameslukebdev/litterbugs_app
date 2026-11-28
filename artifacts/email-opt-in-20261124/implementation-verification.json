@@ -1,0 +1,32 @@
+{
+  "source_checkpoints": [
+    "db31a0b",
+    "05dab6b",
+    "8094f48"
+  ],
+  "deployed": false,
+  "migration_applied_to_hosted": false,
+  "emails_sent": 0,
+  "web_tests": 19,
+  "contract_tests": 3,
+  "native_tests": 52,
+  "native_source_modules": 232,
+  "web_production_build": "passed",
+  "web_typecheck": "passed",
+  "database_verification": "passed disposable PostgreSQL17",
+  "known_baseline_failure": "account-dialog draft deletion; reproduced without feature edit",
+  "native_exports": {
+    "ios": [
+      {
+        "file": "/tmp/litterbugs-email-implementation/ios-export/_expo/static/js/ios/index-1ab9d94ee9ea3dc538268cb58c99366b.hbc",
+        "sha256": "3ff4d966c997cc6bcb3b6456b4c53918119c4ca03a6393f3260197f0f3623fe6"
+      }
+    ],
+    "android": [
+      {
+        "file": "/tmp/litterbugs-email-implementation/android-export/_expo/static/js/android/index-aec003d9041dc414efd440e555571363.hbc",
+        "sha256": "c7e3cfd37592e08ca29e984f7615013b4bc275e7592fcde0a68efba5c0ab4b03"
+      }
+    ]
+  }
+}

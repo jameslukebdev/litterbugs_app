@@ -14,6 +14,22 @@ It does not authorize App Store or Google Play publication.
   enabled and the exact-address rule forwards to the previously verified
   `grant@burrowbase.com` business inbox. The catch-all remains disabled.
 
+## Admin email forwarding — October 21, 2026
+
+- `admin@litterbugs.app` routes to the Cloudflare Worker
+  `litterbugs-admin-email-forwarder`, maintained in
+  `services/admin-email-forwarder/`.
+- The only destinations are `gegibson@icloud.com` and
+  `jameslukeb.evj@gmail.com`. Both were verified in Cloudflare before completion.
+- Each destination is attempted independently. One failed destination does not
+  prevent the other copy. If both fail, the Worker reports failure. Message
+  contents and sender details are not logged.
+- This is incoming forwarding, not a hosted shared mailbox or send-as setup.
+  No Zoho account or paid email subscription was created. The existing support
+  rule remains active for published app and website contact links.
+- Verified deployment and active routing configuration; actual mailbox delivery
+  has not been tested end to end.
+
 ## Primary ownership
 
 | Queue | Primary | Backup |

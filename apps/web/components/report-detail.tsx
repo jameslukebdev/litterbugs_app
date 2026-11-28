@@ -1,6 +1,5 @@
 'use client';
 import { AppLink } from '@/components/app-link';
-import { reportContext } from '@/lib/report-context';
 
 import { moveDialogFocus } from '@/lib/dialog-focus';
 import Link from 'next/link';
@@ -8,16 +7,24 @@ import Link from 'next/link';
 /* eslint-disable @next/next/no-img-element -- Signed Supabase URLs are short-lived runtime images. */
 
 import { useEffect, useRef, useState } from 'react';
+import { DeleteReportConfirm, dangerTriggerClass } from '@/components/decision-panels';
+import { FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import styles from './report-detail.module.css';
 import type { Report } from '@litterbugs/report-contract';
 
 import { isReportClosed } from '@/lib/report-visibility';
 import { useReportSheetDismiss } from '@/components/use-report-sheet-dismiss';
-import { ModalShell } from '@/components/modal-shell';
-import { CompletedCleanup } from '@/components/completed-cleanup';
+import { PhotoExpandButton, ReportPhotoViewer } from '@/components/report-photo-viewer';
+import { AfterPhotos, CompletedCleanup, useCleanupImpact } from '@/components/completed-cleanup';
 import { ReportAuthor } from '@/components/report-author';
+import { ReportIssueAccess } from '@/components/cleanup-issue-tools';
+import { cleanupIssuesEnabled } from '@/lib/cleanup-issues';
+import { ReportSiteActivity } from '@/components/report-site-activity';
 import { CleanupAction } from '@/components/cleanup-action';
 import { CleanupReviewAction } from '@/components/cleanup-review-action';
 import { FundingContributionAction } from '@/components/funding-contribution-action';
+import { ContributionSupporters } from '@/components/contribution-supporters';
+import type { WithContributorCredit } from '@/lib/contributor-credit';
 import { Icon } from '@/components/icon';
 import { PayoutSetupAction } from '@/components/payout-setup-action';
 import { ReportShareDialog } from '@/components/report-share-dialog';
@@ -25,6 +32,8 @@ import { isPubliclyShareableReport } from '@/lib/public-report-share-model';
 import { reportShareCopy } from '@/lib/report-share-destinations';
 import { retryReportPhotoUrl, getReportCardPhotoUrl, getReportDetailPhotoUrl, getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
+import { useBecame, useFundFlight } from '@/components/bug-motion';
+import { replayClass, scurryFrom } from '@/lib/bug-motion';
 
 const EMPTY_PHOTO_PATHS: string[] = [];
 
@@ -50,9 +59,12 @@ function cleanupStatusLabel(status: string) {
 
 export function ReportDetail({
   report,
+  entryIntent,
+  closeLabel = 'Close report and return to map',
   embedded = false,
   inline = false,
   taskBase,
+  isActiveCleaner=false,
   isOwner,
   onClose,
   onEdit,
@@ -66,14 +78,17 @@ export function ReportDetail({
   onHiddenChange,
   onNotify,
 }: {
-  report: Report;
+  report: WithContributorCredit<Report>;
+  entryIntent?: string | null;
+  closeLabel?: string;
   embedded?: boolean;
   inline?: boolean;
   taskBase?: string;
+  isActiveCleaner?:boolean;
   isOwner: boolean;
   onClose: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<void>;
   userId?: string | null;
   onRequireSignIn?: (intent?: 'clean' | 'fund') => void;
   onReportChanged?: () => void | Promise<void>;
@@ -91,7 +106,38 @@ export function ReportDetail({
   const [expandedLayout, setExpandedLayout] = useState(false);
   useReportSheetDismiss(dialogRef, closeRef, !embedded && (!inline || expandedLayout));
   const [photoExpanded, setPhotoExpanded] = useState(false);
-  const [photoZoomed, setPhotoZoomed] = useState(false);
+  // Remembered per report, so opening another report starts on its after photo again.
+  const [photoChoice, setPhotoChoice] = useState<{ id: string; side: 'after' | 'before' }>({ id: report.id, side: 'after' });
+  const photoSide = photoChoice.id === report.id ? photoChoice.side : 'after';
+  const setPhotoSide = (side: 'after' | 'before') => setPhotoChoice({ id: report.id, side });
+  // Keep the report URL intact while giving the photo its own Back/Forward step.
+  useEffect(() => {
+    const restorePhoto = () => {
+      const state = window.history.state;
+      const open = state?.litterbugsPhotoReport === report.id;
+      const side = state?.litterbugsPhotoSide;
+      if (open && (side === 'before' || side === 'after')) setPhotoChoice({ id: report.id, side });
+      setPhotoExpanded(open);
+    };
+    window.addEventListener('popstate', restorePhoto);
+    return () => window.removeEventListener('popstate', restorePhoto);
+  }, [report.id]);
+
+  function openPhoto(side: 'before' | 'after') {
+    if (window.history.state?.litterbugsPhotoReport !== report.id) {
+      window.history.pushState({ ...window.history.state, litterbugsPhotoReport: report.id, litterbugsPhotoSide: side }, '', window.location.href);
+    }
+    setPhotoSide(side);
+    setPhotoExpanded(true);
+  }
+
+  function closePhoto() {
+    if (window.history.state?.litterbugsPhotoReport === report.id) window.history.back();
+    else setPhotoExpanded(false);
+  }
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoRetry, setPhotoRetry] = useState(0);
   type ReadyPhoto = { reportId: string; src: string; index: number };
@@ -133,7 +179,13 @@ export function ReportDetail({
   function selectPhoto(index: number) {
     setRetainedPhoto(readyPhotoRef.current?.reportId === report.id ? readyPhotoRef.current : null);
     setPhotoIndex(index);
-    setPhotoZoomed(false);
+  }
+
+  function retryPhoto() {
+    setRenderedPhoto({ path: '', loaded: false, failed: false });
+    setRenderedPreview({ path: '', loaded: false, failed: false });
+    setSignedPhoto({ path: '', src: null, failed: false });
+    setPhotoRetry(value => value + 1);
   }
 
   useEffect(() => {
@@ -172,6 +224,21 @@ export function ReportDetail({
 
   const [openedAt] = useState(() => Date.now());
   const closed = isReportClosed(report, openedAt);
+  // Cleaned-up reports lead with the after photo; the switch flips the same frame to the before photo.
+  const cleanup = useCleanupImpact(report.cleanup_state === 'completed' ? report.id : null);
+  const hasAfterPhotos = report.cleanup_state === 'completed' && (cleanup.impact?.photoPaths.length ?? 0) > 0;
+  const showAfter = hasAfterPhotos && photoSide === 'after';
+  // Same bugs and colours as the map pins: ladybug = needs a cleanup, caterpillar = being cleaned, flower = cleaned up.
+  // Bug motion: the status bug blooms when this report becomes a finished cleanup while it's open; the fund counts
+  // up after the bee flies in; the After switch's flower opens when chosen.
+  const bloomCount = useBecame(report.id, report.cleanup_state, (next, previous) => next === 'completed' && previous !== 'completed');
+  const fundLine = useRef<HTMLSpanElement>(null);
+  const shownFund = useFundFlight(report.id, report.funded_amount_cents, fundLine);
+  const [afterBloom, setAfterBloom] = useState(0);
+  const statusView = closed ? { tone: 'muted', bug: '' }
+    : report.cleanup_state === 'completed' ? { tone: 'done', bug: '/brand/bugs/flower.png' }
+    : report.cleanup_state === 'available' ? { tone: 'open', bug: '/brand/bugs/ladybug.png' }
+    : { tone: 'busy', bug: '/brand/ranks/caterpillar.svg' };
   const severity = report.severity ?? 'Medium';
   const hasLitterTypes = Boolean(report.litter_types?.length || report.types);
   const shareable = isPubliclyShareableReport(report);
@@ -226,6 +293,13 @@ export function ReportDetail({
   }, [embedded, inline, expandedLayout]);
 
   useEffect(() => {
+    if (entryIntent !== 'fund' && entryIntent !== 'clean') return;
+    const footer = dialogRef.current?.querySelector<HTMLElement>('footer');
+    footer?.scrollIntoView?.({ block: 'nearest' });
+    footer?.focus({ preventScroll: true });
+  }, [entryIntent, report.id]);
+
+  useEffect(() => {
     if (!actionStatus) return;
     const timeout = window.setTimeout(() => setActionStatus(''), 3000);
     return () => window.clearTimeout(timeout);
@@ -261,32 +335,16 @@ export function ReportDetail({
     window.requestAnimationFrame(() => shareButtonRef.current?.focus());
   }
 
-  return (
-    <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <aside
-        ref={dialogRef}
-        className={`report-detail${photoPaths.length ? '' : ' report-detail-without-photo'}`}
-        role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
-        aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
-        tabIndex={-1}
-        aria-labelledby="report-detail-title"
-      >
-        {!embedded && (!inline || expandedLayout) && <button
-          type="button"
-          className="report-detail-dismiss-handle"
-          aria-label="Close report and return to map"
-          title="Swipe down or tap to return to map"
-          onClick={onClose}
-        ><span aria-hidden /></button>}
-        <header className="report-detail-toolbar">
-          <button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
+  const reportToolbar=(
+    <header className="report-detail-toolbar">
+          {!taskBase&&<button ref={backButtonRef} type="button" className="report-detail-toolbar-back" onClick={onClose}>
             <Icon name="chevron-left" />
-            <span>Back</span>
-          </button>
-          {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout}>{expandedLayout ? 'Compact view' : 'Larger view'}</button>}
+            <span>{closeLabel.includes('community') ? 'Back to community' : 'Back to map'}</span>
+          </button>}
+          {!embedded && <button className="report-layout-toggle" onClick={() => setExpandedLayout(value => !value)} aria-pressed={expandedLayout} aria-label={expandedLayout ? 'Compact view' : 'Larger view'} title={expandedLayout ? 'Compact view' : 'Larger view'}>{expandedLayout ? <FiMinimize2 aria-hidden="true" /> : <FiMaximize2 aria-hidden="true" />}</button>}
           <img className="report-detail-toolbar-logo" src="/brand/litterbugs-logo.png" alt="" aria-hidden />
           <nav className="report-detail-toolbar-actions" aria-label="Report actions">
-            {onFavoriteChange && <button type="button" aria-pressed={favorite} onClick={() => onFavoriteChange?.(!favorite)}>
+            {onFavoriteChange && <button type="button" aria-pressed={favorite} title={favorite ? 'Saved' : 'Favorite'} onClick={event => { if (!favorite) replayClass(event.currentTarget, 'bug-heart-pop'); onFavoriteChange?.(!favorite); }}>
               <Icon name="heart" />
               <span>{favorite ? 'Saved' : 'Favorite'}</span>
             </button>}
@@ -296,36 +354,51 @@ export function ReportDetail({
                 type="button"
                 aria-haspopup="dialog"
                 aria-expanded={shareDialogOpen}
+                title={report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}
                 onClick={() => { void shareReport(); }}
               >
                 <Icon name="share" />
-                <span>{shareCopy.actionLabel}</span>
+                <span>{report.cleanup_state === 'completed' ? 'Share cleanup' : shareCopy.actionLabel}</span>
               </button>
             )}
-            {onHiddenChange && <button type="button" aria-pressed={hidden} onClick={() => onHiddenChange?.(!hidden)}>
+            {onHiddenChange && <button type="button" aria-pressed={hidden} title={hidden ? 'Hidden' : 'Hide'} onClick={event => { if (!hidden) scurryFrom(event.currentTarget); onHiddenChange?.(!hidden); }}>
               <Icon name="eye-off" />
               <span>{hidden ? 'Hidden' : 'Hide'}</span>
             </button>}
           </nav>
           {actionStatus && <span className="report-detail-toolbar-status" role="status">{actionStatus}</span>}
         </header>
+  );
+
+  return (
+    <div className={embedded ? "report-detail-embedded" : inline && !expandedLayout ? "report-detail-pane report-detail-context" : `report-detail-backdrop${expandedLayout ? ' report-detail-expanded' : ' report-detail-context'}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <aside
+        ref={dialogRef}
+        className={`report-detail ${styles.v2}${photoPaths.length ? '' : ' report-detail-without-photo'}`}
+        role={embedded || (inline && !expandedLayout) ? "region" : "dialog"}
+        aria-modal={embedded || (inline && !expandedLayout) ? undefined : true}
+        tabIndex={-1}
+        aria-labelledby="report-detail-title"
+      >
+        {!embedded && (!inline || expandedLayout) && <button
+          type="button"
+          className="report-detail-dismiss-handle"
+          aria-label={closeLabel}
+          title="Swipe down or tap to return to map"
+          onClick={onClose}
+        ><span aria-hidden /></button>}
+        {!taskBase&&reportToolbar}
         <div className="report-detail-layout">
-              <header className="report-detail-header">
-                  <h2 id="report-detail-title">{report.title || 'Litter Report'}</h2><p className="report-context">{reportContext(report)}</p>
-                <div className="report-summary-line">
-                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity}</span>
-                  {report.created_at && <span>{formatDate(report.created_at)}</span>}
-                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Expires {formatDate(report.expires_at)}</span>}
-                </div>
-                <div className="report-status-row">
-                  <span>{closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}</span>
-                  {report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <strong>{formatUsd(report.funded_amount_cents)} reward</strong>}
-                </div>
-                <AppLink reportId={report.id} className="report-open-app">Open in app ↗</AppLink>
-              </header>
           <div className="report-detail-visual">
-            <div className="report-photo-region" aria-busy={photoPaths.length > 0 && !photoLoaded && !photoFailed}>
-              {photoSrc && (photoLoaded || retained) && !photoFailed && <button disabled={!photoLoaded} className="photo-expand-button" onClick={() => { setPhotoExpanded(true); setPhotoZoomed(false); }}>View full photo</button>}
+            {hasAfterPhotos && photoPaths.length > 0 && <div className={styles.sideSwitch} role="group" aria-label="Choose photos">
+              <button type="button" aria-pressed={photoSide === 'after'} data-side="after" onClick={() => { if (photoSide !== 'after') setAfterBloom(value => value + 1); setPhotoSide('after'); }}><img key={afterBloom} className={afterBloom ? 'bug-switch-bloom' : undefined} src="/brand/bugs/flower.png" alt="" aria-hidden="true" width={16} height={16} />After cleanup</button>
+              <button type="button" aria-pressed={photoSide === 'before'} data-side="before" onClick={() => setPhotoSide('before')}><img src="/brand/bugs/ladybug.png" alt="" aria-hidden="true" width={16} height={16} />Before</button>
+            </div>}
+            <div className="report-photo-region" aria-busy={showAfter ? undefined : photoPaths.length > 0 && !photoLoaded && !photoFailed}>
+              {/* The switch already names the photo; label it only when there is no switch (no after photos). */}
+              {report.cleanup_state === 'completed' && !hasAfterPhotos && photoPaths.length > 0 && <span className={styles.sideLabel} data-side="before">Before cleanup</span>}
+              {showAfter ? <AfterPhotos key={report.id} reportId={report.id} paths={cleanup.impact!.photoPaths} fill viewer={{ open: photoExpanded, onOpen: () => openPhoto('after'), onClose: closePhoto }} /> : <>
+              {photoSrc && (photoLoaded || retained) && !photoFailed && <PhotoExpandButton disabled={!photoLoaded} onClick={() => openPhoto('before')} />}
               {photoPaths.length ? (
                 <>
                   {retained && retained.src !== photoSrc && <img key={retained.src} className={`report-photo report-photo-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}
@@ -357,12 +430,7 @@ export function ReportDetail({
                   {photoFailed && !previewLoaded && !retained && <div className="photo-placeholder photo-placeholder-overlay"><Icon name="image" /><strong>Photo unavailable</strong><span>This photo could not be displayed.</span></div>}
                   {photoFailed && <div className="report-photo-recovery" role="status">
                     <span>{retained ? 'Photo could not load. Previous photo shown.' : previewLoaded ? 'Full-size photo unavailable. Preview shown.' : 'Photo could not load.'}</span>
-                    <button className="secondary-button compact-button" onClick={() => {
-                      setRenderedPhoto({ path: '', loaded: false, failed: false });
-                      setRenderedPreview({ path: '', loaded: false, failed: false });
-                      setSignedPhoto({ path: '', src: null, failed: false });
-                      setPhotoRetry(value => value + 1);
-                    }}>Retry photo</button>
+                    <button className="secondary-button compact-button" onClick={retryPhoto}>Retry photo</button>
                   </div>}
                   {photoPaths.length > 1 && (
                     <>
@@ -375,11 +443,28 @@ export function ReportDetail({
               ) : (
                 <div className="photo-placeholder"><Icon name="image" /><strong>No photo added</strong><span>This report was submitted without a photo.</span></div>
               )}
+              </>}
             </div>
           </div>
 
           <div className="report-detail-panel">
             <div className="report-detail-scroll">
+              <header className="report-detail-header">
+                <div className={taskBase?styles.accountTitleRow:undefined}><h2 id="report-detail-title">{report.title || 'Litter Report'}</h2>{taskBase&&reportToolbar}</div>
+                <p className={styles.status} data-tone={statusView.tone}>
+                  {statusView.bug ? <img key={bloomCount} className={statusView.tone === 'done' && bloomCount ? 'bug-bloom' : undefined} src={statusView.bug} alt="" aria-hidden="true" width={18} height={18} /> : null}
+                  {closed ? 'Report closed' : cleanupStatusLabel(report.cleanup_state)}
+                </p>
+                {!closed && report.cleanup_state !== 'completed' && report.funded_amount_cents > 0 && <p className={styles.fund}><img src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} /><span><span ref={fundLine}>{formatUsd(shownFund)}</span> in its cleanup fund</span></p>}
+                <p className={styles.meta}>
+                  <span className={`report-detail-severity report-detail-severity-${severity.toLowerCase()}`}><span />{severity} priority</span>
+                  {report.created_at && <span>Reported {formatDate(report.created_at)}</span>}
+                  {!closed && report.cleanup_state === 'available' && report.expires_at && <span>Open until {formatDate(report.expires_at)}</span>}
+                </p>
+                <div className={`${styles.byline} ${styles.headerByline}`}><ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} /></div>
+                <div className={styles.siteActions}><ReportSiteActivity key={`${report.id}-actions`} reportId={report.id} mode="actions" /></div>
+              </header>
+              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} cleanup={cleanup} showPhotos={!hasAfterPhotos} />}
 
 
 
@@ -388,21 +473,32 @@ export function ReportDetail({
                 {hasLitterTypes && <p className="report-detail-fact"><strong>Litter</strong><span>{[...(report.litter_types ?? []), ...(report.types ? [report.types] : [])].join(', ')}</span></p>}
                 {!!report.notes_presets?.length && <p className="report-detail-fact"><strong>Notes</strong><span>{report.notes_presets.join(', ')}</span></p>}
                 {report.notes_other && <p className="report-detail-fact"><strong>Details</strong><span>{report.notes_other}</span></p>}
+                {(report as typeof report & {additional_information?:string|null}).additional_information&&<p className="report-detail-fact"><strong>Additional information</strong><span>{(report as typeof report & {additional_information?:string|null}).additional_information}</span></p>}
+                {cleanupIssuesEnabled&&taskBase&&<ReportIssueAccess reportId={report.id} userId={userId}/>}
+
+                {(!closed || report.cleanup_state === 'completed') && <ContributionSupporters reportId={report.id} initialCredit={report.contributorCredit} />}
+                {!taskBase && !closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <div className={styles.payout}><span>Cleaning this up? Set up payouts so you can get paid.</span><PayoutSetupAction compact /></div>}
+                <div className={styles.siteHistory}>{!taskBase&&<ReportSiteActivity key={`${report.id}-timeline`} reportId={report.id} mode="timeline" />}</div>
+                <p className={styles.footnote}><AppLink reportId={report.id} className="report-open-app">Open in the app</AppLink><span aria-hidden="true"> · </span><span>Report ID {report.id.slice(0, 8)}</span></p>
               </div>
-              <ReportAuthor profileId={report.user_id} sourceReportId={report.id} onBlocked={() => { onClose(); void onReportChanged?.(); }} />
-              {report.cleanup_state === 'completed' && <CompletedCleanup key={report.id} reportId={report.id} />}
             </div>
 
-            <footer className="report-detail-footer">
-              {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="danger-button compact-button" onClick={onDelete}><Icon name="trash" />Delete</button>}
-              {onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
+            <footer className="report-detail-footer" tabIndex={entryIntent ? -1 : undefined} aria-label="Cleanup and funding options">
+              {confirmingDelete && onDelete ? <DeleteReportConfirm busy={deleting} onCancel={() => setConfirmingDelete(false)} onConfirm={() => {
+                setDeleting(true);
+                void Promise.resolve(onDelete()).finally(() => { setDeleting(false); setConfirmingDelete(false); });
+              }} /> : <>
+              {onDelete && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className={`danger-button compact-button ${dangerTriggerClass}`} onClick={() => setConfirmingDelete(true)}><Icon name="trash" />Delete</button>}
+              {cleanupIssuesEnabled&&isOwner&&!closed&&['available','claimed'].includes(report.cleanup_state??'')&&<Link className="secondary-button compact-button" href={`/account/reports/${report.id}/edit`}>Edit report</Link>}
+              {!cleanupIssuesEnabled&&onEdit && isOwner && !closed && report.cleanup_state === 'available' && !report.funding_locked_at && <button className="secondary-button compact-button" onClick={onEdit}><Icon name="edit" />Edit</button>}
               {taskBase && isOwner && !closed && report.cleanup_state === 'completion_submitted' ? <Link className="secondary-button" href={`${taskBase}&task=review`}>Review cleanup</Link> : <CleanupReviewAction report={report} userId={userId} isOwner={isOwner} onChanged={onReportChanged} />}
-              <FundingContributionAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
-              {!closed && userId && report.funded_amount_cents > 0 && report.cleanup_state !== 'completed' && <PayoutSetupAction compact />}
-              {!closed && (taskBase ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Open cleanup workspace</Link> : <CleanupAction report={report} userId={userId} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
+              <FundingContributionAction report={report} userId={userId} autoOpen={entryIntent === 'fund'} onRequireSignIn={() => onRequireSignIn?.('fund')} onChanged={onReportChanged} />
+              {!closed && (taskBase&&isActiveCleaner ? <Link className="primary-button" href={`${taskBase}&task=cleanup`}>Continue cleanup</Link> : <CleanupAction showIssueShortcut={!taskBase} report={report} userId={userId} autoOpen={entryIntent === 'clean'} onRequireSignIn={() => onRequireSignIn?.('clean')} onChanged={onReportChanged} />)}
+              </>}
             </footer>
           </div>
         </div>
+        {taskBase&&<div className={styles.accountHistory}><ReportSiteActivity key={`${report.id}-account-timeline`} reportId={report.id} mode="timeline" /></div>}
         <ReportShareDialog
           open={shareDialogOpen}
           report={report}
@@ -411,7 +507,13 @@ export function ReportDetail({
           onClose={closeShareDialog}
           onShared={() => notify('Report shared.')}
         />
-        {photoExpanded && photoSrc && <ModalShell onClose={() => setPhotoExpanded(false)} label="Report photo viewer" className="photo-viewer-dialog"><h2>Photo {visiblePhotoIndex + 1} of {photoPaths.length}</h2><button className="secondary-button" onClick={() => setPhotoZoomed(value => !value)}>{photoZoomed ? 'Fit photo' : 'Zoom in'}</button><div className={`photo-viewer-image${photoZoomed ? ' zoomed' : ''}`}><>{retained && retained.src !== photoSrc && <img key={retained.src} className={`photo-viewer-retained${photoLoaded ? ' report-photo-loading' : ''}`} src={retained.src} alt="" aria-hidden="true" />}<img key={photoSrc} className={photoLoaded ? 'photo-viewer-current' : 'photo-viewer-current report-photo-loading'} src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} /></></div>{photoPaths.length > 1 && <div className="photo-viewer-controls"><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + photoPaths.length - 1) % photoPaths.length); }}>Previous photo</button><button className="secondary-button" onClick={() => { selectPhoto((displayedPhotoIndex + 1) % photoPaths.length); }}>Next photo</button></div>}</ModalShell>}
+        {photoExpanded && !showAfter && photoPaths.length > 0 && <ReportPhotoViewer
+          number={visiblePhotoIndex + 1} count={photoPaths.length}
+          src={photoSrc} alt={`Report photo ${displayedPhotoIndex + 1}`} previousSrc={retained?.src}
+          loading={!photoLoaded && !photoFailed} failed={photoFailed}
+          onStep={step => selectPhoto((displayedPhotoIndex + step + photoPaths.length) % photoPaths.length)}
+          onClose={closePhoto} onRetry={retryPhoto}
+        />}
       </aside>
     </div>
   );

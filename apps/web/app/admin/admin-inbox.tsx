@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { cleanupIssuesEnabled, issueHref } from '@/lib/cleanup-issues';
 
 import { getWebCompatibleReportPhotoUrl } from '@/lib/report-photo';
 import { createClient } from '@/lib/supabase/client';
@@ -24,7 +26,7 @@ type AdminCase = {
 
 type CaseDetail = {
   case: AdminCase & { context?: Record<string, unknown> };
-  report: { title?: string | null; severity?: string | null; funding_eligibility?: string; funding_hold_reason?: string | null; cancelled_at?: string | null; photo_paths?: string[] | null } | null;
+  report: { title?: string | null; severity?: string | null; funding_eligibility?: string; funding_hold_reason?: string | null; cancelled_at?: string | null; expired_at?: string | null; cleanup_state?: string | null; photo_paths?: string[] | null } | null;
   attempt: { reward_amount_cents?: number; financial_review_summary?: string | null; financial_review_status?: string; dispute_reason?: string | null; dispute_status?: string; first_paid_cleanup?: boolean; payout_status?: string } | null;
   contribution: { principal_amount_cents?: number; platform_fee_cents?: number; total_amount_cents?: number; status?: string; failure_code?: string | null } | null;
   cleaner_history: { completed_cleanups?: number; paid_rewards_sent?: number } | null;
@@ -120,9 +122,32 @@ export function adminDecisionSuccessMessage(action: string) {
 }
 
 async function invokeAdmin(body: Record<string, unknown>) {
+  if(process.env.NODE_ENV==='development'&&cleanupIssuesEnabled&&['127.0.0.1','localhost'].includes(window.location.hostname)){
+    const response=await fetch('/api/local/cleanup-issues/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await response.json();if(!response.ok||data?.error)throw new Error(data?.error||'Local review could not be loaded.');return data;
+  }
   const { data, error } = await createClient().functions.invoke('admin-cleanup-case', { body });
-  if (error || data?.error) throw new Error(data?.error || error?.message || 'Admin request failed');
+  if (error) {
+    // Show the server's own explanation, not the library's "Edge Function returned a non-2xx status code".
+    const reply = await (error as { context?: Response }).context?.clone().json().catch(() => null) as { error?: string } | null | undefined;
+    throw new Error(reply?.error || 'The admin action could not be completed. Please try again.');
+  }
+  if (data?.error) throw new Error(data.error);
   return data;
+}
+
+/** A report whose cleanup is complete (or that is already closed) can't be closed for refunds; the database refuses it. */
+export function closeBlockedReason(detail: Pick<CaseDetail, 'report'>) {
+  if (detail.report?.cleanup_state === 'completed') return 'This report’s cleanup is already complete, so it can’t be closed for refunds.';
+  if (detail.report?.cancelled_at) return 'This report is already closed.';
+  return null;
+}
+
+export function availableActions(detail: Pick<CaseDetail, 'case' | 'report'>) {
+  const closeBlocked = Boolean(closeBlockedReason(detail));
+  return (actions[detail.case.case_type] ?? [])
+    .filter((action) => action.value !== 'remove_report' || Boolean(detail.report))
+    .filter((action) => action.value !== 'close_and_refund' || !closeBlocked);
 }
 
 export function AdminInbox() {
@@ -173,11 +198,18 @@ export function AdminInbox() {
     setType(nextType);
   }
 
+  // The chosen decision waits here for a second, in-page confirmation (no browser pop-up).
+  const [confirming, setConfirming] = useState<{ value: string; label: string; destructive?: boolean } | null>(null);
+
   async function openCase(item: AdminCase) {
     setDetailLoading(true);
+    setConfirming(null);
     setMessage('');
     try {
-      setSelected(await invokeAdmin({ operation: 'get', caseId: item.id }) as CaseDetail);
+      const detail=await invokeAdmin({ operation: 'get', caseId: item.id }) as CaseDetail;
+      const issueId=detail.case.context?.cleanup_issue_id;
+      if(cleanupIssuesEnabled&&typeof issueId==='string'){window.location.assign(issueHref(issueId));return;}
+      setSelected(detail);
       setReason('');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Case unavailable');
@@ -186,7 +218,7 @@ export function AdminInbox() {
 
   async function resolve(action: { value: string; label: string; destructive?: boolean }) {
     if (!selected || reason.trim().length < 3) return setMessage('Add a short decision reason first.');
-    if (!window.confirm(`${action.label}? This decision is recorded in the audit history.`)) return;
+    setConfirming(null);
     setBusy(action.value);
     setMessage('');
     try {
@@ -255,6 +287,10 @@ export function AdminInbox() {
               </p>
             </div>
 
+            {cleanupIssuesEnabled && typeof selected.case.context?.cleanup_issue_id === 'string' ? (
+              <Link href={issueHref(selected.case.context.cleanup_issue_id)} className={styles.primaryButton}>Review cleanup issue</Link>
+            ) : null}
+
             {selected.case.case_type === 'user_moderation' ? (
               <div className={styles.summaryCard}>
                 <h3>Member’s concern</h3>
@@ -321,18 +357,30 @@ export function AdminInbox() {
               <div className={styles.summaryCard}><h3>Cleaner’s description</h3><p>{selected.submissions.at(-1)?.description}</p></div>
             ) : null}
 
-            {selected.case.status === 'open' ? (
+            {selected.case.status === 'open' && !(cleanupIssuesEnabled && typeof selected.case.context?.cleanup_issue_id === 'string') ? (
               <div className={styles.decisionPanel}>
                 <p>{decisionGuidance[selected.case.case_type]}</p>
                 <label>Why are you making this decision? <span className={styles.required}>Required</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} minLength={3} required aria-required="true" placeholder="Describe the photos, payment information, or safety facts that support your choice." /></label>
                 <p className={styles.decisionHint}>Enter at least 3 characters to enable a decision.</p>
-                <div className={styles.actionGrid}>
-                  {(actions[selected.case.case_type] ?? []).filter((action) => action.value !== 'remove_report' || Boolean(selected.report)).map((action) => (
-                    <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(action)} disabled={Boolean(busy) || reason.trim().length < 3}>
-                      {busy === action.value ? 'Saving…' : action.label}
-                    </button>
-                  ))}
-                </div>
+                {(actions[selected.case.case_type] ?? []).some((action) => action.value === 'close_and_refund') && closeBlockedReason(selected)
+                  ? <p className={styles.decisionHint}>{closeBlockedReason(selected)} Allow or block funding to resolve this case.</p> : null}
+                {confirming ? (
+                  <div className={styles.confirm} role="group" aria-label="Confirm decision">
+                    <p><strong>{confirming.label}?</strong> This decision is recorded in the audit history with your reason.</p>
+                    <div className={styles.actionGrid}>
+                      <button className={confirming.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => void resolve(confirming)} disabled={Boolean(busy)}>Yes, {confirming.label.charAt(0).toLowerCase() + confirming.label.slice(1)}</button>
+                      <button className={styles.secondaryButton} onClick={() => setConfirming(null)} disabled={Boolean(busy)}>Go back</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.actionGrid}>
+                    {availableActions(selected).map((action) => (
+                      <button key={action.value} className={action.destructive ? styles.dangerButton : styles.primaryButton} onClick={() => { setMessage(''); setConfirming(action); }} disabled={Boolean(busy) || reason.trim().length < 3}>
+                        {busy === action.value ? 'Saving…' : action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className={styles.history}>

@@ -15,7 +15,7 @@ describe('cleanup notifications', () => {
     expect(cleanupNotificationPresentation([{ event_type: 'claim_expired' }]).message)
       .toContain('expired');
     expect(cleanupNotificationPresentation([{ event_type: 'completion_submitted' }]).message)
-      .toContain('submitted');
+      .toContain('before and after photos');
     expect(cleanupNotificationPresentation([{ event_type: 'changes_requested' }]).message)
       .toContain('Changes');
     expect(cleanupNotificationPresentation([{ event_type: 'cleanup_approved' }]).message)
@@ -48,6 +48,22 @@ describe('cleanup notifications', () => {
       .toContain('can now accept contributions');
     expect(cleanupNotificationPresentation([{ event_type: 'report_funding_rejected' }]).message)
       .toContain('cannot accept');
+    expect(cleanupNotificationPresentation([{ event_type: 'nearby_reports_daily' }])).toEqual({
+      title: 'New litter near you',
+      message: 'New litter reports are available in your area for funding and cleanup.',
+    });
+  });
+
+  it('tells a reporter a payout is waiting and opens payout setup', () => {
+    expect(cleanupNotificationPresentation([{ event_type: 'reporter_payout_waiting' }]).title).toBe('A payout is waiting for you');
+    expect(cleanupNotificationDestination({ event_type: 'reporter_payout_waiting', report_id: 'r1', cleanup_attempt_id: 'c1' })).toMatchObject({ name: 'PayoutSetup' });
+  });
+
+  it('opens the map near the person for the daily nearby alert, and earnings for a sent reward', () => {
+    expect(cleanupNotificationDestination({ eventType: 'nearby_reports_daily', notificationId: 'n' }))
+      .toEqual({ name: 'App', label: 'See new reports', params: { screen: 'Map', params: { showNearby: true } } });
+    expect(cleanupNotificationDestination({ event_type: 'cleanup_reward_sent', report_id: 'report', cleanup_attempt_id: 'cleanup' }))
+      .toMatchObject({ name: 'Payments' });
   });
 
   it('routes review and feedback events to dedicated screens', () => {
@@ -142,4 +158,30 @@ describe('contributor completion and serious exception notifications', () => {
   it('opens the admin inbox for cleanup and payment exceptions, including a missing report', () => {
     expect(cleanupNotificationDestination({ event_type: 'admin_cleanup_needed' })).toEqual({ url: 'https://litterbugs.app/admin', label: 'Open admin inbox' });
   });
+});
+
+describe('notification wording matches the phone push', () => {
+  it('shows the same title and message in Updates as the push sends, for every notification', async () => {
+    const { CLEANUP_NOTIFICATION_COPY } = await import('./cleanupNotifications');
+    const { NOTIFICATION_EVENT_TYPES, notificationContent } = await import('../../../supabase/functions/_shared/notification-content.ts');
+    for (const eventType of NOTIFICATION_EVENT_TYPES) {
+      expect(CLEANUP_NOTIFICATION_COPY[eventType], eventType).toBeDefined();
+      expect({ title: CLEANUP_NOTIFICATION_COPY[eventType].title, body: CLEANUP_NOTIFICATION_COPY[eventType].message }, eventType)
+        .toEqual(notificationContent(eventType));
+    }
+  });
+
+  it('opens the completed cleanup when tapped', () => {
+    expect(cleanupNotificationDestination({ event_type: 'cleanup_completed_nearby', report_id: 'report', cleanup_attempt_id: 'cleanup' }))
+      .toMatchObject({ name: 'App', params: { screen: 'Map', params: { reportId: 'report' } } });
+  });
+});
+
+it('shows who tipped, how much and their note, and opens Payments', () => {
+  expect(cleanupNotificationPresentation([{ event_type: 'tip_received', tip: { tip_amount_cents: 500, tipper_name: 'Sarah', note: 'Thanks!' } }]))
+    .toEqual({ title: 'Sarah tipped you $5.00', message: '“Thanks!”' });
+  expect(cleanupNotificationPresentation([{ event_type: 'tip_received', tip: { tip_amount_cents: 1250, tipper_name: null, note: null } }]).title)
+    .toBe('Someone tipped you $12.50');
+  expect(cleanupNotificationPresentation([{ event_type: 'tip_received' }]).title).toBe('You got a tip');
+  expect(cleanupNotificationDestination({ event_type: 'tip_received', report_id: null })).toMatchObject({ name: 'Payments' });
 });

@@ -1,39 +1,89 @@
 import type { Report } from '@litterbugs/report-contract';
+import type { ContributorCredit } from './contributor-credit';
 
-export type PublicReportShareState = 'available' | 'in_progress' | 'completed';
+export type PublicReportShareState = 'available' | 'in_progress' | 'completed' | 'expired';
 
 export type PublicReportShareModel = {
   id: string;
+  /** Directory presentation only; the occurrence's canonicalUrl is unchanged. */
+  siteLink?: { id: string; href: string; completedCount: number; reportCount: number; hasActiveReport: boolean };
+  /** A real local submission, isolated from the hosted database. Never set by hosted records. */
+  localDevelopment?: boolean;
+  contributorCredit?: ContributorCredit | null;
   state: PublicReportShareState;
   title: string;
   rewardCents?: number;
+  fundingEligible?: boolean;
   generalLocation: string;
+  localityLabel?: string;
+  /** The verified town behind `localityLabel`, from a community or the town lookup; absent when unknown. */
+  place?: { locality: string; region: string; countryCode: string };
+  /** The community leaderboard for the report's town, when that page is public. */
+  community?: { slug: string; path: string; name: string };
+  /** Nearest street address, so people can find the spot; absent when the lookup has no answer. */
+  address?: { street: string; line: string; locality: string | null; region: string | null; postalCode: string | null; countryCode: string | null } | null;
+  /** The report's position, for the page's map and directions link. */
+  location?: { latitude: number; longitude: number } | null;
   severity: string | null;
+  reporterName?: string;
+  reporterId?: string | null;
   notes: string | null;
+  additionalInformation?:string|null;
+  cleanupIssueHold?:boolean;
   litterTypes: string[];
   reportDate: string | null;
+  expiredDate?: string | null;
   cleanerName: string | null;
+  /** When the first contribution reached its cleanup fund. */
+  fundedDate?: string | null;
+  /** When the completed cleanup was claimed. */
+  claimedDate?: string | null;
+  cleanerId?: string | null;
   completionDate: string | null;
   cleanupDescription: string | null;
   bagsOrItemsRemoved: number | null;
+  /** Minutes the cleaner said the cleanup took. */
+  cleanupMinutes?: number | null;
   weightPounds: number | null;
   beforePhotoUrl: string | null;
+  /** How many report photos there are; linked cards page through them with `?photo=N`. */
+  photoCount?: number;
   afterPhotoUrl: string | null;
+  /** How many cleanup photos there are; the report page pages through them with `?photo=N`. */
+  afterPhotoCount?: number;
   canonicalUrl: string;
 };
 
-export function isPubliclyShareableReport(report: Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at' | 'is_sample'> & { is_published?: boolean }, now = new Date()) {
-  if (report.is_published === false || report.is_sample || report.cancelled_at || report.expired_at) return false;
+type ShareableReport = Pick<Report, 'cleanup_state' | 'cancelled_at' | 'expired_at' | 'expires_at' | 'is_sample'> & {
+  is_published?: boolean; renewal_status?: string; title?: string | null;
+};
+
+export function isExpiredPublicReport(report: ShareableReport, now = new Date()) {
+  if (report.cleanup_state !== 'available') return false;
+  // Expiry closures retain their expiry timestamp; explicit withdrawals clear it.
+  if (report.cancelled_at && !(report.expired_at && report.renewal_status === 'closed')) return false;
+  if (report.expired_at) return true;
+  return Boolean(report.expires_at && Number.isFinite(Date.parse(report.expires_at))
+    && Date.parse(report.expires_at) <= now.getTime());
+}
+
+export function isPubliclyShareableReport(report: ShareableReport, now = new Date()) {
+  if (report.is_published === false || report.is_sample) return false;
+  if (isExpiredPublicReport(report, now)) {
+    // Account-deletion anonymization removes titles: don't republish those records.
+    return report.title === undefined || Boolean(report.title?.trim());
+  }
+  if (report.cancelled_at || report.expired_at) return false;
   if (report.cleanup_state === 'completed') return true;
   if (['claimed', 'completion_submitted', 'changes_requested'].includes(report.cleanup_state)) return true;
   if (report.cleanup_state !== 'available') return false;
   if (!report.expires_at) return true;
-
   const expiresAt = Date.parse(report.expires_at);
   return Number.isFinite(expiresAt) && expiresAt > now.getTime();
 }
 
 export function publicReportShareDescription(report: PublicReportShareModel) {
+  if (report.state === 'expired') return `${report.title} is an expired litter report. A cleanup has not been confirmed.`;
   if (report.state === 'in_progress') {
     return `${report.title} has a cleanup in progress. Follow its current status on Litterbugs.`;
   }

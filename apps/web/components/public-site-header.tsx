@@ -1,25 +1,23 @@
 'use client';
 
 import Image from 'next/image';
-import { IoMenuOutline, IoCloseOutline, IoPhonePortraitOutline } from 'react-icons/io5';
-import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { IoChevronDown, IoMenuOutline, IoPhonePortraitOutline, IoMapOutline } from 'react-icons/io5';
+import { ResponsiveLink as Link } from './responsive-link';
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 
 import { AppLink } from '@/components/app-link';
-import { GetAppNavigation, MobileAppStrip } from '@/components/app-promotion';
+import { GetAppNavigation } from '@/components/app-promotion';
+
+import { HeaderAreaSearch } from './header-area-search';
+import { AVAILABLE_CLEANUPS_MAP_HREF, LITTER_MAP_HREF, MAP_HOME_EVENT, REPORT_ENTRY_HREF } from '@/lib/home-map-link';
 
 import { PublicAccountAction } from '@/components/public-account-action';
+import { SocialLinks } from './social-links';
+import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from '@/lib/header-profile-cache';
 
 import styles from './public-site-header.module.css';
 
-export type PublicPath = '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
-
-const policyLinks: { href: PublicPath; label: string; description: string }[] = [
-  { href: '/cleanup-policy', label: 'Cleanup policy', description: 'Funding, rewards, disputes, and refunds' },
-  { href: '/cleanup-safety', label: 'Safety', description: 'Guidelines for cleaning safely' },
-  { href: '/terms', label: 'Terms of use', description: 'Rules for using Litterbugs' },
-  { href: '/privacy', label: 'Privacy policy', description: 'How information is handled' },
-];
+export type PublicPath = '/reports' | '/map' | '/report-litter' | '/cleaner' | '/fund-a-cleanup' | '/communities' | '/cleanups' | '/get-app' | '/' | '/support' | '/about' | '/cleanup-policy' | '/cleanup-safety' | '/privacy' | '/terms' | '/help' | '/photo-review';
 
 function HeaderLink({
   href,
@@ -27,7 +25,7 @@ function HeaderLink({
   children,
   onNavigate,
 }: {
-  href: PublicPath | '/?view=map';
+  href: PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`;
   activePath: PublicPath;
   children: ReactNode;
   onNavigate?: () => void;
@@ -35,7 +33,6 @@ function HeaderLink({
   return (
     <Link
       href={href}
-      prefetch={true}
       className={styles.navLink}
       aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
       onClick={onNavigate}
@@ -45,112 +42,266 @@ function HeaderLink({
   );
 }
 
-function NavigationMenu({ activePath, mobile = false, accountLinks = false }: { activePath: PublicPath; mobile?: boolean; accountLinks?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const hasActivePolicy = policyLinks.some(({ href }) => href === activePath);
-  const panelId = mobile ? 'mobile-navigation-panel' : 'information-navigation-panel';
+const reportingLinks = [
+  [REPORT_ENTRY_HREF, 'Report trash'],
+  ['/report-litter', 'Reporter reward details'],
+] as const;
+const fundingLinks = [
+  [AVAILABLE_CLEANUPS_MAP_HREF, 'Find a cleanup to fund'],
+  ['/fund-a-cleanup', 'Fees, rewards & refunds'],
+] as const;
+const cleanupLinks = [
+  [AVAILABLE_CLEANUPS_MAP_HREF, 'Find a cleanup on the map'],
+  ['/cleaner', 'Claiming & getting paid'],
+  ['/cleanups', 'Completed cleanups'],
+  ['/cleanup-safety', 'Safety guidelines'],
+] as const;
+const informationLinks = [
+  ['/report-litter', 'Reporting and rewards'],
+  ['/help', 'Get help'],
+  ['/cleanup-safety', 'Safety guidelines'],
+  ['/about', 'About Litterbugs'],
+  ['/support', 'Support Litterbugs'],
+] as const;
+type NavigationLinks = ReadonlyArray<readonly [PublicPath | '/report' | `/map?${string}` | `/sign-in?${string}`, string]>;
 
+/** Each menu family is labelled by one bug and its colour. Report is the dragonfly (periwinkle), same as the map's Report Litter button. */
+const familyIntros: Record<string, { bug: string; text: string }> = {
+  Report: { bug: '/brand/ranks/dragonfly.svg', text: 'Pin litter, earn cash' },
+  Donate: { bug: '/brand/bugs/bee.png', text: 'Fund a cleanup nearby' },
+  Earn: { bug: '/brand/bugs/butterfly.png', text: 'Get paid to clean up litter' },
+  Support: { bug: '/brand/ranks/caterpillar.svg', text: 'Help, safety and our story' },
+};
+
+function NavigationDropdown({ label, links, activePath, open, onToggle, onClose, onNavigate }: {
+  label: string;
+  links: NavigationLinks;
+  activePath: PublicPath;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onNavigate?: () => void;
+}) {
+  const id = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOpen = useRef(open);
+  const openedByHover = useRef(false);
+  const intro = familyIntros[label];
+  function clearTimers() {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    openTimer.current = closeTimer.current = null;
+  }
+  function close() { clearTimers(); openedByHover.current = false; onClose(); }
+  useEffect(() => {
+    isOpen.current = open;
+    if (!open && closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, [open]);
+  useEffect(() => () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
   useEffect(() => {
     if (!open) return;
-
-    function closeOnPointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
+    function outside(event: PointerEvent) {
+      if (root.current?.closest('dialog nav')?.contains(event.target as Node)) return;
+      if (!root.current?.contains(event.target as Node)) {
+        clearTimers();
+        onClose();
+      }
     }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') { setOpen(false); menuRef.current?.querySelector('button')?.focus(); }
-    }
-
-    document.addEventListener('pointerdown', closeOnPointerDown);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnPointerDown);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [open]);
-
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open, onClose]);
   return (
-    <div ref={menuRef} className={mobile ? styles.mobileMenu : styles.infoMenu}>
-      <button
-        type="button"
-        className={styles.menuTrigger}
-        aria-label={mobile ? (open ? 'Close menu' : 'Open menu') : undefined}
-        aria-expanded={open}
-        aria-controls={panelId}
-        data-active={!mobile && hasActivePolicy ? 'true' : undefined}
-        onClick={() => setOpen((isOpen) => !isOpen)}
-      >
-        {mobile ? (open ? <IoCloseOutline aria-hidden /> : <IoMenuOutline aria-hidden />) : 'Safety'}
+    <div ref={root} className={styles.dropdown} data-nav-family={label}
+      onPointerEnter={(event) => {
+        clearTimers();
+        // Drawer/touch navigation stays tap-controlled, including on hybrid devices.
+        if (event.pointerType !== 'mouse' || root.current?.closest('dialog') || !window.matchMedia('(min-width: 760px) and (hover: hover) and (pointer: fine)').matches) return;
+        if (!open) openTimer.current = setTimeout(() => {
+          openTimer.current = null;
+          if (!isOpen.current) { openedByHover.current = true; onToggle(); }
+        }, 350);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'mouse' || root.current?.closest('dialog')) return;
+        clearTimers();
+        closeTimer.current = setTimeout(() => {
+          closeTimer.current = null;
+          if (isOpen.current && !root.current?.contains(document.activeElement)) onClose();
+        }, 300);
+      }}
+      onBlur={(event) => { if (root.current?.closest('dialog nav')?.contains(event.relatedTarget)) return; if (!event.currentTarget.contains(event.relatedTarget)) close(); }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          clearTimers();
+          if (open) {
+            event.stopPropagation();
+            onClose();
+            trigger.current?.focus();
+          }
+        }
+      }}>
+      <button ref={trigger} className={styles.menuTrigger} type="button"
+        aria-expanded={open} aria-controls={id} data-active={links.some(([href]) => href === activePath)} onClick={() => { clearTimers(); if (open && openedByHover.current) { openedByHover.current = false; return; } openedByHover.current = false; onToggle(); }}>
+        {intro && <Image className={styles.triggerBug} src={intro.bug} alt="" width={64} height={64} unoptimized />}
+        <span className={styles.triggerLabel}>{label}</span>
+        <IoChevronDown className={styles.chevron} aria-hidden />
       </button>
-
-      {open && (
-        <nav
-          id={panelId}
-          className={mobile ? styles.mobilePopover : styles.infoPopover}
-          aria-label={mobile ? 'Mobile navigation' : 'Information and policies'}
-        >
-          {mobile && (
-            <>
-              <span className={styles.menuLabel}>Explore</span>
-              <div className={styles.mobilePrimaryLinks}>
-                <HeaderLink href="/?view=map" activePath={activePath} onNavigate={() => setOpen(false)}>Map</HeaderLink>
-                <HeaderLink href="/about" activePath={activePath} onNavigate={() => setOpen(false)}>About</HeaderLink>
-                <HeaderLink href="/support" activePath={activePath} onNavigate={() => setOpen(false)}>Support</HeaderLink>
-                <HeaderLink href="/get-app" activePath={activePath} onNavigate={() => setOpen(false)}>Get the app</HeaderLink>
-                <HeaderLink href="/help" activePath={activePath} onNavigate={() => setOpen(false)}>Help</HeaderLink>
-                {accountLinks && <><Link className={styles.navLink} href="/account" onClick={() => setOpen(false)}>Profile / sign in</Link><Link className={styles.navLink} href="/account/notifications" onClick={() => setOpen(false)}>Updates</Link></>}
-              </div>
-            </>
-          )}
-
-          <span className={styles.menuLabel}>Policies &amp; safety</span>
-          <div className={styles.policyLinks}>
-            {policyLinks.map(({ href, label, description }) => (
-              <Link
-                key={href}
-                href={href}
-                className={styles.policyLink}
-                aria-current={activePath === href.split('?')[0] ? 'page' : undefined}
-                onClick={() => setOpen(false)}
-              >
-                <strong>{label}</strong>
-                <span>{description}</span>
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
+      <ul id={id} className={`${styles.dropdownLinks}${label === 'Support' ? ` ${styles.helpLinks}` : ''}`} hidden={!open}>
+        {intro && <li className={styles.panelIntro}><Image src={intro.bug} alt="" width={64} height={64} unoptimized />{intro.text}</li>}
+        {links.map(([href, text]) => <li key={href}><HeaderLink href={href} activePath={activePath} onNavigate={() => { close(); onNavigate?.(); }}>{text}</HeaderLink></li>)}
+      </ul>
     </div>
   );
 }
 
-export function PublicSiteHeader({ activePath, action, reportId, compactMobile = false }: { activePath: PublicPath; action?: ReactNode; reportId?: string; compactMobile?: boolean }) {
+function NavigationMenu({ activePath }: { activePath: PublicPath }) {
+  const member = useSyncExternalStore(subscribeHeaderProfile, getHeaderProfile, getServerHeaderProfile);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = 'mobile-navigation-panel';
+
+  function closeMenu() {
+    dialogRef.current?.close();
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const desktop = window.matchMedia(activePath === '/map' ? '(width > 760px)' : '(min-width: 840px)');
+    function closeOnDesktop() {
+      if (desktop.matches) dialogRef.current?.close();
+    }
+    desktop.addEventListener('change', closeOnDesktop);
+    closeOnDesktop();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener('change', closeOnDesktop);
+    };
+  }, [open, activePath]);
+
   return (
-    <header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}`}>
-      {activePath !== '/get-app' && <div className={styles.appStrip}><MobileAppStrip reportId={reportId} /></div>}
-      <div className={styles.inner}>
-        <nav className={styles.desktopNav} aria-label="Main navigation">
-          <div className={styles.downloadNav}><GetAppNavigation /></div>
-          <HeaderLink href="/?view=map" activePath={activePath}>Map</HeaderLink>
-          <HeaderLink href="/about" activePath={activePath}>About</HeaderLink>
-          <HeaderLink href="/support" activePath={activePath}>Support</HeaderLink>
-        </nav>
+    <div className={styles.mobileMenu}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.menuTrigger}
+        aria-label="Open menu"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-haspopup="dialog"
+        onClick={() => {
+          dialogRef.current?.showModal();
+          setOpen(true);
+        }}
+      >
+        <IoMenuOutline aria-hidden />
+        <span className={styles.menuLabel}>Menu</span>
+      </button>
 
-        <NavigationMenu activePath={activePath} mobile accountLinks={compactMobile} />
-        {activePath !== '/get-app' && <AppLink reportId={reportId} className={styles.tabletAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
-
-        <Link href="/?view=map" prefetch={true} className={styles.brandLink} aria-label="Litterbugs map">
-          <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
-        </Link>
-
-        <div className={styles.desktopActions}>
-          <div className={styles.infoMenu}><HeaderLink href="/cleanup-safety" activePath={activePath}>Safety</HeaderLink></div>
-          <div className={styles.action}>
-            {action ?? <div className="map-header-actions"><Link className="header-report-button" href="/report">Report Litter</Link><PublicAccountAction /></div>}
-            {compactMobile && <AppLink reportId={reportId} className={styles.compactAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink>}
-          </div>
+      <dialog
+        ref={dialogRef}
+        id={panelId}
+        className={styles.mobileDrawer}
+        aria-label="Site menu"
+        onClose={() => {
+          setOpen(false);
+          setOpenCategory(null);
+          triggerRef.current?.focus();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return;
+          const controls = event.currentTarget.querySelectorAll<HTMLElement>('button, a[href]');
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+        onClick={(event) => {
+          if (event.target !== event.currentTarget) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeMenu();
+        }}
+      >
+        <div className={styles.drawerHeader}>
+          <button type="button" className={styles.menuTrigger} aria-label="Close menu" aria-expanded={open} aria-controls={panelId} onClick={closeMenu}>
+            <IoMenuOutline aria-hidden />
+          </button>
+          <Link href="/" prefetch={true} className={styles.drawerBrand} aria-label="Litterbugs home" onClick={closeMenu}>
+            <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} />
+          </Link>
         </div>
+        <nav className={styles.mobilePrimaryLinks} aria-label="Mobile navigation">
+          <Link href={LITTER_MAP_HREF} prefetch={true} className={`${styles.navLink} ${styles.mapEntry}`} aria-current={activePath === '/map' ? 'page' : undefined} onClick={closeMenu}><IoMapOutline aria-hidden /><span>Open map</span></Link>
+          <NavigationDropdown label="Report" links={reportingLinks} activePath={activePath}
+            open={openCategory === 'reporting'} onToggle={() => setOpenCategory(openCategory === 'reporting' ? null : 'reporting')} onClose={() => setOpenCategory(current => current === 'reporting' ? null : current)} onNavigate={closeMenu} />
+          {([['Donate', fundingLinks], ['Earn', cleanupLinks]] as const).map(([label, links]) =>
+            <NavigationDropdown key={label} label={label} links={links} activePath={activePath}
+              open={openCategory === label} onToggle={() => setOpenCategory(openCategory === label ? null : label)} onClose={() => setOpenCategory(current => current === label ? null : current)} onNavigate={closeMenu} />)}
+          <HeaderLink href="/communities" activePath={activePath} onNavigate={closeMenu}>
+            <Image className={styles.triggerBug} src="/brand/bugs/champion-beetle.svg" alt="" width={64} height={64} unoptimized />
+            <span className={styles.triggerLabel}>Leaderboards</span>
+          </HeaderLink>
+          <NavigationDropdown label="Support" links={informationLinks} activePath={activePath}
+            open={openCategory === 'Support'} onToggle={() => setOpenCategory(openCategory === 'Support' ? null : 'Support')} onClose={() => setOpenCategory(current => current === 'Support' ? null : current)} onNavigate={closeMenu} />
+          {!member?.userId && <Link className={styles.navLink} href="/sign-in" onClick={closeMenu}>Log in / Sign up</Link>}
+          <div className={styles.drawerSocial}><SocialLinks /></div>
+        </nav>
+      </dialog>
+    </div>
+  );
+}
+
+export function PublicSiteHeader({ activePath, action, reportAction, reportId, compactMobile = false, mobileMapControls }: { activePath: PublicPath; action?: ReactNode; reportAction?: ReactNode; reportId?: string; compactMobile?: boolean; mobileMapControls?: ReactNode }) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  function toggleMenu(label: string) {
+    setSearchOpen(false);
+    setOpenMenu(openMenu === label ? null : label);
+  }
+  return (
+    <header data-site-header className={`${styles.header}${compactMobile ? ` ${styles.compactMobile}` : ''}${activePath === '/map' ? ` ${styles.mapHeader}` : ''}`} onClickCapture={event => {
+      const link = event.target instanceof Element ? event.target.closest('a') : null;
+      if (window.location.pathname !== '/map' || link?.getAttribute('href') !== LITTER_MAP_HREF
+        || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (!window.dispatchEvent(new Event(MAP_HOME_EVENT, { cancelable: true }))) event.preventDefault();
+    }}>
+      <div className={styles.inner}>
+        <Link href="/" prefetch={true} className={styles.brandLink} aria-label="Litterbugs home">
+          <Image src="/brand/litterbugs-logo.png" alt="Litterbugs" width={636} height={433} priority />
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny decorative bee, like BrandBug. */}
+          <img className={styles.logoBee} src="/brand/bugs/bee.png" alt="" aria-hidden="true" width={18} height={18} draggable={false} />
+        </Link>
+        <nav className={styles.desktopNav} aria-label="Main navigation">
+          <div className={styles.mapLink}>{activePath === '/map' ? <HeaderLink href={LITTER_MAP_HREF} activePath={activePath}>Map</HeaderLink> : <Link href={LITTER_MAP_HREF} aria-label="Open map" className={`${styles.navLink} ${styles.mapEntry}`}><IoMapOutline aria-hidden /><span className={styles.mapDesktopLabel}>Open map</span><span className={styles.mapMobileLabel}>Map</span></Link>}</div>
+          <div className={styles.reportAction}>{reportAction ?? (<NavigationDropdown label="Report" links={reportingLinks} activePath={activePath} open={openMenu === 'reporting'} onToggle={() => toggleMenu('reporting')} onClose={() => setOpenMenu(null)} />)}</div>
+          <div className={styles.funding}><NavigationDropdown label="Donate" links={fundingLinks} activePath={activePath} open={openMenu === 'funding'} onToggle={() => toggleMenu('funding')} onClose={() => setOpenMenu(null)} /></div>
+          <div className={styles.cleaning}><NavigationDropdown label="Earn" links={cleanupLinks} activePath={activePath} open={openMenu === 'cleaning'} onToggle={() => toggleMenu('cleaning')} onClose={() => setOpenMenu(null)} /></div>
+          {/* Leaderboards serve reporters, funders and cleaners alike, so they sit outside the three families. */}
+          <div className={styles.leaderboards}><HeaderLink href="/communities" activePath={activePath}>Leaderboards</HeaderLink></div>
+        </nav>
+        <div className={styles.help}><NavigationDropdown label="Support" links={informationLinks} activePath={activePath} open={openMenu === 'help'} onToggle={() => toggleMenu('help')} onClose={() => setOpenMenu(null)} /></div>
+        <div className={styles.appLink}><GetAppNavigation /><AppLink reportId={reportId} className={styles.smallAppLink}><IoPhonePortraitOutline aria-hidden />Get the app</AppLink></div>
+        {activePath !== '/map' && <HeaderAreaSearch open={searchOpen} onOpenChange={value => { setSearchOpen(value); if (value) setOpenMenu(null); }} />}
+        {mobileMapControls && <div className={styles.mobileMapControls}>{mobileMapControls}</div>}
+        <div className={styles.account}>{action ?? <PublicAccountAction />}</div>
+        <NavigationMenu activePath={activePath} />
       </div>
     </header>
   );

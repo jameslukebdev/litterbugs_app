@@ -1,5 +1,7 @@
 import { userMessage } from './lib/userMessage';
 import FeeExplanationLabel from './components/FeeExplanationLabel';
+import { AnonymousDonationChoice } from './components/DonationPrivacy';
+import { savedContributorVisibility } from './lib/contributorCredit';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { reconcileContribution } from './lib/reconcileContribution';
 import { replaceUnpaidContribution } from './lib/replaceUnpaidContribution';
@@ -7,9 +9,11 @@ import { useSession } from './lib/session';
 import { supabase } from './lib/supabase';
 import { loadPaymentAttempt, savePaymentAttempt, clearPaymentAttempt } from './lib/contributionRecovery';
 import { useEffect, useRef, useState } from 'react';
+import { startTiming, trackParticipation, trackParticipationFailure } from './lib/analytics';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -52,9 +56,11 @@ import {
   savePendingReportFunding,
 } from './lib/pendingReportFunding';
 import FundingAvailabilityNotice from './components/FundingAvailabilityNotice';
-import SteadyButtonContent from './components/SteadyButtonContent';
+import { ErrorText, PrimaryButton, TextLink } from './components/ui';
+import { hapticSuccess } from './lib/haptics';
 import { canEditOrDeleteReport } from './lib/reportAccess';
 import { useIsFocused } from '@react-navigation/native';
+import { colors, fonts } from './lib/theme';
 
 export default function FundingContributionScreen(props) {
   const { user } = useSession();
@@ -96,6 +102,8 @@ function FundingContributionController({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [paying]);
   const [receipt, setReceipt] = useState(null);
+  const [showContributorName, setShowContributorName] = useState(true);
+  const [nameChoiceLocked, setNameChoiceLocked] = useState(false);
   const [confirmationPending, setConfirmationPending] = useState(false);
   const previousFundingEligibility = useRef(null);
   const fundingEligibilityInitialized = useRef(false);
@@ -127,7 +135,7 @@ function FundingContributionController({ navigation, route }) {
       attempt,
       findContribution: async (requestId) => {
         const { data, error } = await withTimeout(supabase.from('cleanup_contributions')
-          .select('id,status,principal_amount_cents,total_amount_cents')
+          .select('id,status,principal_amount_cents,total_amount_cents,show_contributor_name')
           .eq('contributor_id', user.id).eq('client_request_id', requestId).maybeSingle(), 12000, 'Payment status is taking longer than expected.');
         if (error) throw error;
         return data;
@@ -140,9 +148,20 @@ function FundingContributionController({ navigation, route }) {
       clearAttempt: () => clearPaymentAttempt(user.id, reportId, attempt.clientRequestId),
     });
     if (!mounted.current) return 'obsolete';
-    attemptRef.current = result.attempt;
+    let recovered = result.attempt;
+    if (recovered) {
+      const shown = savedContributorVisibility(recovered, result.contribution);
+      recovered = { ...recovered, showContributorName: shown,
+        ...(recovered.intent ? { intent: { ...recovered.intent, showContributorName: shown } } : {}) };
+      await savePaymentAttempt(user.id, reportId, recovered, { updating: true });
+      if (!mounted.current) return 'obsolete';
+      setShowContributorName(shown);
+    }
+    attemptRef.current = recovered;
+    setNameChoiceLocked(Boolean(recovered));
     setConfirmationPending(result.attempt?.phase === 'submitted');
     if (result.state === 'received') {
+      hapticSuccess();
       setReceipt({ principalAmountCents: result.contribution.principal_amount_cents, totalAmountCents: result.contribution.total_amount_cents });
     } else if (result.state === 'refund' || result.state === 'failed') {
       setRecoveryError(result.state === 'refund' ? 'The previous contribution is being returned. See Payment activity for its status.' : 'Your previous payment did not complete. You can try again.');
@@ -258,9 +277,14 @@ function FundingContributionController({ navigation, route }) {
     fundingEligibilityInitialized.current = true;
   }, [loadError, loading, report]);
 
+  useEffect(() => { trackParticipation('fund', 'amount_review'); }, []);
+
   const pay = async () => {
     if (!principalCents || payLock.current || !recoveryReady || confirmationPending) return;
     payLock.current = true;
+    // Measurement only: how far this attempt got, so a failure names the right step.
+    let paymentStep = 'start';
+    let submission = null;
     try {
       setPaying(true);
       // Reconcile first, including after navigation or a process restart.
@@ -280,26 +304,31 @@ function FundingContributionController({ navigation, route }) {
       if (!mounted.current) return;
       attemptRef.current = attempt;
       if (!attempt) {
-        attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, createdAt: Date.now(), phase: 'preparing' };
+        attempt = { clientRequestId: Crypto.randomUUID(), principalAmountCents: principalCents, showContributorName, createdAt: Date.now(), phase: 'preparing' };
         await savePaymentAttempt(user.id, reportId, attempt);
         attemptRef.current = attempt;
+        setNameChoiceLocked(true);
       }
       if (!attempt.intent && Date.now() - attempt.createdAt > 23 * 60 * 60 * 1000) {
         throw new Error('We haven’t confirmed your previous payment. Open payment history or get help before paying again.');
       }
-      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId, pricingVersion: currentQuote?.pricingVersion });
+      const intent = attempt.intent || await createCleanupContribution({ reportId, principalAmountCents: attempt.principalAmountCents, clientRequestId: attempt.clientRequestId, pricingVersion: currentQuote?.pricingVersion, showContributorName: savedContributorVisibility(attempt) });
       attempt = { ...attempt, intent, phase: 'ready' };
       await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
       attemptRef.current = attempt;
+      setShowContributorName(savedContributorVisibility(attempt));
+      setNameChoiceLocked(true);
       if (!mounted.current) return;
       const accepted = await new Promise((resolve) => Alert.alert(
         'Confirm contribution',
-        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}`,
+        `Cleanup contribution: ${formatUsd(intent.principalAmountCents)}\nService fee: ${formatUsd(intent.platformFeeCents)}\nTotal payment: ${formatUsd(intent.totalAmountCents)}\n\n${savedContributorVisibility(attempt) ? 'Your name will be shown with this donation.' : 'You’ll be listed as Anonymous.'}`,
         [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
           { text: 'Continue to payment', onPress: () => resolve(true) }],
         { cancelable: true, onDismiss: () => resolve(false) },
       ));
       if (!accepted || !mounted.current) return;
+      trackParticipation('fund', 'payment_form');
+      paymentStep = 'form';
       const applePayEnabled = Platform.OS === 'ios'
         && Constants.expoConfig?.extra?.stripeApplePayEnabled === true;
       await initStripe(stripeInitializationConfiguration({
@@ -321,8 +350,16 @@ function FundingContributionController({ navigation, route }) {
       await savePaymentAttempt(user.id, reportId, { ...attempt, phase: 'submitted' }, { updating: true });
       attemptRef.current = { ...attempt, phase: 'submitted' };
       if (!mounted.current) return;
+      // The sheet is on screen; nothing is submitted until it returns without "Canceled".
+      trackParticipation('fund', 'payment_ready');
       const { error: paymentError } = await presentPaymentSheet();
+      submission = paymentError?.code === 'Canceled' ? null : startTiming('submission', { flow: 'fund' });
+      if (submission) { trackParticipation('fund', 'payment_submitted'); paymentStep = 'submitted'; }
       if (paymentError) {
+        if (paymentError.code !== 'Canceled') {
+          trackParticipationFailure('fund', 'payment_submitted', 'payment_rejected');
+          submission?.finish('failed');
+        }
         if (paymentError.code === 'Canceled') {
           await savePaymentAttempt(user.id, reportId, attempt, { updating: true });
           attemptRef.current = attempt;
@@ -336,12 +373,17 @@ function FundingContributionController({ navigation, route }) {
         await retrievePaymentIntent(intent.paymentIntentClientSecret),
       );
       if (!paymentConfirmation.confirmed) {
+        trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable');
+        submission?.finish('unconfirmed');
         setConfirmationPending(true);
         await refreshReports({ showRefresh: false });
         Alert.alert('Payment confirmation pending', paymentConfirmation.message);
         return;
       }
 
+      trackParticipation('fund', 'payment_confirmed');
+      submission?.finish('ready');
+      hapticSuccess();
       setReceipt(intent);
       await clearPaymentAttempt(user.id, reportId, attempt.clientRequestId);
       attemptRef.current = null;
@@ -350,6 +392,13 @@ function FundingContributionController({ navigation, route }) {
       });
       await refreshReports({ showRefresh: false });
     } catch (error) {
+      // Failures before Stripe returns, and confirmation checks that throw afterwards.
+      if (paymentStep === 'start') trackParticipationFailure('fund', 'amount_review', 'payment_start_failed');
+      else if (paymentStep === 'form') trackParticipationFailure('fund', 'payment_form', 'payment_form_failed');
+      else if (submission?.active) {
+        trackParticipationFailure('fund', 'payment_submitted', 'payment_confirmation_unavailable');
+        submission.finish('unconfirmed');
+      }
       setQuote(null);
       setQuoteRetry(value => value + 1);
       if (attemptRef.current?.phase === 'submitted') setConfirmationPending(true);
@@ -366,7 +415,7 @@ function FundingContributionController({ navigation, route }) {
       <View style={[styles.container, { padding: 20, paddingTop: 28 }]}>
         <Text style={styles.title}>Cleanup fund</Text>
         <Text style={styles.reportTitle}>Review the report and your contribution before continuing.</Text>
-        <View style={{ height: 104, marginTop: 24, borderRadius: 14, backgroundColor: '#F0F6F0' }} accessibilityLabel="Checking contribution availability" accessibilityRole="progressbar" />
+        <View style={{ height: 104, marginTop: 24, borderRadius: 14, backgroundColor: colors.primarySoft }} accessibilityLabel="Checking contribution availability" accessibilityRole="progressbar" />
       </View>
     );
   }
@@ -374,21 +423,11 @@ function FundingContributionController({ navigation, route }) {
   if (loadError && !report) {
     return (
       <View style={styles.center}>
-        <Ionicons name="time-outline" size={44} color="#8A6400" />
+        <Ionicons name="time-outline" size={44} color={colors.yellow} />
         <Text style={styles.centerTitle}>This is taking longer than expected</Text>
         <Text style={styles.centerText}>{loadError}</Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          disabled={refreshing}
-          onPress={() => {
-            setReloadKey((value) => value + 1);
-          }}
-        >
-          <SteadyButtonContent label="Try again" busy={refreshing} busyLabel="Refreshing contribution availability" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Return to report</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Try again" busy={refreshing} busyLabel="Refreshing contribution availability" onPress={() => setReloadKey((value) => value + 1)} style={styles.centerButton} />
+        <TextLink label="Return to report" onPress={() => navigation.goBack()} style={styles.secondaryButton} />
       </View>
     );
   }
@@ -396,7 +435,7 @@ function FundingContributionController({ navigation, route }) {
   if (!flags?.payments_enabled || !flags?.gemini_financial_review_enabled) {
     return (
       <View style={styles.center}>
-        <Ionicons name="construct-outline" size={42} color="#6C757D" />
+        <Ionicons name="construct-outline" size={42} color={colors.muted} />
         <Text style={styles.centerTitle}>Cleanup funds are not open yet</Text>
         <Text style={styles.centerText}>This feature is safely disabled while launch setup is completed.</Text>
       </View>
@@ -406,25 +445,24 @@ function FundingContributionController({ navigation, route }) {
   if (receipt) {
     return (
       <View style={styles.center}>
-        <View style={styles.successIcon}><Ionicons name="checkmark" size={38} color="#FFFFFF" /></View>
-        <Text style={styles.centerTitle}>Contribution received</Text>
+        {/* Website finish: the bee and "Thank you!". */}
+        <Image source={require('./assets/bugs/bee.png')} style={{ width: 56, height: 56 }} resizeMode="contain" accessible={false} />
+        <Text style={styles.centerTitle}>Thank you!</Text>
         <Text style={styles.centerText}>
-          {formatUsd(receipt.principalAmountCents)} was added to the cleanup fund. Your total charge was {formatUsd(receipt.totalAmountCents)}.
+          {formatUsd(receipt.principalAmountCents)} is in the cleanup fund. Someone can now earn cash for cleaning this spot. Your total charge was {formatUsd(receipt.totalAmountCents)}.
         </Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.primaryButtonText}>Return to report</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Return to report" onPress={() => navigation.goBack()} style={styles.centerButton} />
       </View>
     );
   }
 
   if (confirmationPending || recoveryError) return <View style={styles.center}>
-    <Ionicons name="time-outline" size={44} color="#2F7D32" />
+    <Ionicons name="time-outline" size={44} color={colors.primary} />
     <Text style={styles.centerTitle}>{confirmationPending ? 'Checking your payment' : 'Payment status'}</Text>
     <Text style={styles.centerText}>{recoveryError || 'Your payment attempt is saved. We’re waiting for confirmation. You can leave this screen and return without starting another charge.'}</Text>
-    <TouchableOpacity style={styles.primaryButton} onPress={() => reconcileAttempt().catch(() => setRecoveryError('Status is still unavailable. Check your connection and retry.'))}><Text style={styles.primaryButtonText}>Refresh status</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('ContributionHistory')}><Text style={styles.secondaryButtonText}>Payment activity</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}><Text style={styles.secondaryButtonText}>Return to report</Text></TouchableOpacity>
+    <PrimaryButton label="Refresh status" style={styles.centerButton} onPress={() => reconcileAttempt().catch(() => setRecoveryError('Status is still unavailable. Check your connection and retry.'))} />
+    <TextLink label="Payment activity" onPress={() => navigation.navigate('ContributionHistory')} style={styles.secondaryButton} />
+    <TextLink label="Return to report" onPress={() => navigation.goBack()} />
   </View>;
 
   const unavailable = fundingAvailabilityPresentation(report);
@@ -451,19 +489,21 @@ function FundingContributionController({ navigation, route }) {
   return (
     <KeyboardAvoidingView style={styles.container} keyboardVerticalOffset={headerHeight} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 28 }]} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{fromReportCreation ? 'Start your cleanup fund' : 'Help fund this cleanup'}</Text>
-        <Text style={styles.reportTitle}>{report?.title || 'Litter report'}</Text>
-
-        <View style={styles.rewardCard}>
-          <View style={styles.rewardSummary}>
-            <Text style={styles.rewardLabel}>Current cleanup reward</Text>
-            <Text style={styles.rewardValue}>{formatUsd(report?.funded_amount_cents)}</Text>
+        {/* Website fund dialog: the bee labels the fund; colour lives in the yellow money controls. */}
+        <View style={styles.titleRow}>
+          <Image source={require('./assets/bugs/bee.png')} style={styles.titleBug} resizeMode="contain" accessible={false} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} accessibilityRole="header">{fromReportCreation ? 'Start the cleanup fund' : 'Add to the cleanup fund'}</Text>
+            <Text style={styles.reportTitle}>{report?.title || 'Litter report'}</Text>
           </View>
-          <Text style={styles.rewardText}>Your contribution adds to this reward.</Text>
         </View>
+        <Text style={styles.rewardText}>
+          Whoever cleans this spot earns this money once the cleanup is approved.
+          {Number(report?.funded_amount_cents) > 0 ? ` The fund is ${formatUsd(report.funded_amount_cents)} so far.` : ''}
+        </Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Contribution amount</Text>
+          <Text style={styles.label}>How much?</Text>
           <View style={styles.amountPresets}>
             {['5', '25', '50'].map((preset) => {
               const selected = principalCents === Number(preset) * 100;
@@ -482,6 +522,7 @@ function FundingContributionController({ navigation, route }) {
               );
             })}
           </View>
+          <Text style={styles.subLabel}>Or enter an amount</Text>
           <View style={styles.amountRow}>
             <Text style={styles.dollar}>$</Text>
             <TextInput
@@ -494,34 +535,37 @@ function FundingContributionController({ navigation, route }) {
               accessibilityLabel="Cleanup fund contribution amount"
             />
           </View>
-          <Text style={[styles.helper, amount.trim() && !principalCents ? styles.error : null]}>Minimum $1 · Maximum $1,000 per contribution</Text>
+          <Text style={[styles.helper, amount.trim() && !principalCents ? styles.error : null]}>Minimum $1, maximum $1,000</Text>
         </View>
 
         {principalCents ? (
-          <View style={styles.card}>
-            <View style={styles.line}><Text style={styles.lineLabel}>Cleanup fund</Text><Text style={styles.lineValue}>{formatUsd(principalCents)}</Text></View>
+          <View style={styles.summaryCard}>
+            <View style={styles.line}><Text style={styles.lineLabel}>Goes to the cleaner</Text><Text style={styles.lineValue}>{formatUsd(principalCents)}</Text></View>
             <View style={styles.line}><FeeExplanationLabel textStyle={styles.lineLabel} /><Text style={styles.lineValue}>{feeCents == null ? 'Checking…' : formatUsd(feeCents)}</Text></View>
+            <View style={[styles.line, styles.totalLine]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{currentQuote ? formatUsd(currentQuote.totalAmountCents) : 'Checking…'}</Text></View>
           </View>
         ) : null}
 
-        {quoteError ? <View style={styles.card}><Text style={styles.error}>{quoteError}</Text><TouchableOpacity onPress={() => setQuoteRetry(value => value + 1)} accessibilityRole="button"><Text>Retry pricing</Text></TouchableOpacity></View> : null}
+        <AnonymousDonationChoice shown={showContributorName} onChange={setShowContributorName} disabled={paying || confirmationPending} locked={nameChoiceLocked} />
+
+        {quoteError ? <View style={styles.card}><ErrorText>{quoteError}</ErrorText><TextLink align="start" label="Retry pricing" onPress={() => setQuoteRetry(value => value + 1)} /></View> : null}
         <View style={styles.termsCard}>
-          <Ionicons name="information-circle-outline" size={21} color="#52636B" />
+          <Ionicons name="information-circle-outline" size={21} color={colors.body} />
+          {/* Same refund line as the website's fund dialog. */}
           <Text style={styles.termsText}>
-            Stripe charges your selected payment method when you confirm so the cleanup reward is funded and available for a cleaner. Litterbugs pays the cleaner only after an approved cleanup. If the report closes or the funds reach the published holding limit, Litterbugs refunds your full charge, including the service fee. Funding freezes once a cleaner claims the report.
+            If this report closes before payout, your full charge, including the fee, is refunded.
           </Text>
         </View>
 
         {confirmationPending ? (
           <View style={styles.pendingCard}>
-            <Ionicons name="time-outline" size={21} color="#7A5810" />
+            <Ionicons name="time-outline" size={21} color={colors.yellow} />
             <Text style={styles.pendingText}>Your payment is being confirmed. You can return to the report while we check. Please don’t pay again.</Text>
           </View>
         ) : null}
 
       </ScrollView>
-      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: '#FFFFFF', borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DDE2DE' }}>
-        <View style={styles.line}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalValue}>{currentQuote ? formatUsd(currentQuote.totalAmountCents) : principalCents ? 'Checking pricing…' : 'Enter an amount'}</Text></View>
+      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.white, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.line }}>
         <TouchableOpacity
           style={[styles.primaryButton, styles.paymentButton, (!principalCents || confirmationPending) && styles.disabled]}
           activeOpacity={1}
@@ -534,12 +578,12 @@ function FundingContributionController({ navigation, route }) {
           <Text style={styles.primaryButtonText}>{confirmationPending ? 'Payment confirmation pending' : 'Continue to payment'}</Text>
           {paying && showPaymentSpinner ? (
             <View style={styles.paymentSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.white} />
             </View>
           ) : null}
         </TouchableOpacity>
         <View style={styles.paymentTrustRow}>
-          <Ionicons name="lock-closed-outline" size={12} color="#687178" />
+          <Ionicons name="lock-closed-outline" size={12} color={colors.muted} />
           <Text style={styles.paymentTrustText}>Secure checkout by Stripe</Text>
         </View>
       </View>
@@ -548,52 +592,52 @@ function FundingContributionController({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#F5F6F7' },
-  centerTitle: { marginTop: 16, color: '#202428', fontSize: 24, fontWeight: '900', textAlign: 'center' },
-  centerText: { maxWidth: 360, marginTop: 9, color: '#667078', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  successIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32' },
-  createdLabel: { marginTop: 16, color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
-  savedContributionCard: { maxWidth: 380, marginTop: 20, padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: 16, backgroundColor: '#E6F2E7' },
-  savedContributionText: { flex: 1, color: '#3F6843', fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '900', letterSpacing: 1.1 },
-  title: { color: '#202428', fontSize: 26, lineHeight: 32, fontWeight: '700' },
-  reportTitle: { marginTop: 8, color: '#687178', fontSize: 14, lineHeight: 20, fontWeight: '400' },
-  rewardCard: { marginTop: 20, padding: 16, borderRadius: 14, backgroundColor: '#F0F6F0' },
-  rewardSummary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  rewardLabel: { flexShrink: 1, color: '#3F6843', fontSize: 13, lineHeight: 18, fontWeight: '500' },
-  rewardValue: { color: '#245F2A', fontSize: 25, lineHeight: 31, fontWeight: '700' },
-  rewardText: { marginTop: 6, color: '#526C55', fontSize: 12, lineHeight: 18 },
-  card: { marginTop: 24, padding: 0, backgroundColor: '#FFFFFF' },
-  label: { color: '#30363B', fontSize: 15, fontWeight: '600' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  centerTitle: { marginTop: 16, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
+  centerText: { maxWidth: 360, marginTop: 9, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  successIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
+  createdLabel: { marginTop: 16, color: colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
+  savedContributionCard: { maxWidth: 380, marginTop: 20, padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: 16, backgroundColor: colors.primarySoft },
+  savedContributionText: { flex: 1, color: colors.primaryDark, fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  eyebrow: { color: colors.primary, fontSize: 12, fontWeight: '900', letterSpacing: 1.1 },
+  title: { color: colors.ink, fontSize: 21, lineHeight: 25, fontFamily: fonts.heading },
+  reportTitle: { marginTop: 2, color: colors.muted, fontSize: 14, lineHeight: 20 },
+  rewardText: { marginTop: 14, color: colors.body, fontSize: 15, lineHeight: 22 },
+  card: { marginTop: 22, padding: 0, backgroundColor: colors.white },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  titleBug: { width: 34, height: 34 },
+  subLabel: { marginTop: 16, color: colors.ink, fontSize: 14, fontWeight: '800' },
+  summaryCard: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, borderWidth: 2, borderColor: colors.yellowBorder, backgroundColor: colors.yellowPale },
+  label: { color: colors.ink, fontSize: 17, fontFamily: fonts.heading },
   amountPresets: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  amountPreset: { flex: 1, minHeight: 48, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#DCE3DE', alignItems: 'center', justifyContent: 'center' },
-  amountPresetSelected: { backgroundColor: '#EAF3EA', borderColor: '#2F7D32' },
-  amountPresetText: { color: '#3E4842', fontSize: 16, fontWeight: '600' },
-  amountPresetTextSelected: { color: '#2F7D32' },
-  amountRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#B8C2B9', borderRadius: 13, backgroundColor: '#FBFCFB' },
-  dollar: { paddingLeft: 15, color: '#30363B', fontSize: 24, fontWeight: '600' },
-  amountInput: { flex: 1, minHeight: 56, paddingHorizontal: 8, color: '#202428', fontSize: 24, fontWeight: '600' },
-  helper: { marginTop: 8, color: '#737D83', fontSize: 13 },
-  error: { color: '#A33A32' },
+  amountPreset: { flex: 1, minHeight: 54, padding: 6, borderRadius: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderBottomWidth: 4, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  amountPresetSelected: { backgroundColor: colors.yellowSoft, borderColor: colors.fundEdge },
+  amountPresetText: { color: colors.yellow, fontSize: 20, fontFamily: fonts.heading },
+  amountPresetTextSelected: { color: colors.yellow },
+  amountRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
+  dollar: { paddingLeft: 14, color: colors.yellow, fontSize: 18, fontWeight: '800' },
+  amountInput: { flex: 1, minHeight: 48, paddingHorizontal: 8, color: colors.ink, fontSize: 18, fontWeight: '700' },
+  helper: { marginTop: 8, color: colors.muted, fontSize: 13 },
+  error: { color: colors.red },
   line: { minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  lineLabel: { color: '#59636A', fontSize: 15 },
-  lineValue: { color: '#30363B', fontSize: 15, fontWeight: '700' },
-  totalLine: { marginTop: 8, paddingTop: 13, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#CDD3CF' },
-  totalLabel: { color: '#202428', fontSize: 17, fontWeight: '600' },
-  totalValue: { color: '#202428', fontSize: 18, fontWeight: '700' },
-  termsCard: { marginTop: 20, paddingTop: 16, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: '#E8ECE9' },
-  termsText: { flex: 1, color: '#52636B', fontSize: 13, lineHeight: 19 },
-  pendingCard: { marginTop: 16, padding: 15, flexDirection: 'row', gap: 10, borderRadius: 14, backgroundColor: '#FFF4D6' },
-  pendingText: { flex: 1, color: '#7A5810', fontSize: 13, lineHeight: 19 },
-  primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
+  lineLabel: { color: colors.body, fontSize: 15 },
+  lineValue: { color: colors.ink, fontSize: 15, fontWeight: '700' },
+  totalLine: { marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.yellowBorder, borderStyle: 'dashed' },
+  totalLabel: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
+  totalValue: { color: colors.ink, fontSize: 18, fontFamily: fonts.heading },
+  termsCard: { marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  termsText: { flex: 1, color: colors.body, fontSize: 13, lineHeight: 19 },
+  pendingCard: { marginTop: 16, flexDirection: 'row', gap: 10 },
+  pendingText: { flex: 1, color: colors.yellow, fontSize: 13, lineHeight: 19, fontWeight: '600' },
+  primaryButton: { minWidth: 220, minHeight: 54, marginTop: 22, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   paymentTrustRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, marginTop: 9 },
-  paymentTrustText: { color: '#687178', fontSize: 12, lineHeight: 17 },
+  paymentTrustText: { color: colors.muted, fontSize: 12, lineHeight: 17 },
   paymentButton: { marginTop: 8, paddingHorizontal: 36, paddingVertical: 12 },
   paymentSpinner: { position: 'absolute', right: 10, top: 0, bottom: 0, width: 20, justifyContent: 'center', alignItems: 'center' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  secondaryButton: { minHeight: 48, marginTop: 10, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '900' },
+  primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  secondaryButton: { marginTop: 10 },
+  centerButton: { minWidth: 220, marginTop: 22 },
   disabled: { opacity: 0.55 },
 });

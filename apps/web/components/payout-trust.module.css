@@ -1,0 +1,34 @@
+/* Trust line on payout screens: a lock and plain words, on white (no tinted box). */
+.trust { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #e3dff0; border-radius: 14px; background: #fff; }
+.icon { flex: none; width: 18px; height: 18px; margin-top: 2px; color: #176350; }
+.trust p { margin: 0; color: #45434d; font-size: 14px; line-height: 1.45; text-align: left; }
+.trust strong { color: #176350; font-weight: 800; }
+.compact { padding: 10px 12px; }
+.compact p { font-size: 13px; }
+
+/* "Payouts are ready": where the money goes, with a green tick */
+.readyLine.readyLine { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: #176350; font-size: 15px; font-weight: 700; line-height: 1.45; }
+.readyLine svg { flex: none; width: 20px; height: 20px; margin-top: 1px; }
+
+/* Manage payouts: a quiet white button once nothing is left to do */
+.manage.manage { width: 100%; min-height: 48px; border: 2px solid #e3dff0; border-radius: 14px; color: #3f36c4; background: #fff; font-weight: 800; }
+.manage.manage:hover:not(:disabled) { border-color: #c9c2f2; background: #fff; }
+
+/* Payout header pinned above Stripe's form: one clean full-width white bar with a bottom edge.
+   (Replaces white box-shadow strips that sliced through the content scrolling underneath.) */
+.head.head { padding: 6px 0 12px; border-bottom: 1px solid #ece8f8; }
+:global(.payout-page) .head.head {
+  background: #fff;
+  /* Full-bleed white without causing sideways scrolling; clipped so nothing is painted below the bar. */
+  box-shadow: 0 0 0 100vmax #fff;
+  clip-path: inset(-48px -100vmax 0 -100vmax);
+}
+:global(.payout-page) > :global(.modal-close) { z-index: 5; }
+.back { flex: none; min-height: 40px; display: inline-flex; align-items: center; gap: 2px; margin-right: 2px; padding: 0 10px 0 4px; border: 0; border-radius: 10px; color: #3f36c4; background: none; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+.back svg { width: 20px; height: 20px; }
+.back:hover { color: #292932; }
+.back:focus-visible { outline: 3px solid #5146ed; outline-offset: 2px; }
+/* The bar keeps room for the ✕ only where the ✕ sits over the column (phones); wider screens get a full-width line. */
+@media (min-width: 900px) {
+  :global(.payout-page) .head.head { margin-right: 0; }
+}

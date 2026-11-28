@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { cleanupImpactFacts, formatCleanupDate } from './cleanupImpactPresentation';
 
-const mapScreenSource = ['../MapScreen.js', '../components/ReportDetailsSheet.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+const mapScreenSource = ['../MapScreen.js', './useCleanupFlow.js', './useSelectedReportLoaders.js', '../components/ReportDetailsSheet.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 const completedStorySource = readFileSync(
   new URL('../CompletedCleanupStory.js', import.meta.url),
   'utf8'
@@ -51,7 +51,7 @@ describe('completed cleanup impact presentation', () => {
 
   it('places the cleanup date after the completed cleanup photos', () => {
     expect(completedStorySource.indexOf('styles.photoScroll')).toBeLessThan(
-      completedStorySource.indexOf('styles.cleanupDateRow')
+      completedStorySource.indexOf('styles.cleanupDateText')
     );
     expect(mapScreenSource).not.toContain('completedReportToolbar');
     expect(mapScreenSource).not.toContain('See what was reported at this location');

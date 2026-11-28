@@ -1,0 +1,225 @@
+# Cleanup issue requests and funded-report revisions — research/preview only
+
+Owner requested research and a preview before implementation. Follow-up: this must
+be a utility, not a big button; research Refero. No production feature, schema,
+notifications, payments, website deployment or app OTA is authorized by this task.
+
+## Existing behavior verified
+
+- Web CleanupAction/CleanupEvidencePanel already provide Give it back / I can't do
+  this cleanup, but release_cleanup returns the report to availability without a
+  structured site problem or corrective request to the original reporter.
+- Mobile canEditOrDeleteReport combines editing/deleting and requires available
+  state. MapScreen and ReportDetailsSheet also reject funding_locked_at edits.
+- Database private.protect_funded_report_facts independently rejects edits to
+  funded title, location, types/severity, photo_paths and notes. Removing a disabled
+  button will not make funded edits work.
+- saveReportEdit removes superseded photos after a confirmed update. Reusing that
+  behavior for funded/claimed reports would destroy useful original evidence.
+- cleanup_notifications, participant inbox links and Expo push delivery already
+  exist. Extend those operational channels, respecting push preferences; don't
+  introduce a marketing email service or change email-list preferences.
+- Live mobile baseline is2797676 / group63bc12bc; shared mobile checkout has other
+  work. This preview uses websiteba1feca only as a visual/source baseline.
+
+## Reference lock
+
+Primary: existing Litterbugs report details, Your cleanup panel and one Timeline.
+Preserve white surfaces, Nunito headings/system body, existing photo-led hierarchy,
+bug artwork, mint #b9e9dd/#8ed7c5, gold fund role, blue report role and lilac cleanup
+role. New issue ENTRY stays neutral text/flag or an ellipsis utility; amber is for
+an outstanding issue, red only for a genuine safety concern. No new hero/grid.
+Use existing local preview photos; all names/amounts are illustrative, labeled in
+the review shell outside the product UI. No generated imagery is needed.
+
+Refero styles inspected: Tally dbd841f2-12e7-4b5c-b5b8-94ded944643b (single-column
+form restraint), Airbnb2b556363-5cb0-443f-a550-7273d108fea9 (48px targets/rounded
+white surfaces), Buy Me a Coffee2c2500c8-ff34-4bd1-8cec-aef76ab75df1 (human scale).
+These are bounded ingredients, not replacement brand palettes or marketing layouts.
+
+Concrete screen/image evidence:
+- [Linear task detail](https://refero.design/screens/128f5dee-15ec-4191-a2dd-49dfa382d29c):
+  unobtrusive top-right ellipsis; primary task content remains dominant.
+- [komoot route options](https://refero.design/screens/f877fa0e-47cb-4a81-b734-80bfdc84f13a):
+  contextual secondary actions in an icon-and-label popover beside Share.
+- [Buy Me a Coffee reporting form](https://refero.design/screens/ddf84d41-d820-4435-8099-b0887934aea4):
+  reason list, details, one submission action. Borrow structure, not moderation-red.
+- Airbnb screens07ecf44d-6593-4784-b1a7-a947d7377236 and59e44f50-430e-4e41-9998-6518a90509bf:
+  reason/details progression. Flow5989 and Granola14171 inspected; compress their
+  general-support journey into one task-specific sheet instead of many help pages.
+
+## Official workflow research
+
+- [SeeClickFix notifications](https://www.civicplus.help/seeclickfix/docs/customize-email-notifications)
+  attach notifications to request status/comments. Adopt issue-linked events and
+  deep links to the exact report; do not copy its email delivery configuration.
+- [FixMyStreet FAQ](https://www.fixmystreet.com/faq) uses report updates/status and
+  subscriptions for civic work. Adopt one continuing record, not duplicate reports
+  for corrections to the same occurrence.
+- [GoFundMe editing](https://support.gofundme.com/hc/en-us/articles/360001992687-Editing-your-fundraiser-content)
+  separates editable content (story/main image) from account/transfers settings.
+  [Updates](https://support.gofundme.com/hc/en-us/articles/12553895153563-How-to-post-a-GoFundMe-update)
+  keep supporters informed. Analogy supports editable descriptions with explicit
+  update history; it does not establish Litterbugs financial/refund policy.
+
+## Proposed first version (recommendations, not built rules)
+
+1. Active cleaner only: Your cleanup > Cleanup options (ellipsis) > Report an issue.
+   Alternative shown for comparison: small inline flag/text, never a large entry CTA.
+   This is distinct from reporting/blocking an account or disputing a finished cleanup.
+2. One short sheet: Unsafe to clean / Can't reach litter / Litter moved / No litter
+   here / Other; details required, photo optional. Keep cleanup or Give it back is
+   explicit. Safety/gone default Give it back; an issue never implies completion.
+3. Blocking issue pauses new funding/claims. Retaining the claim pauses its clock;
+   giving it back releases that attempt while keeping the report on hold. Existing
+   personal-unavailability release stays separate and need not flag the site.
+4. Private issue details belong to cleaner, reporter and authorized team members.
+   Public page/card only says Update requested. Notification inbox + optional push
+   link to the issue. Deduplicate retries and notify once; no broad free-form chat.
+5. Reporter can update photos, description and access notes even when funded or
+   claimed. Keep original photos and a revision history, including the report
+   version seen at claim and contribution. Do not delete earlier evidence.
+6. Routine access/details correction: notify cleaner, who confirms Looks right or
+   Still an issue. Resume retained claim/remaining clock, or make site available
+   if claim was released. If cleaner is unavailable, team can review; timing policy
+   remains to be selected. Don't auto-resolve a safety issue after a timer.
+7. Unsafe/moved/no-litter cases go to team review. Reporter can correct information
+   but cannot self-clear a safety hold. No litter is a closure request, never a
+   completed cleanup or automatic payout. A different location/scope needs separate
+   review; don't move existing donations to another site through an Edit form.
+8. Keep same report/site URLs and existing Timeline. Add Update requested / Report
+   updated / Issue resolved events; do not count them as cleanups. Donor identity,
+   anonymity and financial totals stay as before. Held funds do not auto-transfer,
+   pay out or refund from this issue form; closure must use existing reviewed
+   financial/refund workflow. Exact escalation/closure timing needs product agreement.
+
+## Implementation boundaries for a later approved build
+
+Split content-edit permission from delete/financial permissions. Use narrow,
+authenticated reporter-owned revision RPCs and expected-version concurrency checks;
+don't drop the funded-facts trigger or allow arbitrary direct report updates.
+Stage/sanitize/review new photos before publication. Snapshot existing funded
+report/claim evidence before first revision; immutable retained media needs access
+rules and deletion/retention policy. Preserve donor anonymity in every projection.
+Issue creation + optional release/hold + notification enqueue must be atomic and
+idempotent. Server must enforce holds in claim/funding APIs, including old clients.
+Handle stale saves, replaced cleaners, duplicate requests, deleted/blocked accounts,
+notification failures, issue re-open, unresponsive reporter and staff escalation.
+Push previews omit raw notes/precise address; full evidence is in authenticated UI.
+Reuse existing admin attention queue for sensitive cases. No store/native module
+change appears necessary, but OTA readiness depends on later implementation review.
+
+## Preview delivery / verification
+
+Development-only /dev-review-preview/cleanup-issues, app and web views; browser-local
+state only, no Supabase client/fetch/RPC/upload/payment/notification implementation.
+Inline/menu comparison, five reasons, keep/release outcomes, notification/reporter
+review, funded editor with retained original, cleaner/team review, public hold and
+single Timeline. Product copy stays short; research/explanations remain outside it.
+Visual QA passed in Chrome on shared localhost3000: recommended ellipsis menu,
+inline alternative, required-details form, local confirmation, notification link,
+reporter review, funded access-note save, cleaner confirmation and public Timeline.
+$35/3 contributions and original evidence remain visible; issue resolution is still
+0 cleanups. Safety has no self-clear action; no-litter closure waits for team review.
+Website and app preview views rendered;390px viewport has375px client/scroll width,
+no horizontal overflow, no broken images. Fixed inherited oversized radio inputs
+and grid intrinsic overflow within this route only; viewport override restored.
+Scoped ESLint passes; browser console has no errors. Evidence:
+/tmp/litterbugs-cleanup-issues-evidence-20261125/utility-menu.jpg.
+No native runtime/backend behavior is claimed tested: this is an interactive concept,
+not functioning notifications, database edits, claim pauses, media uploads or payments.
+No production source/schema, deployment or OTA changed. Nothing deployed.
+
+
+## November 25 follow-up: communicating added information
+
+Owner questioned whether access-specific notes fit every correction and whether
+updated reports have a useful place for extra information. Research now supersedes
+the initial suggestion to remove the field: use optional Additional information,
+with one stable label for all issue reasons. Do not force rewriting the original
+litter description just to answer an access, conditions or equipment question.
+
+Reference lock stays existing Litterbugs. Bounded references inspected:
+- Refero Linear13774021-f998-4003-849d-ad1533489547: original issue content plus
+  authored, timestamped activity; preserve context instead of silently overwriting.
+  Official https://linear.app/docs/comment-on-issues documents separate description,
+  comments/attachments and resolution. Borrow traceability, not a general chat system.
+- Refero Airbnb79ed2536-c72e-43cf-8d25-3eb7f240b7f1: structured practical details
+  sections distinct from Message host. Borrow scannable report facts, not booking UI.
+- https://www.civicplus.help/seeclickfix/docs/using-mobile-apps-to-manage-requests-in-the-field
+  supports public/internal comments and images for new information. Keep audience
+  clear; Litterbugs issue notes remain private and aren't copied into public facts.
+- https://www.civicplus.help/seeclickfix/docs/delete-an-issue-or-comment recommends
+  follow-up clarification to preserve records. Do not inherit its no-edit restriction:
+  owner explicitly wants editable funded descriptions/photos with preserved revisions.
+
+Design decision: Additional information is optional, public report content. Editor
+has a compact Public audience label, not explanatory paragraphs. Show populated
+information immediately below description, before Reported by/Timeline, with author
+and update time; no empty section. Display same current information to future cleaners.
+Timeline stores revisions; does not become the only place to find current directions.
+Notify active cleaner with report context and a deep link to the specific update.
+Keep issue resolution separate from saving information. No automatic safety clearance.
+No new chat/private reply field or audience dropdown in this first preview.
+Local preview adds a cleaner notification scene and optional general field; private
+cleaner notes stay in authenticated issue review, not the public information block.
+
+Follow-up visual QA: passed authored information-only save → cleaner notification →
+exact update review → cleaner confirmation → public report in browser. Blank optional
+field plus description-only edit produces no empty Additional information section.
+Current information is above Reported by and the single Timeline; original evidence,
+$35 and 0 cleanups retained. Save alone keeps Update requested. App/website previews
+and390px responsive width pass; no broken images/console errors; viewport reset.
+Evidence: /tmp/litterbugs-cleanup-issues-evidence-20261125/additional-information-phone.jpg
+and additional-information-website.jpg. Deep-link illustrative state:
+/dev-review-preview/cleanup-issues?screen=site&view=web&example=information.
+Preview state only; no account/report edit, upload, notification, DB or deployment.
+
+
+## Full cleaner journey and privacy preview follow-up
+
+Owner requested a clickable full journey, not production implementation, and asked
+whether the exchange is private. Keep the existing Refero/brand reference lock.
+Private cleanup issue conversation is scoped to cleaner/reporter/authorized team;
+no public copy of requests/replies. Public Additional information is a separate,
+explicit report edit, still optional. A private reply can resolve the access query
+without publishing directions or changing the original report at all.
+Preview transition: Your cleanup > ellipsis > request > paused > role switch to
+reporter inbox > private reply > reporter confirmation > role switch to cleaner >
+push/inbox > exact issue conversation > Resume cleanup > same retained claim/time.
+Role-switch controls are outside the product frame; no explanatory product prose.
+Cleaner response persists in Your cleanup as an excerpt + View response; notification
+read state cannot remove that route. Reopening after resolution shows history without
+another resume action. Existing Additional information section holds public facts.
+Resume action is explicit, only after a response and for routine kept claims. Team
+review remains for unsafe/moved/no-litter; released claims are never resumed.
+Still an issue sends private follow-up and keeps the same conversation/paused clock.
+Original evidence, fund/donations, and single public Timeline remain; private reply
+text must never appear in public report, public Timeline or lock-screen push preview.
+
+Full journey QA (Chrome localhost, preview state only) passed:
+- Fresh walkthrough through actual ellipsis request, notification, paused claim,
+  reporter inbox, private answer, reporter confirmation, cleaner push/inbox and
+  exact response review. No production sends/writes or backend tests performed.
+- Notification missed/read: top-of-cleanup pending response row and Your cleanup
+  excerpt both open response. Newest reply shown first; earlier messages expand.
+  Fixed review footer keeps Resume cleanup visible. Resume retains23h40m example
+  time, enables Add cleanup photos, preserves$35 and keeps View response afterward.
+- Still an issue → private follow-up → second private answer → Resume passes;
+  waiting for response keeps photos disabled. Reopening after resume has no second
+  resume action. Unsafe reply cannot self-resume; returned normal claim confirms
+  availability without restoring cleaner claim. All simulated funds/history remain.
+- Private request/reply text absent from public report and Timeline, before and
+  after resolution. Separate public Additional information edit appears publicly
+  and sends a public-update notification, without copying private conversation.
+  Lock-screen push preview contains generic context, no reply content/directions.
+- App + website layouts and390px width pass; no horizontal overflow or broken
+  assets, console error-free, scoped ESLint and diff whitespace checks pass.
+  Temporary viewport reset. No native device/server started; existing3000 reused.
+- Evidence /tmp/litterbugs-cleanup-issues-evidence-20261125/:
+  full-flow-notification.jpg, full-flow-response-on-cleanup.jpg,
+  full-flow-latest-private-response.jpg, full-flow-resumed-final.jpg.
+- Deliverable starts /dev-review-preview/cleanup-issues?walkthrough=1, with example
+  drafts for a click-through. Start full walkthrough resets it. Role-switch controls
+  remain outside product UI. All privacy/timers/notifications are design simulation,
+  not implemented authorization/RLS/push/claim-resumption behavior.

@@ -16,7 +16,7 @@ const MIME_EXTENSIONS: Record<string, string> = {
 type SecureMediaInput = {
   supabase: SupabaseClient<Database>;
   userId: string;
-  kind: 'report' | 'cleanup' | 'avatar';
+  kind: 'report' | 'cleanup' | 'avatar' | 'issue';
   file: File;
   subjectId?: string;
   submissionId?: string;

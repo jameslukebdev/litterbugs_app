@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { colors } from '../lib/theme';
 
 const enabled = process.env.EXPO_PUBLIC_APPLE_SIGN_IN_ENABLED === 'true';
 
@@ -25,7 +26,7 @@ export default function AppleSignInButton({ onPress, disabled, loading }) {
         style={styles.button}
         onPress={() => { if (!disabled) onPress(); }}
       />
-      {loading && <ActivityIndicator color="#fff" style={styles.spinner} />}
+      {loading && <ActivityIndicator color={colors.white} style={styles.spinner} />}
     </View>
   );
 }

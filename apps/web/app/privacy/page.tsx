@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
+import { AnalyticsPreferences } from '@/components/website-analytics';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   alternates: { canonical: '/privacy' },
   title: 'Privacy | Litterbugs',
   description: 'How Litterbugs handles account, report, payment, and cleanup-review data.',
-};
+});
 
 export default function PrivacyPage() {
   return (
@@ -15,7 +18,7 @@ export default function PrivacyPage() {
       eyebrow="LITTERBUGS PRIVACY"
       title="Privacy policy"
       summary="This policy explains how Litterbugs collects, uses, shares, and protects information when providing our services."
-      effectiveDate="September 9, 2026"
+      effectiveDate="November 24, 2026"
       sections={[
         {
           title: 'Scope and responsible company',
@@ -27,7 +30,7 @@ export default function PrivacyPage() {
             <li>Account identifiers, email address, profile details, authentication choices, and support communications.</li>
             <li>Litter reports, descriptions, approximate or precise report locations, photos, cleanup evidence, and dispute reasons.</li>
             <li>Notification preferences, blocked-user choices, and safety or moderation reports.</li>
-            <li>Information submitted to Stripe during cleaner onboarding, although Litterbugs does not receive or store full card or bank-account numbers.</li>
+            <li>Information submitted to Stripe during cleaner onboarding, including a bank account or debit card for payouts, although Litterbugs does not receive or store full card or bank-account numbers.</li>
           </ul>,
         },
         {
@@ -35,7 +38,8 @@ export default function PrivacyPage() {
           content: <ul>
             <li>Device, operating-system, app-version, session, authentication, notification-token, error, and security information.</li>
             <li>Report, claim, submission, review, dispute, administrator-decision, and completed-cleanup history.</li>
-            <li>Contribution and reward amounts; Stripe customer, PaymentIntent, charge, refund, transfer, and connected-account identifiers and statuses; and payout-readiness state.</li>
+            <li>Contribution, tip, and reward amounts; Stripe customer, PaymentIntent, charge, refund, transfer, and connected-account identifiers and statuses; and payout-readiness state.</li>
+            <li>For tips, the cleaner tipped and the amount. The receipt email you enter is passed to Stripe, which sends your receipt; Litterbugs does not keep it with the tip.</li>
             <li>Append-only financial and administrator audit records used to reconcile transactions, prevent fraud, and explain decisions.</li>
           </ul>,
         },
@@ -50,12 +54,27 @@ export default function PrivacyPage() {
           </ul>,
         },
         {
+          title: 'Account emails and community updates',
+          content: <>
+            <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups. Existing and new accounts are subscribed to these emails by default.</p>
+            <p>You can unsubscribe at any time using the link in an email or by turning off Litterbugs emails in your account’s <Link href="/account/email-preferences">Email preferences</Link>. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
+            <p>We use Google Gmail to send community emails. We retain your email preference and a hash of your email address to honor unsubscribe requests, including if an account is recreated. This record is kept separately from your public profile.</p>
+          </>,
+        },
+        {
           title: 'Photos, locations, and Gemini review',
           content: <>
             <p>Report and cleanup photos may contain personal information, and report locations may be approximate or precise. Avoid photographing faces, license plates, private documents, homes beyond what is necessary, or other unrelated personal information.</p>
-            <p>Uploaded photos are sent to Cloudmersive to scan for malicious files before they are accepted. These checks happen automatically when you submit photos.</p>
+            <p>Uploaded photos are sent to Cloudmersive to scan for malicious files. Cloudmersive or Google Gemini also checks photos for potentially inappropriate content before acceptance. Google content checks use a reconstructed image with embedded metadata removed. These checks happen when you submit photos.</p>
             <p>Eligible photos may be provided through short-lived private references to a dedicated Google Cloud relay for paid Google Gemini review. Gemini may assess clarity, scene consistency, cleanup progress, duplicate or manipulated evidence, and possible hazards, then return structured findings to Litterbugs. Litterbugs does not opt into voluntary model-data sharing for this production workflow.</p>
             <p>Gemini does not independently release money. Litterbugs validates its result, and authorized administrators may view the relevant report, photos, reasons, and payment state to override or resolve an ambiguous, disputed, unsafe, or suspicious case. AI output may be inaccurate.</p>
+          </>,
+        },
+        {
+          title: 'Optional nearby notifications',
+          content: <>
+            <p>If you turn on new-litter or completed-cleanup alerts near you, Litterbugs stores your phone&apos;s location rounded to two decimal places (roughly a kilometre), your time zone, and your notification choices with your account. This area is used to find nearby reports and send the alerts you requested; it is separate from app analytics.</p>
+            <p>Nearby alerts start off. You can change them in Profile → Notifications. Turning off both nearby alerts removes the saved area. Operating-system notification and location permissions still apply.</p>
           </>,
         },
         {
@@ -73,8 +92,24 @@ export default function PrivacyPage() {
           </>,
         },
         {
+          title: 'Optional website analytics',
+          content: <>
+            <p>PostHog helps us understand visits using cookieless measurement, without placing analytics cookies or using browser storage for its analytics identifiers. Google Analytics and Microsoft Clarity also help us understand site usage and may use cookies. Clarity may reconstruct masked sessions and interactions. These services may operate with limited functionality in some locations until you allow analytics. Turning analytics off does not affect your ability to use Litterbugs. We honor browser Do Not Track and Global Privacy Control signals.</p>
+            <p>Analytics providers may process online identifiers, pages, referring websites, and basic device or network information. We exclude report content, account identifiers, and payment details from the events we send to Google Analytics and PostHog. Clarity uses masking for sensitive content, but may process other page content, page URLs and interactions. Google Analytics and Clarity may store cookies depending on your settings and location. We do not enable advertising personalization or Google signals.</p>
+            <p><AnalyticsPreferences /> lets you enable, decline, or withdraw optional analytics. Withdrawing stops further measurement on this browser; it does not automatically delete events already processed by a provider. Contact us for privacy requests.</p>
+          </>,
+        },
+        {
+          title: 'App analytics and diagnostics',
+          content: <>
+            <p>The Litterbugs mobile app uses PostHog to understand how the app is used and to diagnose problems. App versions with analytics send the screens and steps you reach (for example, opening a report or finishing a payment), how long they take, rounded result counts, error and crash reports, an anonymous installation identifier, and basic device, app version and network information. We do not associate these analytics with your account or include your name, email address, account ID, report text, photos, payment details or precise location in our usage events. JavaScript error messages are filtered to remove email addresses, links, identifiers and coordinates; native crash reports contain technical crash information and stack traces.</p>
+            <p>The app may also record masked session replays: screen recordings in which all text and images are hidden. Recording stops on sign-in, payment, payout and account screens and while the map is shown. PostHog may estimate an approximate location, such as a country or city, from your network address. We do not use app analytics for advertising or to track you across other companies’ apps or websites.</p>
+            <p>We configure PostHog to discard client IP addresses from stored events. This does not prevent approximate location from being estimated before the address is discarded. In app versions with Analytics choices, you can turn off app analytics, diagnostics and recordings from Profile, or from Settings when signed in. The choice applies to that device, including while signed out. Turning it off does not affect app features or delete information already sent.</p>
+          </>,
+        },
+        {
           title: 'Public and member-visible information',
-          content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
+          content: <p>Report facts, general locations, report photos, cleanup status, and accepted cleanup evidence may be visible to other members or the public as part of the community map and completed-cleanup history. Community leaderboards publicly show your first name and last initial, your rank, and how many accepted reports, confirmed cleanups and funded cleanups you have in each town; you can turn this off in your account settings. Pending private cleanup evidence is limited to the cleaner, reporter, authorized reviewers, and service providers needed for review. Do not submit information you do not want processed for these purposes.</p>,
         },
         {
           title: 'Retention',

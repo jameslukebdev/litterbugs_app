@@ -1,0 +1,124 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app"
+    ]
+  },
+  {
+    "path": "/locations",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/locations"
+    ]
+  },
+  {
+    "path": "/locations/us-nc-boone",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/locations/us-nc-boone"
+    ]
+  },
+  {
+    "path": "/report-litter",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/report-litter"
+    ]
+  },
+  {
+    "path": "/fund-a-cleanup",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/fund-a-cleanup"
+    ]
+  },
+  {
+    "path": "/cleaner",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/cleaner"
+    ]
+  },
+  {
+    "path": "/cleanups",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/cleanups"
+    ]
+  },
+  {
+    "path": "/about",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/about"
+    ]
+  },
+  {
+    "path": "/help",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/help"
+    ]
+  },
+  {
+    "path": "/support",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/support"
+    ]
+  },
+  {
+    "path": "/get-app",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/get-app"
+    ]
+  },
+  {
+    "path": "/map",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": [
+      "https://litterbugs.app/map"
+    ]
+  },
+  {
+    "path": "/sitemap.xml",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": []
+  },
+  {
+    "path": "/robots.txt",
+    "status": 200,
+    "noindex": null,
+    "error": false,
+    "canonical": []
+  }
+]

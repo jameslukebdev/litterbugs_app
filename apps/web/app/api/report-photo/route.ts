@@ -1,12 +1,13 @@
 import 'server-only';
+import { renderCloudflareImage, usesCloudflareImages } from '@/lib/cloudflare-images';
 
-import convert from 'heic-convert';
-import sharp from 'sharp';
 
 import { isHeicReportPhoto, isReportCardPhoto } from '@/lib/report-photo';
 import { isDiscoverableReport, reportDiscoveryWindow } from '@/lib/report-visibility';
 import { createClient } from '@/lib/supabase/server';
+import {cleanupIssuesEnabled,issueClient} from '@/lib/cleanup-issues';
 import { realUserIdFromClaims } from '@/lib/report-access';
+import { loadDisplayPhoto, PhotoSourceError } from '@/lib/display-photo-cache';
 
 export const runtime = 'nodejs';
 
@@ -69,7 +70,13 @@ export async function GET(request: Request) {
       const { data: report, error: reportError } = await supabase.from('reports')
         .select('id,user_id,photo_paths,is_published,is_sample').eq('id', accountReportId).maybeSingle();
       if (reportError) return errorResponse(502, 'Report access could not be checked.');
-      if (!report?.is_published || report.is_sample || !report.photo_paths?.includes(photoPath)) return errorResponse(404, 'Report photo not found.');
+      if (!report?.is_published || report.is_sample) return errorResponse(404, 'Report photo not found.');
+      if(!report.photo_paths?.includes(photoPath)) {
+        if(!cleanupIssuesEnabled)return errorResponse(404,'Report photo not found.');
+        const {data:revision,error}=await issueClient(supabase).from('report_content_revisions').select('id').eq('report_id',accountReportId).contains('photo_paths',[photoPath]).limit(1).maybeSingle();
+        if(error)return errorResponse(502,'Report photo history could not be checked.');
+        if(!revision)return errorResponse(404,'Report photo not found.');
+      }
       if (report.user_id !== userId) {
         const [attempts, contributions] = await Promise.all([
           supabase.from('cleanup_attempts').select('id').eq('report_id', accountReportId).eq('cleaner_id', userId).limit(1),
@@ -79,7 +86,7 @@ export async function GET(request: Request) {
         if (!attempts.data?.length && !contributions.data?.length) return errorResponse(404, 'Report photo not found.');
       }
     } else {
-      const { data: report, error: reportError } = await supabase
+      let { data: report, error: reportError } = await supabase
         .from('reports')
         .select('expires_at, cleanup_state, is_published, is_sample, cancelled_at, expired_at')
         .eq('is_sample', false)
@@ -91,6 +98,11 @@ export async function GET(request: Request) {
         .limit(1)
         .maybeSingle();
 
+      if(!reportError&&!report&&cleanupIssuesEnabled){
+        const prior=await issueClient(supabase).from('report_content_revisions').select('report_id').contains('photo_paths',[photoPath]).limit(1).maybeSingle();
+        if(prior.error)return errorResponse(502,'Report photo history could not be checked.');
+        if(prior.data){const result=await supabase.from('reports').select('expires_at, cleanup_state, is_published, is_sample, cancelled_at, expired_at').eq('id',prior.data.report_id).eq('is_published',true).eq('is_sample',false).is('cancelled_at',null).is('expired_at',null).or(reportDiscoveryWindow(now)).maybeSingle();report=result.data;reportError=result.error;}
+      }
       if (reportError) return errorResponse(502, 'Report photo could not be verified.');
       if (!report || !isDiscoverableReport(report, now)) return errorResponse(404, 'Report photo not found.');
       expiresAt = report.cleanup_state === 'completed'
@@ -98,34 +110,48 @@ export async function GET(request: Request) {
         : report.expires_at;
     }
 
-    const { data: source, error: downloadError } = await supabase.storage
-      .from('report_photos')
-      .download(photoPath);
+    const renderPhoto = async () => {
+      const { data: source, error: downloadError } = await supabase.storage
+        .from('report_photos')
+        .download(photoPath);
 
-    if (downloadError || !source) return errorResponse(404, 'Report photo not found.');
-    if (source.size > MAX_SOURCE_BYTES) return errorResponse(413, 'Report photo is too large.');
+      if (downloadError || !source) throw new PhotoSourceError(404, 'Report photo not found.');
+      if (source.size > MAX_SOURCE_BYTES) throw new PhotoSourceError(413, 'Report photo is too large.');
 
-    const sourceBuffer = new Uint8Array(await source.arrayBuffer());
-    const browserImage = isHeicReportPhoto(photoPath)
-      ? Buffer.from(await convert({
-        buffer: sourceBuffer,
-        format: 'JPEG',
-        quality: 0.82,
-      }))
-      : Buffer.from(sourceBuffer);
-    const deliveredImage = variant === 'card'
-      ? await sharp(browserImage)
-        .rotate()
-        .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
-        .webp({ quality: 76 })
-        .toBuffer()
-      : variant === 'detail'
-        ? await sharp(browserImage)
+      const sourceBuffer = new Uint8Array(await source.arrayBuffer());
+      if (usesCloudflareImages()) {
+        return renderCloudflareImage(sourceBuffer, variant === 'card'
+          ? { width: 720, height: 405, cover: true, format: 'image/webp', quality: 76 }
+          : variant === 'detail'
+            ? { width: 1600, height: 1200, format: 'image/webp', quality: 82 }
+            : { format: 'image/jpeg', quality: 82 });
+      }
+      const browserImage = isHeicReportPhoto(photoPath)
+        ? Buffer.from(await (await import('heic-convert')).default({
+          buffer: sourceBuffer,
+          format: 'JPEG',
+          quality: 0.82,
+        }))
+        : Buffer.from(sourceBuffer);
+      return variant === 'card'
+        ? await (await import('sharp')).default(browserImage)
           .rotate()
-          .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 82 })
+          .resize({ width: 720, height: 405, fit: 'cover', position: 'centre', withoutEnlargement: true })
+          .webp({ quality: 76 })
           .toBuffer()
-        : browserImage;
+        : variant === 'detail'
+          ? await (await import('sharp')).default(browserImage)
+            .rotate()
+            .resize({ width: 1600, height: 1200, fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer()
+          : browserImage;
+    };
+    // Every public, participant, and administrator gate above runs even when
+    // the resized bytes already exist. Private response caching stays disabled.
+    const deliveredImage = isPublicVariant
+      ? await loadDisplayPhoto('report_photos', photoPath, variant as 'card' | 'detail', renderPhoto)
+      : await renderPhoto();
     const secondsUntilExpiration = expiresAt
       ? Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
       : 0;
@@ -133,7 +159,7 @@ export async function GET(request: Request) {
       ? Math.max(0, Math.min(MAX_CACHE_SECONDS, secondsUntilExpiration))
       : 0;
 
-    return new Response(deliveredImage, {
+    return new Response(new Uint8Array(deliveredImage), {
       status: 200,
       headers: {
         'Cache-Control': adminCaseId || accountReportId
@@ -144,7 +170,8 @@ export async function GET(request: Request) {
         'X-Content-Type-Options': 'nosniff',
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof PhotoSourceError) return errorResponse(error.status, error.message);
     return errorResponse(500, 'Report photo could not be converted.');
   }
 }

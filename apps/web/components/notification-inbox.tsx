@@ -1,22 +1,23 @@
 'use client';
-import { reportContext } from '@/lib/report-context';
 import Link from 'next/link';
+import { ResponsiveLink } from './responsive-link';
 import { AccountSectionSkeleton } from './account-section-skeleton';
-import { IoNotificationsOutline } from 'react-icons/io5';
+import { IoChevronForward, IoNotificationsOutline } from 'react-icons/io5';
+import { BrandBug } from './brand-bug';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { notificationHref, notificationPresentation, type CleanupNotification } from '@/lib/cleanup-notifications';
+import { notificationHref, notificationPresentation, type CleanupNotification, type TipNotice } from '@/lib/cleanup-notifications';
 import { notificationInboxHref, type NotificationView } from '@/lib/notification-view';
 import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 
-type Notice = CleanupNotification & { report: ({ title: string | null } & import('@/lib/report-context').ReportContextFields) | null };
+type Notice = CleanupNotification & { report: ({ title: string | null } & import('@/lib/report-context').ReportContextFields) | null; tip?: TipNotice | null };
 const defaultView: NotificationView = { filter: 'all', page: 1 };
 export function NotificationInbox({ userId, view = defaultView }: { userId: string; view?: NotificationView }) {
   return <AccountNotificationInbox key={userId} userId={userId} view={view} />;
 }
 function AccountNotificationInbox({ userId, view }: { userId: string; view: NotificationView }) {
   const { filter, page } = view;
-  const refresh = useDataRefresh();
+  const refresh = useDataRefresh(10_000);
   const [snapshot, setSnapshot] = useState<{ filter: string; page: number; notices: Notice[]; hasMore: boolean; loaded: boolean }>({ filter, page, notices: [], hasMore: false, loaded: false });
   const notices = snapshot.filter === filter && snapshot.page === page ? snapshot.notices.filter(notice => filter !== 'unread' || !notice.read_at) : [];
   const loaded = snapshot.filter === filter && snapshot.page === page && snapshot.loaded;
@@ -33,11 +34,11 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     const sequence = ++request.current;
     if (mutation.current) return;
     void (async () => {
-      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(id,title,created_at,litter_types,types)').eq('user_id', userId);
+      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(id,title,created_at,litter_types,types), tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)').eq('user_id', userId);
       if (filter === 'unread') query = query.is('read_at', null);
       const { data, error } = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 50, page * 50);
       if (error) throw error;
-      if (!cancelled && sequence === request.current) { setSnapshot({ filter, page, notices: data.slice(0, 50), hasMore: data.length > 50, loaded: true }); setMessage(''); }
+      if (!cancelled && sequence === request.current) { setSnapshot({ filter, page, notices: (data as unknown as Notice[]).slice(0, 50), hasMore: data.length > 50, loaded: true }); setMessage(''); }
     })().catch(() => { if (!cancelled && sequence === request.current) { setSnapshot(previous => previous.filter === filter && previous.page === page ? { ...previous, loaded: true } : { filter, page, notices: [], hasMore: false, loaded: true }); setMessage('Updates could not be refreshed. Check your connection and try again.'); } });
     return () => { cancelled = true; };
   }, [userId, filter, page, refresh, retry]);
@@ -71,20 +72,21 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
   const unread = notices.filter(notice => !notice.read_at);
   return <section className="notification-inbox embedded-panel account-dialog member-dashboard">
     <header className="account-screen-title"><h1 id="notification-heading" tabIndex={-1}>Notifications</h1></header>
-    <nav className="activity-tabs" aria-label="Notification filters">
+    <div className="notification-controls"><nav className="activity-tabs" aria-label="Notification filters">
       <Link href={notificationInboxHref({ filter: 'all', page: 1 })} aria-current={filter === 'all' ? 'page' : undefined}>All updates</Link>
       <Link href={notificationInboxHref({ filter: 'unread', page: 1 })} aria-current={filter === 'unread' ? 'page' : undefined}>Unread</Link>
     </nav>
-    {!!unread.length && <button className="secondary-button" disabled={busy} onClick={() => void markRead(unread.map(notice => notice.id))}>Mark displayed updates as read</button>}
+    {!!unread.length && <button className="secondary-button" disabled={busy} onClick={() => void markRead(unread.map(notice => notice.id))}>Mark displayed updates as read</button>}</div>
     {!!failedReadIds.length && <p role="alert">Could not mark these updates as read. <button disabled={busy} onClick={() => void markRead(failedReadIds)}>Retry marking read</button></p>}
     {message && <p role="alert">{message} <button onClick={() => setRetry(value => value + 1)}>Retry updates</button></p>}
     {!loaded && <AccountSectionSkeleton section="notifications" />}
-    {loaded && !notices.length && !message && <p>{page > 1 ? 'No updates on this page.' : filter === 'unread' ? 'You’re caught up. No unread updates.' : 'No updates yet. Cleanup activity will appear here.'}</p>}
+    {loaded && !notices.length && !message && <p className="notification-empty"><BrandBug kind="butterfly" size={32} className="brand-bug-state" />{page > 1 ? 'No updates on this page.' : filter === 'unread' ? 'You’re caught up. No unread updates.' : 'No updates yet.'}</p>}
     <ul className="notification-list">{notices.map(notice => {
       const copy = notificationPresentation(notice);
       return <li key={notice.id} id={`notification-${notice.id}`} data-unread={!notice.read_at}>
-        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link><p className="notification-report">{notice.report?.title || 'Report details unavailable'}</p>{notice.report && <p className="report-context">{reportContext(notice.report)}</p>}<p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString()}</time></div>
+        <div>{!notice.read_at && <span className="notification-unread">Unread</span>}<Link className="notification-row-link" href={notificationHref(notice, view)} onClick={() => { if (!notice.read_at) void markRead([notice.id]); }}><strong>{copy.title}</strong></Link>{notice.report?.title && <p className="notification-report">{notice.report.title}</p>}<p>{copy.message}</p><time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></div>
         {!notice.read_at && <button className="secondary-button compact-button" disabled={busy} onClick={() => void markRead([notice.id])}>Mark read</button>}
+        <IoChevronForward className="notification-chevron" aria-hidden />
       </li>;
     })}</ul>
     <nav className="account-actions" aria-label="Notification pages">
@@ -95,16 +97,17 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
 }
 
 export function NotificationLink({ userId, className = '' }: { userId: string | null; className?: string }) {
-  const refresh = useDataRefresh();
-  const [count, setCount] = useState<number | null>(null);
+  const refresh = useDataRefresh(10_000);
+  const [snapshot, setSnapshot] = useState<{ userId: string; count: number } | null>(null);
+  const count = snapshot?.userId === userId ? snapshot.count : null;
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       if (!userId) return;
       const result = await createClient().from('cleanup_notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null);
-      if (!cancelled) setCount(result.error ? null : result.count);
-    })().catch(() => { if (!cancelled) setCount(null); });
+      if (!cancelled && !result.error && result.count !== null) setSnapshot({ userId, count: result.count });
+    })().catch(() => { /* Keep the last known unread count until a successful refresh. */ });
     return () => { cancelled = true; };
   }, [userId, refresh]);
-  return <Link className={`notification-link ${className}`} href="/account/notifications" title="Updates" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden /><span className="notification-label">Updates</span>{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</Link>;
+  return <ResponsiveLink className={`notification-link ${className}`} href="/account/notifications" title="Notifications" aria-label={count ? `Notifications, ${count} unread` : userId ? 'Notifications' : 'Updates'}><IoNotificationsOutline aria-hidden />{count ? <span className="notification-count">{count > 99 ? '99+' : count}</span> : null}</ResponsiveLink>;
 }

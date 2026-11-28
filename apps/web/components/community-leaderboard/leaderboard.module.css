@@ -1,0 +1,302 @@
+/* Community leaderboards (town pages and the Leaderboards home page).
+   The site's own language: white surfaces, Nunito headings, raised edges (a solid shadow under a card),
+   and bugs that each mean one thing. Approved in the local mock-up on November 15, 2026. */
+@font-face { font-family: 'Playful Nunito'; src: url('/fonts/nunito/black.ttf') format('truetype'); font-weight: 700 900; font-display: swap; }
+
+.page {
+  --ink: #292932; --body: #45434d; --muted: #686477; --faint: #9a96a8;
+  --line: #e3dff0; --hair: #efedf4; --edge: #eeeaf8;
+  --purple: #5146ed; --purple-dark: #4438bb; --purple-soft: #efedff;
+  --nunito: 'Playful Nunito', system-ui, sans-serif;
+  --tint: #f7effc; --tint-strong: #ead6f5; --tint-edge: #cfa2e5; --tint-ink: #60237e;
+  width: min(1180px, calc(100% - 64px)); margin: 0 auto; padding: 0 0 96px;
+  color: var(--ink); font-size: 17px; line-height: 1.5;
+}
+/* Each board takes its action's colour: Clean = lilac, Report = blue, Fund = yellow. */
+.page[data-board='report'] { --tint: #eef4ff; --tint-strong: #c2d8ff; --tint-edge: #9bbbf3; --tint-ink: #234485; }
+.page[data-board='fund'] { --tint: #fff7d6; --tint-strong: #ffda61; --tint-edge: #d9ac19; --tint-ink: #493a10; }
+.page :is(a, button, summary):focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+.page button { font: inherit; cursor: pointer; }
+.page p { margin: 0; }
+.page.page :is(h1, h2, h3) { font-family: var(--nunito); font-weight: 900; color: var(--ink); }
+.page.page h2 { margin: 0 0 20px; font-size: clamp(26px, 3vw, 36px); line-height: 1.15; letter-spacing: -.025em; }
+
+/* ---------- Page top ---------- */
+.top { padding: 20px 0 24px; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; min-height: 44px; font-size: 16px; font-weight: 700; }
+.crumbs > span { display: inline-flex; align-items: center; gap: 4px; }
+.crumbs svg { width: 16px; height: 16px; color: var(--faint); }
+.crumbs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--purple-dark); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.page.page .top h1 { margin: 2px 0 0; font-size: clamp(40px, 6vw, 68px); line-height: .96; letter-spacing: -.035em; text-wrap: balance; }
+
+/* Board on the left; the map and the winners beside it. */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; align-items: start; gap: 32px; }
+.layout[data-single] { grid-template-columns: minmax(0, 760px); }
+.main { display: grid; gap: 20px; min-width: 0; }
+.side { display: grid; gap: 24px; }
+
+/* The town's map, framed like the homepage photos, with the map's own bug pins. */
+.map { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden; background: var(--purple-soft); box-shadow: 0 6px 0 #8ed7c5; }
+.mapImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .8; }
+.pin { position: absolute; display: inline-flex; align-items: center; gap: 3px; height: 30px; min-width: 30px; padding: 0 5px; translate: -50% -50%; border: 2px solid #ece8f8; border-radius: 999px; background: #fff; box-shadow: 0 2px 5px #2a225a2e; }
+.pin img { width: 17px; height: 17px; object-fit: contain; }
+.pin b { padding-right: 3px; color: #493a10; font-family: var(--nunito); font-size: 12px; font-weight: 900; line-height: 1; }
+
+/* ---------- The board ---------- */
+.race { padding: 28px 32px; border: 1px solid var(--line); border-radius: 26px; background: #fff; box-shadow: 0 6px 0 var(--edge); }
+.raceHead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.page.page .raceHead h2 { margin: 0; }
+.daysLeft { padding: 4px 12px; border-radius: 999px; background: var(--tint); color: var(--tint-ink); font-family: var(--nunito); font-size: 14px; font-weight: 900; box-shadow: inset 0 0 0 1px var(--tint-edge); }
+.period { display: inline-flex; margin-left: auto; padding: 3px; border-radius: 12px; background: #f4f3f7; }
+.period button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--body); font-size: 14px; font-weight: 700; }
+.period button[aria-pressed='true'] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px #29293224; }
+
+/* One round bug badge per board; the chosen one raised and in its colour. */
+.badges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 22px; padding-bottom: 22px; border-bottom: 1px solid var(--hair); }
+.badges button { display: grid; justify-items: center; gap: 8px; padding: 4px 0; border: 0; background: transparent; color: var(--muted); font-family: var(--nunito); font-size: 16px; font-weight: 900; }
+.badge { display: grid; place-items: center; width: 72px; height: 72px; border: 2px solid var(--line); border-radius: 50%; background: #fff; box-shadow: 0 4px 0 var(--edge); transition: transform 160ms ease; }
+.badge img { width: 40px; height: 40px; object-fit: contain; }
+.badges button:hover .badge { border-color: #c9c2f2; }
+.badges button[aria-selected='true'] { color: var(--tint-ink); }
+.badges button:focus-visible { outline: none; }
+.badges button:focus-visible .badge { outline: 3px solid var(--purple); outline-offset: 3px; }
+/* A pale fill keeps the bug crisp; the colour lives in the thick ring and raised edge. */
+.badges button[aria-selected='true'] .badge { border: 3px solid var(--tint-edge); background: var(--tint); box-shadow: 0 5px 0 var(--tint-edge); transform: scale(1.12); }
+
+/* A plain ranked list: place, rank bug, name, score. */
+.lanes { margin: 14px 0 0; padding: 0; list-style: none; animation: board-in 200ms ease both; }
+.lanes > li { border-top: 1px solid var(--hair); }
+.row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; align-items: center; gap: 14px; width: calc(100% + 16px); min-height: 68px; margin: 0 -8px; padding: 0 8px; border-radius: 14px; color: inherit; text-decoration: none; }
+a.row:hover { background: #faf9ff; }
+a.row:hover .who strong { color: var(--purple-dark); }
+.pos { display: grid; place-items: center; justify-self: center; width: 32px; height: 32px; font-family: var(--nunito); font-size: 18px; font-weight: 900; color: var(--faint); font-variant-numeric: tabular-nums; }
+/* Top three get a medal: gold in the brand yellow, then silver and bronze. */
+.pos[data-medal] { border-radius: 50%; color: #3b2f0b; }
+.pos[data-medal='1'] { background: #ffda61; box-shadow: inset 0 -3px 0 #d9ac19; }
+.pos[data-medal='2'] { background: #e6e4ef; box-shadow: inset 0 -3px 0 #c3bfd3; color: #45434d; }
+.pos[data-medal='3'] { background: #f6d3ba; box-shadow: inset 0 -3px 0 #dca27e; color: #5a3519; }
+.rowBug { width: 40px; height: 40px; object-fit: contain; }
+.who { display: grid; min-width: 0; }
+.who strong, .profileName { overflow: hidden; font-size: 17px; font-weight: 800; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+.who span { overflow: hidden; font-size: 13px; line-height: 1.3; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; }
+.profileName { color: inherit; text-decoration: none; }
+.profileName:hover { color: var(--purple-dark); text-decoration: underline; }
+.rowActions { display: flex; align-items: center; gap: 12px; }
+.score { font-size: 14px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.score b { color: var(--ink); font-family: var(--nunito); font-size: 22px; font-weight: 900; }
+.emptyLane { padding: 22px 0 6px; color: var(--body); font-size: 16px; }
+.showAll { display: block; width: 100%; min-height: 48px; margin-top: 6px; border: 0; border-top: 1px solid var(--hair); background: transparent; color: var(--purple-dark); font-size: 15px; font-weight: 800; }
+.showAll:hover { text-decoration: underline; text-underline-offset: 4px; }
+.updated { margin-top: 8px !important; color: var(--faint); font-size: 13px; text-align: center; }
+@keyframes board-in { from { opacity: 0; } }
+
+/* Loading placeholders, shaped like the rows they replace. */
+.skelDot, .skelBug, .skelName, .skelLine, .skelScore { display: block; border-radius: 8px; background: #f0eef6; animation: skel 1.2s ease-in-out infinite; }
+.skelDot { justify-self: center; width: 28px; height: 28px; border-radius: 50%; }
+.skelBug { width: 36px; height: 36px; border-radius: 50%; }
+.skelName { width: min(150px, 80%); height: 16px; }
+.skelLine { width: 80px; height: 11px; margin-top: 7px; }
+.skelScore { width: 70px; height: 18px; }
+@keyframes skel { 50% { opacity: .55; } }
+
+/* ---------- Your standing ---------- */
+.standing { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 20px 24px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 5px 0 var(--edge); }
+.standingBug { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--tint); box-shadow: inset 0 0 0 2px var(--tint-edge); }
+.standingBug img { width: 34px; height: 34px; object-fit: contain; }
+.standingBug[data-empty] { background: #fff; box-shadow: inset 0 0 0 2px var(--line); }
+.standingCopy { min-width: 0; }
+.page.page .standingCopy h2 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; }
+.standingCopy p { margin-top: 3px; font-size: 15px; line-height: 1.45; color: var(--body); }
+.standingCopy a { color: var(--purple-dark); font-weight: 700; }
+.primary, .secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 18px; border-radius: 14px; font-size: 15px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.primary { border: 1px solid var(--purple); background: var(--purple); color: #fff; box-shadow: 0 4px 0 #3528ac; }
+.primary:hover { background: var(--purple-dark); border-color: var(--purple-dark); }
+.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 #3528ac; }
+.secondary { border: 1px solid #d8d1f0; background: #fff; color: var(--purple-dark); box-shadow: 0 3px 0 var(--edge); }
+.secondary:hover { border-color: #b7ace5; }
+
+/* ---------- Share my rank ---------- */
+.share { width: min(520px, calc(100vw - 32px)); padding: 22px; border: 1px solid #d8d1f0; border-radius: 24px; color: var(--ink); box-shadow: 0 7px 0 #ede9f6, 0 24px 60px #2a225a2e; }
+.share[open] { animation: share-in 200ms cubic-bezier(.3, 1.3, .5, 1); }
+@keyframes share-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.share::backdrop { background: #26213d66; }
+.shareHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.page.page .shareHead h2 { margin: 0; font-size: 22px; }
+.close { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #f4f3f7; color: var(--body); font-size: 24px; line-height: 1; }
+.close:hover { background: #ebe9f3; color: var(--ink); }
+.cardImage { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 630; border-radius: 16px; background: var(--tint); box-shadow: 0 0 0 1px var(--line); }
+.shareActions { display: flex; gap: 12px; margin-top: 18px; }
+.shareActions > * { flex: 1; }
+
+/* ---------- Past champions ---------- */
+/* Last month's winner, featured: their bug in a gold medal. */
+.latest { display: grid; justify-items: center; gap: 2px; padding: 22px 20px 20px; border: 1px solid #f0d27a; border-radius: 22px; background: #fffbea; box-shadow: 0 5px 0 #f3e2a6; color: var(--ink); text-align: center; text-decoration: none; }
+.latestBadge { display: grid; place-items: center; width: 76px; height: 76px; margin-bottom: 8px; border-radius: 50%; background: #ffda61; box-shadow: inset 0 -4px 0 #d9ac19, 0 0 0 5px #fff; }
+.latestBadge img { width: 46px; height: 46px; object-fit: contain; }
+.latestTitle { color: #7a5a00; font-family: var(--nunito); font-size: 15px; font-weight: 900; }
+.latest strong { font-family: var(--nunito); font-size: 24px; font-weight: 900; line-height: 1.2; }
+.latest > span:last-child { font-size: 14px; color: var(--muted); }
+.champs { display: grid; gap: 12px; margin: 0; padding: 0 8px; list-style: none; }
+.champs a { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.champs a:hover strong { color: var(--purple-dark); }
+.champs img { width: 34px; height: 34px; object-fit: contain; }
+.champs a > span { display: grid; }
+.champs strong { font-size: 15px; font-weight: 800; line-height: 1.25; }
+.champs a > span > span { font-size: 13px; line-height: 1.3; color: var(--muted); }
+
+/* ---------- Local help ---------- */
+.helpSection { margin-top: 64px; }
+.help { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+/* One card per way to help: what you want to do, who runs it, and the one detail that matters. */
+.help a { display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; align-items: center; gap: 14px; height: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: #fff; color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--edge); }
+.help a:hover { border-color: #c9c2f2; }
+.help a:hover strong { color: var(--purple-dark); }
+.helpIcon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--purple-soft); color: var(--purple-dark); }
+.helpIcon svg { width: 20px; height: 20px; }
+.helpCopy { display: grid; min-width: 0; }
+.helpCopy strong { font-size: 16px; font-weight: 800; line-height: 1.3; }
+.helpCopy span { font-size: 14px; line-height: 1.4; color: var(--body); }
+.helpCopy span + span { color: var(--muted); }
+.helpGo { width: 18px; height: 18px; color: var(--faint); }
+.help a:hover .helpGo { color: var(--purple-dark); }
+
+/* The cleanup guide lives on the page: one fold-open question each. */
+.guide { margin-top: 28px; border-top: 1px solid var(--hair); }
+.guide details { border-bottom: 1px solid var(--hair); }
+.guide summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; padding: 8px 0; font-size: 17px; font-weight: 800; cursor: pointer; list-style: none; }
+.guide summary::-webkit-details-marker { display: none; }
+.guide summary::after { content: ''; flex: none; width: 9px; height: 9px; margin-right: 6px; border-right: 2.5px solid var(--purple-dark); border-bottom: 2.5px solid var(--purple-dark); rotate: 45deg; translate: 0 -3px; transition: rotate 160ms ease; }
+.guide details[open] summary::after { rotate: 225deg; translate: 0 2px; }
+.guide summary:hover { color: var(--purple-dark); }
+.guideBody { display: grid; gap: 12px; max-width: 760px; padding: 0 0 20px; font-size: 16px; line-height: 1.6; color: var(--body); }
+.guideBody ul { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; padding: 0; list-style: none; }
+.guideBody a { color: var(--purple-dark); font-weight: 700; }
+.reviewed { margin-top: 14px !important; color: var(--muted); font-size: 13px; }
+
+/* ---------- Leaderboards home: towns ---------- */
+.towns { margin-top: 64px; }
+.townSearch { display: flex; align-items: center; gap: 10px; max-width: 420px; min-height: 48px; margin: 0 0 16px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.townSearch:focus-within { outline: 3px solid var(--purple); outline-offset: 2px; }
+.townSearch svg { flex: none; width: 18px; height: 18px; color: var(--muted); }
+.townSearch input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; font: inherit; font-size: 16px; outline: none; }
+.townList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.townList a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; min-height: 76px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: #fff; color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--edge); }
+.townList a:hover { border-color: #c9c2f2; }
+.townList a:hover strong { color: var(--purple-dark); }
+.townList strong { font-family: var(--nunito); font-size: 19px; font-weight: 900; line-height: 1.2; }
+.townList span { grid-column: 1; font-size: 14px; color: var(--muted); }
+.townList svg { grid-row: 1 / span 2; grid-column: 2; width: 18px; height: 18px; color: var(--faint); }
+.townsEmpty { color: var(--body); font-size: 16px; }
+
+/* ---------- Leaderboards home: find your town ----------
+   Global board on the left, everything about towns on the right. The finder leads that column (on phones it
+   sits between the title and the board) in the site's mint, so it reads as the way into a town's board. */
+.layout[data-finder] { grid-template-areas: 'main finder' 'main side'; grid-template-rows: auto 1fr; row-gap: 24px; }
+.layout[data-finder] > .main { grid-area: main; }
+.layout[data-finder] > .finderArea { grid-area: finder; min-width: 0; }
+.layout[data-finder] > .side { grid-area: side; }
+.finder { padding: 20px; border: 2px solid #8ed7c5; border-radius: 22px; background: #e8f7f2; box-shadow: 0 6px 0 #8ed7c5; }
+.finderHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.page.page .finderHead h2 { margin: 0; font-size: 22px; }
+.finderBox { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 54px; padding: 0 14px; border: 2px solid #b9e9dd; border-radius: 16px; background: #fff; }
+.finderBox:focus-within { border-color: var(--purple); }
+/* The box itself shows focus (purple border), so the site-wide ring on the input is not repeated inside it. */
+.finderBox.finderBox input:is(:focus, :focus-visible) { outline: none; box-shadow: none; }
+.finderBox > svg { flex: none; width: 20px; height: 20px; color: var(--muted); }
+.finderBox input { flex: 1; min-width: 0; min-height: 50px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 17px; font-weight: 600; outline: none; }
+.finderBox input::placeholder { color: var(--faint); font-weight: 500; }
+.finderBox input::-webkit-search-cancel-button { cursor: pointer; }
+.nearMe { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: #1f5f50; font-size: 15px; font-weight: 800 !important; }
+.nearMe:hover { background: #d3f0e8; }
+.nearMe svg { width: 16px; height: 16px; }
+.nearMe[aria-busy='true'] { color: var(--muted); }
+
+.finderOptions { position: absolute; z-index: 20; top: calc(100% + 8px); left: 0; right: 0; margin: 0; padding: 6px; border: 1px solid var(--line); border-radius: 16px; background: #fff; list-style: none; box-shadow: 0 14px 34px #2a225a24; }
+.finderOptions li { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 8px 12px; border-radius: 11px; cursor: pointer; }
+.finderOptions li[aria-selected='true'] { background: var(--purple-soft); }
+.finderOptions li > span:first-child { display: grid; min-width: 0; }
+.finderOptions strong { font-family: var(--nunito); font-size: 17px; font-weight: 900; line-height: 1.25; }
+.finderOptions li > span:first-child > span { color: var(--muted); font-size: 14px; }
+.finderDetail { display: none; }
+.finderOptions li[data-search] { color: var(--purple-dark); font-weight: 800; }
+.finderOptions li[data-search] > span { display: inline-flex !important; align-items: center; gap: 8px; }
+.finderOptions li[data-search] svg { width: 16px; height: 16px; }
+
+.finderMessage { margin-top: 12px !important; color: var(--body); font-size: 15px; line-height: 1.45; }
+.finderResult { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border: 2px solid var(--purple); border-radius: 16px; background: #fff; color: var(--ink); text-decoration: none; box-shadow: 0 4px 0 #d9d5fb; }
+.finderResult > svg:first-child { justify-self: center; width: 22px; height: 22px; color: var(--purple-dark); }
+.finderResult > svg:last-child { width: 18px; height: 18px; color: var(--purple-dark); }
+.finderResult > span { display: grid; min-width: 0; }
+.finderResult strong { font-family: var(--nunito); font-size: 18px; font-weight: 900; line-height: 1.25; }
+.finderResult span span { color: var(--muted); font-size: 14px; }
+
+.yourTowns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.yourTowns > span { flex-basis: 100%; color: #1f5f50; font-size: 14px; font-weight: 800; }
+.yourTowns a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid #b9e9dd; border-radius: 999px; background: #fff; color: var(--ink); font-size: 15px; font-weight: 800; text-decoration: none; box-shadow: 0 2px 0 #b9e9dd; }
+.yourTowns a:hover { border-color: #c9c2f2; color: var(--purple-dark); }
+
+/* Beside the global board: busiest towns, then countries. */
+.sideCard { padding: 22px 20px 12px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 6px 0 var(--edge); }
+.page.page .sideCard h2 { margin: 0 0 6px; font-size: 22px; }
+.sideList { margin: 0; padding: 0; list-style: none; }
+.sideList li + li { border-top: 1px solid var(--hair); }
+.sideList a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 8px 0; color: var(--ink); text-decoration: none; }
+.sideList a > span { display: grid; min-width: 0; }
+.sideList strong { font-size: 16px; font-weight: 800; line-height: 1.3; }
+.sideList a > span > span { color: var(--muted); font-size: 14px; }
+.sideList svg { flex: none; width: 18px; height: 18px; color: var(--faint); }
+.sideList a:hover strong, .sideList a:hover svg { color: var(--purple-dark); }
+
+/* Country and state pages: just the list. */
+.browse .towns { margin-top: 8px; }
+
+/* ---------- Smaller screens ---------- */
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 1fr; }
+  .layout[data-finder] { grid-template-areas: 'finder' 'main' 'side'; grid-template-rows: auto; }
+  .side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .side > .champs { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Phones: the board comes first, so the map steps aside. */
+@media (max-width: 700px) {
+  .page { width: calc(100% - 32px); padding-bottom: 64px; font-size: 16px; }
+  .top { padding: 12px 0 16px; }
+  .map { display: none; }
+  .race { padding: 18px 16px; border-radius: 22px; }
+  .period { width: 100%; margin-left: 0; }
+  .period button { flex: 1; }
+  .badge { width: 60px; height: 60px; }
+  .badge img { width: 34px; height: 34px; }
+  .badges button { font-size: 14px; }
+  .pos { width: 28px; height: 28px; font-size: 16px; }
+  .row { grid-template-columns: 28px 34px minmax(0, 1fr) auto; gap: 10px; min-height: 62px; }
+  .rowBug { width: 34px; height: 34px; }
+  .who strong, .profileName { font-size: 16px; }
+  .rowActions { gap: 8px; }
+  .rowActions .score { display: grid; justify-items: end; font-size: 11px; line-height: 1.1; }
+  .score b { font-size: 20px; }
+  .standing { grid-template-columns: 48px minmax(0, 1fr); gap: 12px 14px; padding: 16px; border-radius: 18px; }
+  .standingBug { width: 48px; height: 48px; }
+  .standingBug img { width: 28px; height: 28px; }
+  .page.page .standingCopy h2 { font-size: 19px; }
+  .standing > :is(.primary, .secondary) { grid-column: 1 / -1; }
+  .share { padding: 16px; border-radius: 20px; }
+  .side { grid-template-columns: 1fr; }
+  .side > .champs { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 4px; }
+  .helpSection, .towns { margin-top: 48px; }
+  .browse .towns { margin-top: 4px; }
+  .finder { padding: 16px; border-radius: 20px; }
+  .finderBox { gap: 8px; padding: 0 12px; }
+  .finderBox input { font-size: 16px; }
+  .help, .townList { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lanes, .share[open] { animation: none; }
+  .skelDot, .skelBug, .skelName, .skelLine, .skelScore { animation: none; }
+  .badge, .guide summary::after { transition: none; }
+}
+
+/* Page titles lead with the Leaderboards bug (the crowned beetle), as the homepage labels sections with a bug. */
+.page.page .top h1.title { display: flex; align-items: center; gap: .18em; }
+.titleBeetle { flex: none; width: .9em; height: .9em; margin-top: -.06em; }

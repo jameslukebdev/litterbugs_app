@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 const platform = vi.hoisted(() => ({ OS: 'ios' }));
-vi.mock('react-native', () => ({ Platform: platform, View: ({children}) => <div>{children}</div>, Text: ({children}) => <span>{children}</span>, StyleSheet: {create: value=>value} }));
+vi.mock('react-native', () => ({ Platform: platform, View: ({children}) => <div>{children}</div>, Text: ({children}) => <span>{children}</span>, Image: ({source}) => <img data-src={source?.testUri} />, StyleSheet: {create: value=>value} }));
 vi.mock('react-native-maps', () => ({ Marker: ({children}) => <section>{children}</section> }));
 vi.mock('@expo/vector-icons', () => ({Ionicons: ({name}) => <i data-icon={name} />}));
 vi.mock('./AndroidReportMarker', () => ({ default: ({ children }) => <section>{children}</section> }));
@@ -10,21 +10,21 @@ import ReportMapMarkers from './ReportMapMarkers';
 const render = (cleanup_state, label, labelled=true, selectedId=null) => renderToStaticMarkup(<ReportMapMarkers markers={[{id:'a',label,labelled,width:80,height:32,coordinate:{latitude:36,longitude:-81},report:{cleanup_state}}]} selectedId={selectedId} />);
 afterEach(() => { platform.OS = 'ios'; });
 describe('report marker meaning', () => {
-  it('puts a clock or check before the unchanged funded amount', () => {
-    for (const [state,icon] of [['claimed','time-outline'],['completion_submitted','time-outline'],['completed','checkmark']]) {
-      const html=render(state,'$25');
-      expect(html).toContain(`data-icon="${icon}"`);
-      expect(html.indexOf('data-icon')).toBeLessThan(html.indexOf('$25'));
+  it('labels each state with its website bug', () => {
+    for (const [state, bug] of [['available','ladybug'],['claimed','caterpillar'],['completion_submitted','caterpillar'],['completed','flower']]) {
+      expect(render(state,'$25')).toContain(`/${bug}.png`);
     }
   });
-  it('shows zero funding explicitly without a leaf', () => {
-    const html=render('available','$0');
-    expect(html).not.toContain('leaf-outline'); expect(html).toContain('$0');
+  it('shows money only on open reports and keeps $0 pins as the bug alone', () => {
+    expect(render('available','$25')).toContain('$25');
+    expect(render('available','$0')).not.toContain('$0');
+    expect(render('claimed','$25')).not.toContain('$25');
+    expect(render('completed','$25')).not.toContain('$25');
   });
-  it('keeps the state icon when a funded label is crowded and reveals the amount on selection', () => {
-    expect(render('claimed','$25',false)).toContain('time-outline');
-    expect(render('claimed','$25',false)).not.toContain('$25');
-    expect(render('claimed','$25',false,'a')).toContain('$25');
+  it('hides a crowded amount and reveals it on selection', () => {
+    expect(render('available','$25',false)).toContain('/ladybug.png');
+    expect(render('available','$25',false)).not.toContain('$25');
+    expect(render('available','$25',false,'a')).toContain('$25');
   });
   it('preserves Android marker identity for visual changes and refreshes immutable spoken information', () => {
     platform.OS = 'android';

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Litterbugs",
     "slug": "litterbugs-partner",
-    "version": "2.0.0",
+    "version": "2.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -47,10 +47,10 @@
         {
           "backgroundColor": "#FFFFFF",
           "image": "./assets/LB_Logo_PNG.png",
-          "imageWidth": 244,
+          "imageWidth": 300,
           "resizeMode": "contain",
           "android": {
-            "imageWidth": 128
+            "imageWidth": 200
           }
         }
       ],
@@ -61,16 +61,30 @@
         "expo-image-picker",
         {
           "photosPermission": "Litterbugs uses your photos when you choose report or profile pictures.",
-          "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures.",
+          "cameraPermission": "Litterbugs uses your camera when you take report or profile pictures, or a photo of your ID if Stripe asks for one during payout setup.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {
         "projectId": "df0d0855-71d9-4943-b278-d1f083ab6b06"
       }
     },
-    "owner": "litterbugs-community-cleanup"
+    "owner": "litterbugs-community-cleanup",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/df0d0855-71d9-4943-b278-d1f083ab6b06",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
   }
 }

@@ -79,6 +79,12 @@ export const stripeV2 = async <T>(path: string, init: RequestInit = {}): Promise
 
 export type StripeRecipientAccount = {
   id: string;
+  defaults?: {
+    profile?: {
+      business_url?: string | null;
+      product_description?: string | null;
+    } | null;
+  } | null;
   identity?: {
     country?: string | null;
     entity_type?: "company" | "government_entity" | "individual" | "non_profit" | null;
@@ -87,6 +93,9 @@ export type StripeRecipientAccount = {
     entries?: Array<{
       awaiting_action_from?: "user" | "stripe" | null;
       description?: string | null;
+      minimum_deadline?: {
+        status?: "currently_due" | "eventually_due" | "past_due" | null;
+      } | null;
     }> | null;
   } | null;
   configuration?: {
@@ -103,15 +112,16 @@ export type StripeRecipientAccount = {
 
 export const stripeRecipientState = (account: StripeRecipientAccount) => {
   const requirementsDue = (account.requirements?.entries ?? [])
-    .filter((entry) => entry.awaiting_action_from === "user")
+    .filter((entry) => entry.awaiting_action_from === "user"
+      && entry.minimum_deadline?.status !== "eventually_due")
     .map((entry) => entry.description ?? "Additional Stripe information is required");
   const transferStatus = account.configuration?.recipient?.capabilities
     ?.stripe_balance?.stripe_transfers?.status;
   const payoutStatus = account.configuration?.recipient?.capabilities
     ?.stripe_balance?.payouts?.status;
-  const payoutsEnabled = transferStatus === "active"
-    && payoutStatus === "active"
-    && requirementsDue.length === 0;
+  // Capabilities are Stripe's authority on what the account can do now.
+  // Future volume thresholds must not lock members out of enabled payouts.
+  const payoutsEnabled = transferStatus === "active" && payoutStatus === "active";
   return {
     payoutsEnabled,
     onboardingStatus: payoutsEnabled
@@ -128,6 +138,7 @@ export const retrieveStripeRecipientAccount = (accountId: string) => {
     "include[0]": "configuration.recipient",
     "include[1]": "identity",
     "include[2]": "requirements",
+    "include[3]": "defaults",
   });
   return stripeV2<StripeRecipientAccount>(
     `/core/accounts/${encodeURIComponent(accountId)}?${includes.toString()}`,
@@ -135,28 +146,69 @@ export const retrieveStripeRecipientAccount = (accountId: string) => {
   );
 };
 
-export const configureStripeRecipientAsIndividual = (
-  accountId: string,
-  country = "us",
-) => stripeV2<StripeRecipientAccount>(
-  `/core/accounts/${encodeURIComponent(accountId)}`,
-  {
+export const legacyRecipientProfileReset = (account: StripeRecipientAccount) => {
+  const profile = account.defaults?.profile;
+  const reset: { url?: ""; product_description?: "" } = {};
+  // Remove only exact values previously injected by Litterbugs. Preserve
+  // any website or service description the member has supplied themselves.
+  if (profile?.business_url === "https://litterbugs.app/cleanup-policy") reset.url = "";
+  if ([
+    "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
+    "Individual litter reporting and cleanup services rewarded after verified cleanups through the Litterbugs community cleanup platform.",
+  ].includes(profile?.product_description ?? "")) reset.product_description = "";
+  return reset;
+};
+
+export const LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION =
+  "Individual participation in litter reporting and community cleanups coordinated through Litterbugs. Litterbugs pays rewards for eligible, verified activity.";
+
+export const recipientProfileUpdate = (account: StripeRecipientAccount) => {
+  const reset = legacyRecipientProfileReset(account);
+  const profile = account.defaults?.profile;
+  const individual = !account.identity?.entity_type || account.identity.entity_type === "individual";
+  const hasMemberWebsite = Boolean(profile?.business_url?.trim()) && reset.url !== "";
+  const hasMemberDescription = Boolean(profile?.product_description?.trim())
+    && reset.product_description !== "";
+  const needsActivityDescription = (account.requirements?.entries ?? []).some((entry) =>
+    entry.awaiting_action_from === "user"
+    && /^(defaults\.profile\.(business_url|product_description)|business_profile\.(url|product_description))$/.test(entry.description ?? "")
+  );
+  const replacingLegacyProfile = Object.keys(reset).length > 0;
+  return {
+    ...reset,
+    // Describe the member's reward activity rather than inventing a website or
+    // asking them to write a business pitch. Stripe shows this for review.
+    // Stripe can redact profile values after onboarding begins. A missing
+    // value alone is not permission to overwrite a member's existing details.
+    ...(individual && !hasMemberWebsite && !hasMemberDescription
+        && (needsActivityDescription || replacingLegacyProfile)
+      ? { product_description: LITTERBUGS_REWARD_ACTIVITY_DESCRIPTION }
+      : {}),
+  };
+};
+
+export const configureStripeRecipientAsIndividual = async (
+  account: StripeRecipientAccount,
+) => {
+  const profileUpdate = recipientProfileUpdate(account);
+  const updateProfile = Object.keys(profileUpdate).length > 0;
+  if (updateProfile) {
+    // Accounts v1 supports empty-string field removal; Stripe documents that
+    // v1 updates to a v2 account update its corresponding v2 properties.
+    await stripeClient().accounts.update(account.id, { business_profile: profileUpdate });
+  }
+  if (account.identity?.entity_type) {
+    // Never overwrite an entity type the member has already supplied.
+    return updateProfile ? retrieveStripeRecipientAccount(account.id) : account;
+  }
+  return stripeV2<StripeRecipientAccount>(`/core/accounts/${encodeURIComponent(account.id)}`, {
     method: "POST",
     body: JSON.stringify({
-      identity: {
-        country,
-        entity_type: "individual",
-      },
-      defaults: {
-        profile: {
-          business_url: "https://litterbugs.app/cleanup-policy",
-          product_description: "Individual litter cleanup services coordinated and rewarded through the Litterbugs community cleanup platform.",
-        },
-      },
-      include: ["configuration.recipient", "identity", "requirements"],
+      identity: { country: account.identity?.country ?? "us", entity_type: "individual" },
+      include: ["configuration.recipient", "identity", "requirements", "defaults"],
     }),
-  },
-);
+  });
+};
 
 export type StripeAccountLink = { url: string; expires_at: string };
 

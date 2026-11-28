@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-08",
+  "property": "sc-domain:litterbugs.app",
+  "requested": 9,
+  "results": [
+    {
+      "id": "25b202b4-b36f-47b8-b50d-a77de060d702",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "01-castle-ford.jpg"
+    },
+    {
+      "id": "42dd5736-8b33-41a0-951c-2d5db84e113a",
+      "result": "Rejected: live test Soft 404; fetch successful; crawl and indexing allowed",
+      "evidence": "02-patio-live-test.jpg"
+    },
+    {
+      "id": "94ff2afa-939f-4f32-bd25-850f45ebbd44",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "03-intersection.jpg"
+    },
+    {
+      "id": "a0a47f46-8d85-4c13-8d37-50f8c4c0b525",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "04-park.jpg"
+    },
+    {
+      "id": "ba227d19-b46d-46fa-a02c-7d1f4c5047c3",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "05-ridge-road-two.jpg"
+    },
+    {
+      "id": "cc0f660d-4af4-4db0-8f29-f6ec0bd3b07e",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "06-ridge-road-three.jpg"
+    },
+    {
+      "id": "ce154938-f7c9-40d9-99bc-4a5d43710aa0",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "07-howards-creek.jpg"
+    },
+    {
+      "id": "dd2bcb17-f7f9-4b3e-b0bf-4ad31e7cbe95",
+      "result": "Indexing requested; priority crawl queue",
+      "evidence": "08-calle.jpg"
+    },
+    {
+      "id": "ed1500be-2555-4504-9421-6a72451c3ea6",
+      "result": "Rejected: live test Soft 404; fetch successful; crawl and indexing allowed",
+      "evidence": "09-sand-live-test.jpg"
+    }
+  ],
+  "summary": {
+    "submitted": 9,
+    "acceptedPriorityCrawl": 7,
+    "rejectedSoft404": 2,
+    "notConfirmationOfIndexing": true
+  },
+  "analyticsNote": "HTTP requests did not execute visitor scripts; browser use was confined to Search Console. Google live tests rendered the pages and may execute analytics: treat November 8 approximately 4:23\u20134:32 p.m. Eastern Google Inspection Tool activity as test traffic; visitor analytics settings were not changed."
+}

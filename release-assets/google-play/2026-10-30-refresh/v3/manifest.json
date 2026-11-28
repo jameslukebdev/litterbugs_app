@@ -1,0 +1,104 @@
+{
+  "created": "2026-10-30",
+  "status": "Review draft; not published",
+  "boardId": "959886fa-d600-49fc-9797-89a0ff32bc4d",
+  "gallery": [
+    {
+      "id": "native-v3-1",
+      "file": "01-make-money-cleaning.png",
+      "title": "Make money cleaning up.",
+      "type": "existing illustration/graphic",
+      "source": "../v2/01-your-neighborhood.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-2",
+      "file": "02-find-litter.png",
+      "title": "Find litter near you.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/reports-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-3",
+      "file": "03-choose-a-cleanup.png",
+      "title": "Choose a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/cleanup-detail-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-4",
+      "file": "04-report-litter.png",
+      "title": "Make money reporting litter.",
+      "type": "existing illustration/graphic",
+      "source": "../v2/04-reporter-rewards.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-5",
+      "file": "05-donate.png",
+      "title": "Donate to a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/donate-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-6",
+      "file": "06-clean-up.png",
+      "title": "Pick up litter. Get paid.",
+      "type": "existing illustration/graphic",
+      "source": "../v2/06-cleanup-rewards.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-7",
+      "file": "07-share.png",
+      "title": "Share a cleanup.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/sharing-build21.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "native-v3-8",
+      "file": "08-community.png",
+      "title": "Help clean up your community.",
+      "type": "real Android screenshot with headline",
+      "source": "source/captures/community-profile-build21.png",
+      "width": 1080,
+      "height": 1920
+    }
+  ],
+  "realScreenshots": 5,
+  "graphics": 3,
+  "featureGraphics": [
+    "feature-graphic-illustrated.png",
+    "feature-graphic-yellow.png"
+  ],
+  "provenance": {
+    "app": "Native Android 2.0.1, versionCode 21, installed from release AAB; local APK signed with standard debug keystore. Captured October 30 via ADB.",
+    "screens": "Original 1080x2340 captures retained; proportionally resized in full, with no UI edits. Real existing public reports and reporter profile. Donation screen is before payment with app default amount; no payment made.",
+    "illustrations": "Existing v2 artwork preserved; no new image generation.",
+    "excluded": "Blank map tiles under local signing, location-permission dialogs, test-payment screenshots, and old build-20 map excluded.",
+    "video": "Actual 20-second build-21 screen recording retained in source/captures; no submission or payment."
+  },
+  "remaining": [
+    "Review gallery and video before any upload."
+  ],
+  "notUploaded": true,
+  "video": {
+    "file": "video-app-preview.mp4",
+    "width": 1920,
+    "height": 1080,
+    "durationSeconds": 26,
+    "actualAppFootageSeconds": 18,
+    "silent": true
+  }
+}

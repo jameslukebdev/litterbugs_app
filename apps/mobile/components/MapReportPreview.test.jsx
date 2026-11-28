@@ -10,7 +10,7 @@ vi.mock('react-native', async () => {
     setValue() {}
     stopAnimation() {}
   }
-  return { useWindowDimensions: () => ({ width: 393, height: 852, fontScale: 1 }), Animated: { View: Box, Value, timing: () => ({ start: vi.fn() }) }, View: Box, Text: Box, ScrollView: Box, Platform: { OS: 'ios' }, ActionSheetIOS: { showActionSheetWithOptions: vi.fn() }, Alert: { alert: vi.fn() }, TouchableOpacity: Box, Modal: ({ visible, children }) => visible ? children : null,
+  return { useWindowDimensions: () => ({ width: 393, height: 852, fontScale: 1 }), PanResponder: { create: () => ({ panHandlers: {} }) }, Animated: { View: Box, Value, add: () => 0, timing: () => ({ start: vi.fn() }) }, View: Box, Text: Box, Image: () => null, ScrollView: Box, Platform: { OS: 'ios' }, ActionSheetIOS: { showActionSheetWithOptions: vi.fn() }, Alert: { alert: vi.fn() }, TouchableOpacity: Box, Modal: ({ visible, children }) => visible ? children : null,
     FlatList: ({ data, renderItem }) => data.map(item => createElement('div', { key: item.id }, renderItem({ item }))),
     StyleSheet: { create: value => value, hairlineWidth: 1 } };
 });
@@ -23,7 +23,8 @@ const report = { id: 'a', title: 'Bottles by the road', funded_amount_cents: 600
 const render = props => renderToStaticMarkup(<MapReportPreview insetBottom={0} getPhotoUrl={vi.fn()} {...props} />);
 const previewSource = readFileSync(new URL('./MapReportPreview.jsx', import.meta.url), 'utf8');
 const previewHeroSource = readFileSync(new URL('./ReportPreviewHero.jsx', import.meta.url), 'utf8');
-const mapSource = readFileSync(new URL('../MapScreen.js', import.meta.url), 'utf8');
+// The map's floating controls live beside the screen that owns their state.
+const mapSource = ['../MapScreen.js', './MapControls.jsx'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
 describe('map preview states', () => {
   it('renders safely before selection and after dismissal', () => {
     expect(render({ report: undefined, nearby: [] })).toBe('');
@@ -34,17 +35,20 @@ describe('map preview states', () => {
     expect(html).toContain('Cleanup reward $6.00');
     expect(html).toContain('0.4 mi');
     expect(html).toContain('View report');
+    expect(html).toContain('Back to map');
   });
   it('does not advertise a completed report as an available reward', () => {
     const html = render({ report: { ...report, cleanup_state: 'completed', completedRewardCents: 500, funded_amount_cents: 0 } });
-    expect(html.match(/Completed/g)).toHaveLength(1);
-    expect(html).toContain('Funded cleanup');
+    // Website card wording: the photo label says "Cleaned"; the reward line names what was paid.
+    expect(html.match(/>Cleaned</g)).toHaveLength(1);
+    expect(html).not.toContain('Available');
+    expect(html).toContain('$5 funded cleanup');
     expect(html).not.toContain('Cleaner reward');
   });
   it('shows compact creator identity, severity, and available actions', () => {
     const html = render({ report: { ...report, reporter: { display_name: 'Luke Barber' }, photo_paths: ['one.jpg', 'two.jpg'] }, canFund: true, canShare: true });
     expect(html).toContain('Reported by Luke Barber');
-    expect(html).toContain('Medium severity');
+    expect(html).toContain('>Medium<'); // website card: severity dot + word
     expect(html).toContain('Ladybug');
     expect(html).not.toContain('Photo 1 of 2');
     expect(html).toContain('Report options');
@@ -68,8 +72,7 @@ describe('map preview states', () => {
     expect(previewSource).not.toContain('photos.map');
     expect(mapSource.match(/\{!previewControlsHidden \? <TouchableOpacity/g)).toHaveLength(2);
     expect(mapSource).toContain('setTimeout(() => setPreviewControlsHidden(false), 180)');
-    expect(previewHeroSource).toContain("icon: 'trash'");
-    expect(previewHeroSource).toContain("icon: 'time'");
-    expect(previewHeroSource).toContain("icon: 'leaf'");
+    // State labels use the website's bugs instead of trash/clock/leaf icons.
+    expect(previewHeroSource).toContain('<BrandBug kind={status.bug}');
   });
 });

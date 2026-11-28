@@ -1,24 +1,46 @@
 import { useEffect, useState } from 'react';
+import PrivateView from './PrivateView';
+import ContributionSupporters from './ContributionSupporters';
+import ReportIssueActions from './ReportIssueActions';
+import { canEditReportContent } from '../lib/cleanupIssues';
+import ReportSiteActivity from './ReportSiteActivity';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
+import LeaveTipButton from './LeaveTipButton';
 import ReportPhotoGallery from './ReportPhotoGallery';
-import ReporterIdentity from '../ReporterIdentity';
+import { FlowDoneHost, showFlowDone } from './FlowDone';
+import HopOnTrue from './HopOnTrue';
+import FundAmount, { rememberFundBefore } from './FundAmount';
+import BrandBug from './BrandBug';
+import LoadingBee from './LoadingBee';
+import SlideUp from './SlideUp';
+import CompactRankBadge from '../CompactRankBadge';
+import ProfileAvatar from '../ProfileAvatar';
+import { reportStatePresentation } from '../lib/reportState';
 import ReportShareSheet from '../ReportShareSheet';
 import { LoadingButtonContent } from '../BrandedLoadingState';
 import { formatUsd } from '../lib/funding';
-import { reportShareActionLabel } from '../lib/reportSharing';
-import { getLitterTypeIcon, getSiteConditionIcon } from '../lib/reportOptionIcons';
-import { getSeveritySelectionColors } from '../lib/severitySelectionColors';
 import { withdrawOwnReport, reportWithdrawalErrorMessage } from '../lib/reportWithdrawal';
 import styles from '../styles/MapScreen.styles';
-const formatFriendlyDateTime = value => new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+import { hapticTap } from '../lib/haptics';
+import { colors } from '../lib/theme';
+// Website severity words: green, orange, red.
+const SEVERITY_INK = { Low: colors.green, Medium: colors.yellow, High: colors.red };
+const formatShortDate = value => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 // The map owns report operations; this component owns the detail presentation.
 export default function ReportDetailsSheet({ state, actions }) {
-  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable } = state;
-  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos } = actions;
+  const { detailsOpen, reportShareSheetOpen, reportShareBusyAction, selectedReport, insets, reportDetailsPreparing, selectedReportHasUtilityActions, completedCleanupImpact, completedCleanupImpactLoading, completedCleanupImpactError, reportHeroWidth, currentUserId, reportPhotoUrls, photosLoading, geminiReviewEnabled, userOwnsSelectedReport, reportFundingFeedback, cleanupDiscoverable, cleanupStatus, currentUserIsCleaner, selectedCleanupAttempt, cleanupAttemptLoading, cleanupActionBusy, canEditOrDeleteSelectedReport, selectedReportCanOpenFunding, payoutGateBusy, selectedReportIsShareable, isFavorite, favoritesReady, blockedIds } = state;
+  const { setReportShareSheetOpen, closeReportDetails, setDetailsOpen, setSelectedReport, navigation, setCompletedCleanupImpact, setCompletedCleanupImpactError, setCompletedCleanupImpactLoading, setCompletedCleanupImpactReloadKey, openCleanupNavigation, openCleanupSubmission, confirmCleanupRelease, openCleanupFeedback, openCleanupReview, beginCleanupClaim, openFundingContribution, removeReport, setForm, setEditingReportId, setIsEditing, setDraftCoord, resetReportWizard, setFormOpen, shareSelectedReport, shareSelectedReportLink, shareSelectedReportToInstagram, editReportPhotos, toggleFavorite, beginSiteReport, openSiteReport } = actions;
+  const openIssue = params => { setDetailsOpen(false); navigation.getParent()?.navigate('CleanupIssue', params); };
+  const openContentEdit = () => { setDetailsOpen(false); navigation.getParent()?.navigate('ReportContentEdit', { reportId: selectedReport.id }); };
+  const contentEditable = canEditReportContent(selectedReport, currentUserId);
+  const issueHeld = Boolean(selectedReport?.cleanup_issue_hold || selectedCleanupAttempt?.issue_paused_at);
   const editSelectedReport = () => editReportPhotos(selectedReport);
+  const displayedReport = selectedReport?.cleanup_state === 'completed' && completedCleanupImpact?.beforePhotoPaths
+    ? { ...selectedReport, photo_paths: completedCleanupImpact.beforePhotoPaths } : selectedReport;
+  const displayedPhotoUrls = completedCleanupImpact?.beforePhotoUrls || reportPhotoUrls;
   const confirmDeleteReport = () => {
 
               Alert.alert(
@@ -40,10 +62,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                         removeReport(selectedReport.id);
                         setDetailsOpen(false);
                         setSelectedReport(null);
-                        Alert.alert(
-                          'Report deleted',
-                          'The report is no longer visible on the map or in report lists.'
-                        );
+                        showFlowDone({ bug: 'dragonfly', title: 'Report deleted', text: 'It’s off the map and report lists.' });
                       } catch (error) {
                         Alert.alert(
                           'Couldn’t delete report',
@@ -66,6 +85,9 @@ export default function ReportDetailsSheet({ state, actions }) {
     setOwnerMenuOpen(value => !value);
   };
   const [feedbackExpanded, setFeedbackExpanded] = useState(false);
+  // Bumped on press so the bee buzzes and the butterfly flaps, as on the website.
+  const [fundTaps, setFundTaps] = useState(0);
+  const [cleanTaps, setCleanTaps] = useState(0);
   useEffect(() => { setFeedbackExpanded(false); }, [detailsOpen, selectedReport?.id, reportFundingFeedback?.user_summary, selectedReport?.funding_eligibility]);
   const [showClaimSpinner, setShowClaimSpinner] = useState(false);
   useEffect(() => {
@@ -76,9 +98,142 @@ export default function ReportDetailsSheet({ state, actions }) {
     const timer = setTimeout(() => setShowClaimSpinner(true), 400);
     return () => clearTimeout(timer);
   }, [cleanupActionBusy, detailsOpen]);
+  // The cleanup status card. For the member doing the cleanup it is the next step,
+  // so it sits right under the title; for everyone else it stays lower down.
+  const cleanupCard = !issueHeld && cleanupStatus && selectedReport?.cleanup_state !== 'completed' ? (
+            <View
+              style={[
+                styles.cleanupProgressCard,
+                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
+              ]}
+            >
+              <View style={styles.cleanupProgressHeader}>
+                <View
+                  style={[
+                    styles.cleanupProgressIcon,
+                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
+                  ]}
+                >
+                  {selectedReport?.cleanup_state === 'claimed' ? <BrandBug kind="caterpillar" size={34} /> : (
+                    <Ionicons
+                      name={cleanupStatus.icon}
+                      size={24}
+                      color={cleanupStatus.tone === 'completed' ? colors.primary : colors.yellow}
+                    />
+                  )}
+                </View>
+                <View style={styles.cleanupProgressCopy}>
+                  <Text
+                    style={[
+                      styles.cleanupProgressTitle,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner ? 'You’re cleaning this one' : cleanupStatus.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.cleanupProgressText,
+                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
+                    ]}
+                  >
+                    {selectedReport?.cleanup_state === 'claimed'
+                      && currentUserIsCleaner
+                      && selectedCleanupAttempt?.claim_expires_at
+                      ? `Clean it and send your after photos by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.`
+                      : cleanupStatus.description}
+                  </Text>
+                </View>
+              </View>
+
+              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
+                <View style={styles.cleanupProgressLoading}>
+                  <ActivityIndicator color={colors.yellow} />
+                  <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
+                </View>
+              ) : cleanupStatus.showClaimActions ? (
+                <View style={styles.cleanupActionStack}>
+                  {/* One clear next step first; directions second; giving up is a quiet link. */}
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
+                    onPress={openCleanupSubmission}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="I cleaned it, add after photos"
+                  >
+                    <Ionicons name="camera-outline" size={20} color={colors.white} />
+                    <Text style={styles.cleanupPrimaryActionText}>I cleaned it – add after photos</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupNavigation}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Get directions to this cleanup"
+                  >
+                    <Ionicons name="navigate-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Get directions</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cleanupGiveUpLink}
+                    onPress={confirmCleanupRelease}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Can’t do it? Give this cleanup back"
+                  >
+                    {cleanupActionBusy ? (
+                      <LoadingButtonContent label="Giving it back…" color={colors.red} />
+                    ) : (
+                      <Text style={styles.cleanupGiveUpText}>Can’t do it? <Text style={styles.cleanupGiveUpAction}>Give this cleanup back</Text></Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showSubmissionAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupFeedbackButton]}
+                    onPress={openCleanupFeedback}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup Feedback"
+                  >
+                    <Ionicons name="document-text-outline" size={20} color={colors.yellow} />
+                    <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupSubmission}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Update Submission"
+                  >
+                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Update Submission</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : cleanupStatus.showReviewAction ? (
+                <View style={styles.cleanupActionStack}>
+                  <TouchableOpacity
+                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
+                    onPress={openCleanupReview}
+                    disabled={cleanupActionBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Review Cleanup"
+                  >
+                    <Ionicons name="images-outline" size={20} color={colors.primary} />
+                    <Text style={styles.cleanupSecondaryActionText}>Review Cleanup</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+  ) : null;
+  const cleanupCardFirst = selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner;
+
   return (<Modal
   visible={detailsOpen}
-  animationType="slide"
+  animationType="fade"
   transparent
   onRequestClose={() => {
     if (ownerMenuOpen) { setOwnerMenuOpen(false); return; }
@@ -90,9 +245,39 @@ export default function ReportDetailsSheet({ state, actions }) {
   }}
 >
   <View style={styles.modalBackdrop}>
-    <View style={styles.reportSheet}>
+    <SlideUp open={Boolean(detailsOpen)} style={styles.reportSheet} distance={80}>
+      {/* This sheet covers the app's banner host, so it carries its own. */}
+      <FlowDoneHost />
 
-      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Close report" style={[styles.reportPhotoControl, styles.reportPhotoCloseControl, { top: reportControlsTop }]}><Ionicons name="close" size={20} color="#30363B" /></TouchableOpacity>
+      {/* A solid bar behind the top buttons, so the report scrolls under it instead of through them. */}
+      <View pointerEvents="none" style={[styles.reportTopBar, { height: reportControlsTop + 62 }]} />
+      {/* Back to map on the left; large favorite and share controls on the right. */}
+      <TouchableOpacity onPress={closeReportDetails} accessibilityRole="button" accessibilityLabel="Back to map" style={[styles.reportBackControl, { top: reportControlsTop }]}>
+        <Ionicons name="chevron-back" size={20} color={colors.ink} />
+        <Text style={styles.reportBackText} numberOfLines={1}>Back to map</Text>
+      </TouchableOpacity>
+      {selectedReportIsShareable ? (
+        <TouchableOpacity
+          onPress={() => setReportShareSheetOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={selectedReport?.cleanup_state === 'completed' ? 'Share completed cleanup' : 'Share litter report'}
+          style={[styles.reportPhotoControl, styles.reportPhotoShareControl, { top: reportControlsTop }]}
+        >
+          <Ionicons name="share-social-outline" size={32} color={colors.ink} />
+        </TouchableOpacity>
+      ) : null}
+
+      {favoritesReady && selectedReport?.id ? (
+        <TouchableOpacity
+          onPress={() => { hapticTap(); toggleFavorite(selectedReport.id); }}
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityState={{ selected: Boolean(isFavorite) }}
+          style={[styles.reportPhotoControl, styles.reportPhotoFavoriteControl, { top: reportControlsTop }, !selectedReportIsShareable && styles.reportPhotoShareControl]}
+        >
+          <HopOnTrue active={Boolean(isFavorite)}><Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={32} color={isFavorite ? colors.severityHigh : colors.ink} /></HopOnTrue>
+        </TouchableOpacity>
+      ) : null}
 
       {reportDetailsPreparing && !selectedReport ? (
         <View
@@ -107,14 +292,9 @@ export default function ReportDetailsSheet({ state, actions }) {
             accessibilityRole="button"
             accessibilityLabel="Close report"
           >
-            <Ionicons name="close-outline" size={24} color="#374151" />
+            <Ionicons name="close-outline" size={24} color={colors.ink} />
           </TouchableOpacity>
-          <ActivityIndicator size="large" color="#2F7D32" />
-          <Text style={styles.reportDetailsLoadingText}>
-            {selectedReport?.cleanup_state === 'completed'
-              ? 'Loading completed report…'
-              : 'Loading report…'}
-          </Text>
+          <LoadingBee label="Loading report" message={selectedReport?.cleanup_state === 'completed' ? 'Loading completed report…' : 'Loading report…'} />
         </View>
       ) : null}
 
@@ -128,11 +308,53 @@ export default function ReportDetailsSheet({ state, actions }) {
         ]}
       >
         {selectedReport?.cleanup_state === 'completed' && completedCleanupImpactLoading && !completedCleanupImpact ? (
-          <View accessibilityRole="progressbar" accessibilityLabel="Loading cleanup" style={{ minHeight: 220, backgroundColor: '#EDF2EE', borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#2F7D32" />
-            <Text style={{ marginTop: 12, color: '#64716A' }}>Loading cleanup…</Text>
-          </View>
+          <LoadingBee label="Loading cleanup" message="Loading cleanup…" />
         ) : <>
+
+        {/* ============================= */}
+        {/* Report Header                 */}
+        {/* ============================= */}
+
+        {/* Website report sheet header (apps/web components/report-detail.tsx): title, then the
+            state's bug and words, the bee's fund line, and a quiet line with a priority dot. */}
+        {(() => {
+          const state = reportStatePresentation(selectedReport);
+          const closed = Boolean(selectedReport?.cancelled_at || selectedReport?.expired_at);
+          const cleanupState = selectedReport?.cleanup_state;
+          const statusText = closed ? 'Report closed'
+            : selectedReport?.cleanup_issue_hold ? 'Update requested'
+            : cleanupState === 'claimed' ? 'Cleanup in progress'
+            : cleanupState === 'completion_submitted' ? 'Cleanup photos under review'
+            : cleanupState === 'changes_requested' ? 'Cleaner is updating photos'
+            : cleanupState === 'completed' ? 'Cleanup complete'
+            : 'Available to clean';
+          const severityWord = selectedReport?.severity ? `${String(selectedReport.severity).charAt(0).toUpperCase()}${String(selectedReport.severity).slice(1).toLowerCase()}` : 'Medium';
+          const funded = Number(selectedReport?.funded_amount_cents) > 0;
+          return (
+            <View style={[styles.reportPostHeader, styles.websiteReportHeader, cleanupState === 'completed' && { borderBottomWidth: 0, paddingBottom: 10 }]}>
+              <Text style={[styles.reportPostTitle, styles.websiteReportTitle]} accessibilityRole="header">{selectedReport?.title || 'Litter Report'}</Text>
+              <View style={[styles.websiteReportState, !closed && cleanupState === 'completed' && styles.cleanedUpPill]}>
+                {!closed && state.bug ? <BrandBug kind={state.bug} size={18} /> : null}
+                <Text style={[styles.websiteReportStateText, { color: closed ? colors.muted : state.ink }]}>{statusText}</Text>
+              </View>
+              {!closed && cleanupState !== 'completed' && funded ? (
+                <FundAmount reportId={selectedReport.id} cents={Number(selectedReport.funded_amount_cents)} rowStyle={styles.websiteReportState} textStyle={[styles.websiteReportStateText, { color: colors.yellow }]} />
+              ) : null}
+              {!issueHeld && cleanupCardFirst && selectedCleanupAttempt?.claim_expires_at ? (
+                <Text style={styles.cleanerDeadline}>You’re cleaning this one. Send your after photos by {new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Text>
+              ) : null}
+              <View style={styles.websiteReportMeta}>
+                <View style={styles.websiteReportSeverity}>
+                  <View style={[styles.websiteReportSeverityDot, { backgroundColor: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]} />
+                  <Text style={[styles.websiteReportSeverityText, { color: SEVERITY_INK[severityWord] || SEVERITY_INK.Medium }]}>{severityWord} priority</Text>
+                </View>
+                {selectedReport?.created_at ? <Text style={styles.websiteReportFacts}>Reported {formatShortDate(selectedReport.created_at)}</Text> : null}
+                {!closed && cleanupState === 'available' && selectedReport?.expires_at ? <Text style={styles.websiteReportFacts}>Open until {formatShortDate(selectedReport.expires_at)}</Text> : null}
+              </View>
+            </View>
+          );
+        })()}
+
         {selectedReport?.cleanup_state === 'completed' ? (
           <>
             <CompletedCleanupStory
@@ -140,6 +362,7 @@ export default function ReportDetailsSheet({ state, actions }) {
               loading={completedCleanupImpactLoading}
               error={completedCleanupImpactError}
               photoWidth={reportHeroWidth}
+              beforePhotos={<ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} aspect={4 / 3} />}
               onRetry={() => {
                 setCompletedCleanupImpact(null);
                 setCompletedCleanupImpactError(null);
@@ -158,180 +381,36 @@ export default function ReportDetailsSheet({ state, actions }) {
                 }
               } : undefined}
             />
-
-            <View style={styles.originalReportDivider}>
-              <Text style={styles.originalReportEyebrow}>BEFORE THE CLEANUP</Text>
-              <Text style={styles.originalReportTitle}>Original litter report</Text>
-            </View>
+            <LeaveTipButton
+              reportId={selectedReport.id}
+              cleaner={completedCleanupImpact?.cleaner}
+              reporter={selectedReport?.reporter}
+              currentUserId={currentUserId}
+              visible={Boolean(detailsOpen)}
+              style={{ marginHorizontal: 22, marginTop: 4, marginBottom: 8 }}
+              onTip={(person) => {
+                setDetailsOpen(false);
+                navigation.getParent()?.navigate('Tip', { profileId: person.id, name: person.name, role: person.role, reportId: selectedReport.id });
+              }}
+            />
           </>
         ) : null}
 
-        {/* ============================= */}
-        {/* Report Header                 */}
-        {/* ============================= */}
-
-        <View style={[
-          styles.reportPostHeader,
-          selectedReport?.cleanup_state === 'completed'
-            ? styles.reportPostHeaderCompleted
-            : styles.reportPostHeaderRegular,
-        ]}>
-
-          {selectedReport?.cleanup_state === 'completed' ? <View style={styles.reportIdentityCard}>
-            <ReporterIdentity
-              profile={selectedReport?.reporter}
-              onPress={selectedReport?.reporter?.id ? () => {
-                setDetailsOpen(false);
-                if (selectedReport.reporter.id === currentUserId) {
-                  navigation.navigate('Profile');
-                } else {
-                  navigation.getParent()?.navigate('PublicProfile', {
-                    profileId: selectedReport.reporter.id,
-                    sourceReportId: selectedReport.id,
-                  });
-                }
-              } : undefined}
-            />
-          </View> : null}
-
-          <Text style={[
-            styles.reportPostTitle,
-            selectedReport?.cleanup_state !== 'completed' && styles.reportPostTitleRegular,
-          ]}>
-            {selectedReport?.title || 'Litter Report'}
-          </Text>
-
-          <View style={styles.reportRewardDirectionsRow}>
-            <View style={[styles.rewardBadge, { marginBottom: 0 }]}>
-              <Ionicons
-                name={Number(selectedReport?.funded_amount_cents) > 0 ? 'cash-outline' : 'heart'}
-                size={18}
-                color={Number(selectedReport?.funded_amount_cents) > 0 ? '#FFFFFF' : '#E13B3B'}
-              />
-              <Text style={styles.rewardBadgeText}>
-                {Number(selectedReport?.funded_amount_cents) > 0
-                  ? `${formatUsd(Number(selectedReport.funded_amount_cents))} Cleanup Reward`
-                  : 'Volunteer Opportunity'}
-              </Text>
-            </View>
-          </View>
-
-          {selectedReport?.cleanup_state === 'completed' && selectedReport?.severity ? (() => {
-            const severityIndex = Math.max(0, ['Low', 'Medium', 'High'].indexOf(selectedReport.severity));
-            const severityColors = getSeveritySelectionColors(severityIndex);
-            return (
-              <View style={[
-                styles.reportSeverityPill,
-                {
-                  backgroundColor: severityColors.backgroundColor,
-                  borderColor: severityColors.borderColor,
-                },
-              ]}>
-                <Ionicons
-                  name={selectedReport.severity === 'High'
-                    ? 'warning-outline'
-                    : selectedReport.severity === 'Low' ? 'leaf-outline' : 'trash-outline'}
-                  size={17}
-                  color={severityColors.foregroundColor}
-                />
-                <Text style={[styles.reportSeverityText, { color: severityColors.foregroundColor }]}>
-                  {selectedReport.severity} Severity
-                </Text>
-              </View>
-            );
-          })() : null}
-
-          {selectedReport?.cleanup_state !== 'completed' ? <View style={styles.reportIdentityCard}>
-            <ReporterIdentity
-              profile={selectedReport?.reporter}
-              onPress={selectedReport?.reporter?.id ? () => {
-                setDetailsOpen(false);
-                if (selectedReport.reporter.id === currentUserId) {
-                  navigation.navigate('Profile');
-                } else {
-                  navigation.getParent()?.navigate('PublicProfile', {
-                    profileId: selectedReport.reporter.id,
-                    sourceReportId: selectedReport.id,
-                  });
-                }
-              } : undefined}
-            />
-          </View> : null}
-
-          {selectedReport?.cleanup_state === 'completed' ? <View style={[
-            styles.reportMetaStack,
-            styles.reportMetaStackCompleted,
-          ]}>
-            {selectedReport?.created_at ? (
-              <View style={styles.reportMetaItem}>
-                <Ionicons name="time-outline" size={17} color="#667085" />
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>Reported</Text>
-                  <Text style={styles.reportMetaItemText}>{formatFriendlyDateTime(selectedReport.created_at)}</Text>
-                </View>
-              </View>
-            ) : null}
-          </View> : null}
-
-        </View>
+        {cleanupCardFirst ? <View style={{ paddingHorizontal: 22 }}><ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /></View> : null}
 
         {selectedReport?.cleanup_state !== 'completed' ? (
-          <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+          <ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
         ) : null}
 
-        {selectedReport?.cleanup_state !== 'completed' && selectedReport?.severity ? (() => {
-          const severityIndex = Math.max(0, ['Low', 'Medium', 'High'].indexOf(selectedReport.severity));
-          const severityColors = getSeveritySelectionColors(severityIndex);
-          return (
-            <View style={[
-              styles.reportSeverityPill,
-              styles.reportSeverityBelowPhoto,
-              {
-                backgroundColor: severityColors.backgroundColor,
-                borderColor: severityColors.borderColor,
-              },
-            ]}>
-              <Ionicons
-                name={selectedReport.severity === 'High'
-                  ? 'warning-outline'
-                  : selectedReport.severity === 'Low' ? 'leaf-outline' : 'trash-outline'}
-                size={17}
-                color={severityColors.foregroundColor}
-              />
-              <Text style={[styles.reportSeverityText, { color: severityColors.foregroundColor }]}>
-                {selectedReport.severity} Severity
-              </Text>
-            </View>
-          );
-        })() : null}
-
-        {selectedReport?.cleanup_state !== 'completed' ? (
-          <View style={[
-            styles.reportMetaStack,
-            styles.reportMetaStackCompact,
-            styles.reportMetaStackBelowPhoto,
-            selectedReport?.severity && styles.reportMetaStackAfterSeverity,
-          ]}>
-            {selectedReport?.created_at ? (
-              <View style={styles.reportMetaItem}>
-                <Ionicons name="time-outline" size={17} color="#667085" />
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>Reported</Text>
-                  <Text style={styles.reportMetaItemText}>{formatFriendlyDateTime(selectedReport.created_at)}</Text>
-                </View>
-              </View>
-            ) : null}
-            {selectedReport?.expires_at ? (
-              <View style={styles.reportMetaItem}>
-                <Ionicons name="calendar-outline" size={17} color="#667085" />
-                <View>
-                  <Text style={styles.reportMetaItemLabel}>Expires</Text>
-                  <Text style={styles.reportMetaItemText}>{new Date(selectedReport.expires_at).toLocaleDateString()}</Text>
-                </View>
-              </View>
-            ) : null}
-          </View>
+        {/* Website report sheet: directions sit right under the photos. */}
+        {selectedReport?.cleanup_state !== 'completed' && !selectedReport?.cancelled_at && !selectedReport?.expired_at && !(selectedReport?.cleanup_state === 'claimed' && currentUserIsCleaner) ? (
+          <TouchableOpacity style={styles.reportDirectionsButton} onPress={openCleanupNavigation} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Get directions to this report">
+            <Ionicons name="locate-outline" size={19} color={colors.primaryDark} />
+            <Text style={styles.reportDirectionsText}>Get directions</Text>
+          </TouchableOpacity>
         ) : null}
+
+        <ContributionSupporters reportId={selectedReport?.id} visible={Boolean(detailsOpen)} style={{ marginHorizontal: 22 }} />
 
         {geminiReviewEnabled
           && userOwnsSelectedReport
@@ -346,7 +425,7 @@ export default function ReportDetailsSheet({ state, actions }) {
                   ? 'alert-circle-outline'
                   : 'time-outline'}
               size={23}
-              color="#8A5A14"
+              color={colors.yellow}
             />
             <View style={styles.fundingCopy}>
               <Text style={styles.fundingFeedbackTitle}>
@@ -370,10 +449,10 @@ export default function ReportDetailsSheet({ state, actions }) {
                 <View style={styles.fundingFeedbackActions}>
                   <TouchableOpacity style={styles.fundingFeedbackAction} onPress={() => setFeedbackExpanded(value => !value)} accessibilityRole="button" accessibilityState={{ expanded: feedbackExpanded }}>
                     <Text style={styles.fundingFeedbackActionText}>{feedbackExpanded ? 'Hide details' : 'View details'}</Text>
-                    <Ionicons name={feedbackExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#754B13" />
+                    <Ionicons name={feedbackExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.yellow} />
                   </TouchableOpacity>
                   {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? <TouchableOpacity style={styles.fundingFeedbackAction} onPress={editSelectedReport} accessibilityRole="button" accessibilityLabel="Edit report photos">
-                    <Ionicons name="camera-outline" size={16} color="#754B13" />
+                    <Ionicons name="camera-outline" size={16} color={colors.yellow} />
                     <Text style={styles.fundingFeedbackActionText}>Edit photos</Text>
                   </TouchableOpacity> : null}
                 </View>
@@ -382,15 +461,16 @@ export default function ReportDetailsSheet({ state, actions }) {
           </View>
         ) : null}
 
-        {selectedReport?.cleanup_state === 'completed' ? (
-          <View style={styles.beforePhotoHeading}>
-            <Ionicons name="images-outline" size={20} color="#667085" />
-            <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
-          </View>
-        ) : null}
-
-        {selectedReport?.cleanup_state === 'completed' ? (
-          <ReportPhotoGallery report={selectedReport} urls={reportPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+        {/* The story above carries the After cleanup / Before switch. Only when it has no
+            after photos to switch with do the original photos sit here on their own. */}
+        {selectedReport?.cleanup_state === 'completed' && !(completedCleanupImpact?.afterPhotoUrls?.length > 0) ? (
+          <>
+            <View style={styles.beforePhotoHeading}>
+              <Ionicons name="images-outline" size={20} color={colors.muted} />
+              <Text style={styles.beforePhotoHeadingText}>Before cleanup</Text>
+            </View>
+            <ReportPhotoGallery report={displayedReport} urls={displayedPhotoUrls} loading={photosLoading} width={reportHeroWidth} />
+          </>
         ) : null}
 
 
@@ -400,231 +480,64 @@ export default function ReportDetailsSheet({ state, actions }) {
 
         <View style={[
           styles.reportPostBody,
-          selectedReport?.cleanup_state !== 'completed' && styles.reportPostBodyRegular,
+          (selectedReport?.cleanup_state !== 'completed' || completedCleanupImpact?.afterPhotoUrls?.length > 0) && styles.reportPostBodyRegular,
         ]}>
 
-          {(selectedReport?.litter_types?.length > 0 || selectedReport?.types) ? (
-            <View style={[styles.reportPostSection, styles.reportInfoCard, styles.reportLitterInfoCard]}>
-              <View style={styles.reportSectionHeader}>
-                <Text style={styles.reportPostSectionTitle}>Litter Types</Text>
-              </View>
-              <View style={styles.reportChipRow}>
-                {selectedReport?.litter_types?.map((type) => (
-                  <View key={type} style={[styles.reportChip, styles.reportTypeChip]}>
-                    <Ionicons name={getLitterTypeIcon(type)} size={16} color="#FFFFFF" />
-                    <Text style={styles.reportChipText}>{type}</Text>
+          {/* Website report sheet body: Litter, Notes and Details as label-over-value facts,
+              then "Reported by" with the reporter's card. */}
+          {(() => {
+            const conditions = (selectedReport?.notes_presets || []).filter(Boolean);
+            const litter = [...(selectedReport?.litter_types || []), selectedReport?.types].filter(Boolean);
+            const reporter = selectedReport?.reporter;
+            const openReporter = reporter?.id ? () => {
+              setDetailsOpen(false);
+              if (reporter.id === currentUserId) navigation.navigate('Profile');
+              else navigation.getParent()?.navigate('PublicProfile', { profileId: reporter.id, sourceReportId: selectedReport.id });
+            } : undefined;
+            return (
+              // Notes and the reporter's name stay out of session replay.
+              <PrivateView style={styles.websiteAbout}>
+                {[['Litter', litter.join(', ')], ['Notes', conditions.join(', ')], ['Details', selectedReport?.notes_other], ['Additional information', selectedReport?.additional_information]].filter(([, value]) => value).map(([label, value]) => (
+                  <View key={label} style={styles.websiteFact}>
+                    <Text style={styles.websiteFactLabel}>{label}</Text>
+                    <Text style={styles.websiteAboutText}>{value}</Text>
                   </View>
                 ))}
-                {selectedReport?.types ? (
-                  <View style={[styles.reportChip, styles.reportOtherTypeChip]}>
-                    <Ionicons name={getLitterTypeIcon(selectedReport.types)} size={16} color="#2F7D32" />
-                    <Text style={styles.reportOtherTypeText}>{selectedReport.types}</Text>
+                {reporter?.id ? (
+                  <View style={styles.websiteByline}>
+                    <Text style={styles.websiteBylineLabel}>Reported by</Text>
+                    <TouchableOpacity
+                      style={styles.websiteReporterRow}
+                      onPress={openReporter}
+                      activeOpacity={0.72}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Reported by ${reporter.display_name || 'a member'}. View profile`}
+                    >
+                      <ProfileAvatar profile={reporter} size={36} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.websiteReporterName} numberOfLines={1}>{reporter.display_name || 'Community member'}</Text>
+                        <CompactRankBadge userId={reporter.id} appearance="plain" />
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.subtle} />
+                    </TouchableOpacity>
                   </View>
                 ) : null}
-              </View>
-            </View>
-          ) : null}
-
-          {selectedReport?.notes_presets?.length > 0 ? (
-            <View style={[styles.reportPostSection, styles.reportInfoCard, styles.reportConditionsInfoCard]}>
-              <View style={styles.reportSectionHeader}>
-                <Text style={styles.reportPostSectionTitle}>Site Conditions</Text>
-              </View>
-              <View style={styles.reportChipRow}>
-                {selectedReport.notes_presets.map((note) => (
-                  <View key={note} style={[styles.reportChip, styles.reportNoteChip]}>
-                    <Ionicons name={getSiteConditionIcon(note)} size={16} color="#FFFFFF" />
-                    <Text style={styles.reportChipText}>{note}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/* Additional descriptive information */}
-          {selectedReport?.notes_other && (
-
-            <View style={[styles.reportPostSection, styles.reportInfoCard, styles.reportDetailsInfoCard]}>
-
-              <View style={styles.reportSectionHeader}>
-
-                <Ionicons
-                  name="document-text-outline"
-                  size={20}
-                  color="#667085"
-                />
-
-                <Text style={styles.reportPostSectionTitle}>
-                  Additional Details
-                </Text>
-
-              </View>
-
-              <View style={styles.reportDetailsCard}>
-
-                <Text style={styles.reportDetailsText}>
-                  {selectedReport.notes_other}
-                </Text>
-
-              </View>
-
-            </View>
-          )}
+              </PrivateView>
+            );
+          })()}
 
 
-          {cleanupDiscoverable ? (
-            <View style={styles.cleanupEligibilityCard}>
-              <View style={styles.cleanupEligibilityHeader}>
-                <View style={styles.cleanupEligibilityIcon}>
-                  <Ionicons name="time-outline" size={22} color="#687178" />
-                </View>
-                <View style={styles.cleanupEligibilityCopy}>
-                  <Text style={styles.cleanupEligibilityTitle}>24-hour cleanup claim</Text>
-                  <Text style={styles.cleanupEligibilityText}>
-                    Review and accept the safety acknowledgment each time you claim a report.
-                  </Text>
-                </View>
-              </View>
+          {!cleanupCardFirst ? <ReportIssueActions report={selectedReport} attempt={selectedCleanupAttempt} userId={currentUserId} visible={detailsOpen} onIssue={openIssue} onEdit={openContentEdit} onRelease={confirmCleanupRelease} /> : null}
 
+          <ReportSiteActivity key={selectedReport?.id} report={selectedReport} visible={Boolean(detailsOpen && selectedReport)} blockedIds={blockedIds} onReportAgain={beginSiteReport} onOpenReport={openSiteReport} />
 
-            </View>
-          ) : null}
-
-          {cleanupStatus && selectedReport?.cleanup_state !== 'completed' && (
-            <View
-              style={[
-                styles.cleanupProgressCard,
-                cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusCard,
-              ]}
-            >
-              <View style={styles.cleanupProgressHeader}>
-                <View
-                  style={[
-                    styles.cleanupProgressIcon,
-                    cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusIcon,
-                  ]}
-                >
-                  <Ionicons
-                    name={cleanupStatus.icon}
-                    size={24}
-                    color={cleanupStatus.tone === 'completed' ? '#2F7D32' : '#8A6400'}
-                  />
-                </View>
-                <View style={styles.cleanupProgressCopy}>
-                  <Text
-                    style={[
-                      styles.cleanupProgressTitle,
-                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusTitle,
-                    ]}
-                  >
-                    {cleanupStatus.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cleanupProgressText,
-                      cleanupStatus.tone === 'completed' && styles.cleanupCompleteStatusText,
-                    ]}
-                  >
-                    {selectedReport?.cleanup_state === 'claimed'
-                      && currentUserIsCleaner
-                      && selectedCleanupAttempt?.claim_expires_at
-                      ? `Complete by ${new Date(selectedCleanupAttempt.claim_expires_at).toLocaleString()}.`
-                      : cleanupStatus.description}
-                  </Text>
-                </View>
-              </View>
-
-              {selectedReport?.cleanup_state === 'claimed' && cleanupAttemptLoading ? (
-                <View style={styles.cleanupProgressLoading}>
-                  <ActivityIndicator color="#8A6400" />
-                  <Text style={styles.cleanupProgressLoadingText}>Checking cleanup details…</Text>
-                </View>
-              ) : cleanupStatus.showClaimActions ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupNavigateButton]}
-                    onPress={openCleanupNavigation}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Navigate to Cleanup"
-                  >
-                    <Ionicons name="navigate-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.cleanupPrimaryActionText}>Navigate to Cleanup</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupSubmission}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Complete Cleanup"
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#2F7D32" />
-                    <Text style={styles.cleanupSecondaryActionText}>Complete Cleanup</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupReleaseButton]}
-                    onPress={confirmCleanupRelease}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Release Cleanup"
-                  >
-                    {cleanupActionBusy ? (
-                      <LoadingButtonContent label="Releasing…" color="#A33A32" />
-                    ) : (
-                      <>
-                        <Ionicons name="return-down-back-outline" size={20} color="#A33A32" />
-                        <Text style={styles.cleanupReleaseActionText}>Release Cleanup</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ) : cleanupStatus.showSubmissionAction ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupFeedbackButton]}
-                    onPress={openCleanupFeedback}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Review Cleanup Feedback"
-                  >
-                    <Ionicons name="document-text-outline" size={20} color="#755900" />
-                    <Text style={styles.cleanupFeedbackActionText}>Review Feedback</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupSubmission}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Update Submission"
-                  >
-                    <Ionicons name="camera-outline" size={20} color="#2F7D32" />
-                    <Text style={styles.cleanupSecondaryActionText}>Update Submission</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : cleanupStatus.showReviewAction ? (
-                <View style={styles.cleanupActionStack}>
-                  <TouchableOpacity
-                    style={[styles.cleanupActionButton, styles.cleanupCompleteButton]}
-                    onPress={openCleanupReview}
-                    disabled={cleanupActionBusy}
-                    accessibilityRole="button"
-                    accessibilityLabel="Review Cleanup"
-                  >
-                    <Ionicons name="images-outline" size={20} color="#2F7D32" />
-                    <Text style={styles.cleanupSecondaryActionText}>Review Cleanup</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-            </View>
-          )}
+          {cleanupCardFirst ? null : cleanupCard}
 
           {userOwnsSelectedReport && (
-            selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport
+            !contentEditable && (selectedReport?.funding_locked_at || !canEditOrDeleteSelectedReport)
           ) ? (
             <View style={styles.ownerReportLockCard}>
-              <Ionicons name="lock-closed-outline" size={20} color="#5F6E62" />
+              <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
               <View style={styles.ownerReportLockCopy}>
                 <Text style={styles.ownerReportLockTitle}>Report history is locked</Text>
                 <Text style={styles.ownerReportLockText}>
@@ -642,77 +555,100 @@ export default function ReportDetailsSheet({ state, actions }) {
         </>}
       </ScrollView>
 
-      {cleanupDiscoverable || selectedReportHasUtilityActions ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>
-      {cleanupDiscoverable ? (
-        <TouchableOpacity
-          style={[styles.cleanupButton, styles.reportDetailPrimaryAction]}
-          activeOpacity={1}
-          onPress={beginCleanupClaim}
-          disabled={cleanupActionBusy}
-          accessibilityRole="button"
-          accessibilityLabel="Claim Cleanup"
-          accessibilityState={{ busy: cleanupActionBusy, disabled: cleanupActionBusy }}
-        >
-          <Text style={[styles.cleanupButtonText, { color: '#FFFFFF' }]}>Claim Cleanup</Text>
-          {cleanupActionBusy && showClaimSpinner ? (
-            <View style={styles.reportDetailClaimSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            </View>
-          ) : null}
-        </TouchableOpacity>
-      ) : null}
-      {selectedReportHasUtilityActions ? (
-        <View style={[styles.reportUtilityBar, styles.reportDetailUtilityRow]}>
+      {!issueHeld && (cleanupDiscoverable || selectedReportCanOpenFunding) ? <View style={[styles.reportDetailActionFooter, { paddingBottom: canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? 4 : Math.max(insets.bottom, 12) }]}>
+      {/* Website footer: Fund (bee, yellow) then Clean (butterfly, lilac), side by side. */}
+      <View style={styles.reportActionRow}>
           {selectedReportCanOpenFunding ? (
             <TouchableOpacity
-              style={[styles.reportUtilityButton, styles.reportFundButton, styles.reportDetailSecondaryAction]}
-              onPress={() => openFundingContribution({ reportId: selectedReport.id })}
+              style={[styles.reportActionButton, styles.reportFundButton]}
+              onPress={() => { setFundTaps(value => value + 1); rememberFundBefore(selectedReport.id, selectedReport.funded_amount_cents); openFundingContribution({ reportId: selectedReport.id }); }}
               disabled={payoutGateBusy}
               accessibilityRole="button"
               accessibilityLabel="Fund cleanup"
             >
               {payoutGateBusy ? (
-                <LoadingButtonContent label="Checking Stripe…" color="#66BB6A" />
+                <LoadingButtonContent label="Checking Stripe…" color={colors.fundInk} />
               ) : (
                 <>
-                  <Ionicons name="cash-outline" size={18} color="#66BB6A" />
+                  <BrandBug kind="bee" size={21} playKey={fundTaps} />
                   <Text style={styles.reportFundButtonText}>Fund</Text>
                 </>
               )}
             </TouchableOpacity>
           ) : null}
-
-          {selectedReportIsShareable ? (
+          {cleanupDiscoverable ? (
             <TouchableOpacity
-              style={[styles.reportUtilityButton, styles.reportShareButton, styles.reportDetailSecondaryAction]}
-              onPress={() => setReportShareSheetOpen(true)}
+              style={[styles.reportActionButton, styles.reportCleanButton]}
+              activeOpacity={1}
+              onPress={() => { setCleanTaps(value => value + 1); beginCleanupClaim(); }}
+              disabled={cleanupActionBusy}
               accessibilityRole="button"
-              accessibilityLabel={selectedReport?.cleanup_state === 'completed'
-                ? 'Share completed cleanup'
-                : 'Share litter report'}
+              accessibilityLabel="Clean up this report"
+              accessibilityState={{ busy: cleanupActionBusy, disabled: cleanupActionBusy }}
             >
-              <Ionicons name="link-outline" size={18} color="#B448CF" />
-              <Text style={styles.reportShareButtonText}>
-                {reportShareActionLabel(selectedReport)}
-              </Text>
+              <BrandBug kind="butterfly" size={21} playKey={cleanTaps} />
+              <Text style={styles.reportCleanButtonText}>Clean</Text>
+              {cleanupActionBusy && showClaimSpinner ? (
+                <View style={styles.reportDetailClaimSpinner} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <ActivityIndicator size="small" color={colors.cleanInk} />
+                </View>
+              ) : null}
             </TouchableOpacity>
           ) : null}
+      </View>
+      </View> : null}
+
+      {/* The cleaner's next steps live in the pinned bar, like Fund and Clean do. */}
+      {!issueHeld && cleanupCardFirst && cleanupStatus?.showClaimActions && !cleanupAttemptLoading ? (
+        <View style={[styles.reportDetailActionFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.reportActionRow}>
+            <TouchableOpacity
+              style={[styles.reportActionButton, styles.cleanerDirectionsButton]}
+              onPress={openCleanupNavigation}
+              disabled={cleanupActionBusy}
+              accessibilityRole="button"
+              accessibilityLabel="Get directions to this cleanup"
+            >
+              <Ionicons name="navigate-outline" size={19} color={colors.primaryDark} />
+              <Text style={styles.cleanerDirectionsText}>Directions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reportActionButton, styles.cleanerDoneButton]}
+              onPress={openCleanupSubmission}
+              disabled={cleanupActionBusy}
+              accessibilityRole="button"
+              accessibilityLabel="I cleaned it, add after photos"
+            >
+              <Ionicons name="camera-outline" size={20} color={colors.white} />
+              <Text style={styles.cleanerDoneText}>I cleaned it</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.cleanupGiveUpLink}
+            onPress={confirmCleanupRelease}
+            disabled={cleanupActionBusy}
+            accessibilityRole="button"
+            accessibilityLabel="Can’t do it? Give this cleanup back"
+          >
+            {cleanupActionBusy ? (
+              <LoadingButtonContent label="Giving it back…" color={colors.red} />
+            ) : (
+              <Text style={styles.cleanupGiveUpText}>Can’t do it? <Text style={styles.cleanupGiveUpAction}>Give this cleanup back</Text></Text>
+            )}
+          </TouchableOpacity>
         </View>
       ) : null}
-
-
-      </View> : null}
 
       {/* ============================= */}
       {/* Persistent Footer             */}
       {/* ============================= */}
 
-      {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at ? (
+      {canEditOrDeleteSelectedReport && !selectedReport?.funding_locked_at && !issueHeld ? (
         <View style={[styles.reportOwnerFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <TouchableOpacity style={styles.reportManageButton} onPress={showOwnerActions} accessibilityRole="button" accessibilityLabel="Manage your report" accessibilityState={{ expanded: ownerMenuOpen }}>
-            <Ionicons name="options-outline" size={18} color="#687178" />
+            <Ionicons name="options-outline" size={18} color={colors.muted} />
             <Text style={styles.reportManageText}>Manage report</Text>
-            <Ionicons name="chevron-up" size={15} color="#687178" />
+            <Ionicons name="chevron-up" size={15} color={colors.muted} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -722,18 +658,18 @@ export default function ReportDetailsSheet({ state, actions }) {
           <TouchableOpacity style={styles.reportOwnerMenuBackdrop} activeOpacity={1} onPress={() => setOwnerMenuOpen(false)} accessibilityRole="button" accessibilityLabel="Dismiss report menu" />
           <View style={[styles.reportOwnerMenu, { bottom: Math.max(insets.bottom, 12) + 52 }]}>
             <TouchableOpacity style={styles.reportOwnerMenuItem} onPress={() => { setOwnerMenuOpen(false); editSelectedReport(); }} accessibilityRole="button" accessibilityLabel="Edit report">
-              <Ionicons name="create-outline" size={20} color="#2F7D32" />
+              <Ionicons name="create-outline" size={20} color={colors.primary} />
               <Text style={styles.reportOwnerMenuText}>Edit report</Text>
             </TouchableOpacity>
             <View style={styles.reportOwnerMenuDivider} />
             <TouchableOpacity style={styles.reportOwnerMenuItem} onPress={() => { setOwnerMenuOpen(false); confirmDeleteReport(); }} accessibilityRole="button" accessibilityLabel="Delete report">
-              <Ionicons name="trash-outline" size={20} color="#B23B3B" />
-              <Text style={[styles.reportOwnerMenuText, { color: '#B23B3B' }]}>Delete report</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.red} />
+              <Text style={[styles.reportOwnerMenuText, { color: colors.red }]}>Delete report</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : null}
-    </View>
+    </SlideUp>
 
     <ReportShareSheet
       visible={reportShareSheetOpen && detailsOpen && selectedReportIsShareable}

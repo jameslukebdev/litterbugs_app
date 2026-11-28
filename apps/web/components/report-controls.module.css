@@ -1,0 +1,85 @@
+.panel.panel.panel { --green: #5146ed; --green-dark: #4438bb; --green-soft: #efedff; --line: #e3dff0; background: #fff; border-color: #e3dff0; }
+.panel.panel.panel :global(.report-browser-header) { position: relative; z-index: 8; padding: 14px 16px 12px; background: #fff; border-bottom: 1px solid #eeeaf8; overflow: visible; max-height: none; }
+.panel.panel.panel :global(.report-browser-heading-row) { gap: 12px; }
+.panel.panel.panel :global(.report-browser-filters) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; overflow: visible; }
+.panel.panel.panel :global(.report-browser-filters) button { min-height: 40px; padding: 8px 12px; border: 1px solid #e3dff0; color: #514b61; background: #fff; }
+.panel.panel.panel :global(.report-browser-filters) button:hover { color: #4438bb; border-color: #b3a6e5; background: #f7f5ff; }
+.panel.panel.panel :global(.report-browser-filters) button[aria-pressed='true'] { color: #4438bb; border-color: #b3a6e5; background: #efedff; }
+.panel.panel.panel :global(.report-browser-list) { position: relative; padding-top: 12px; }
+.panel.panel.panel :global(.report-browser-empty) { min-height: 0; padding: 20px 4px; gap: 8px; }
+.panel.panel.panel .loadingList { flex: 1; grid-template-columns: minmax(0, 1fr); align-content: center; justify-items: center; }
+.emptyPanel { grid-column: 1 / -1; width: 100%; max-width: 440px; margin: 0 auto; padding: clamp(20px, 4vw, 40px) 4px 20px; }
+.emptyIntro { display: flex; align-items: center; gap: 14px; }
+.emptyIntro .emptyBug { flex: none; width: 48px; height: 48px; margin: 0; }
+.emptyIntro h2 { margin: 0; color: #292932; font-family: 'Playful Nunito', sans-serif; font-size: clamp(22px, 2.4vw, 28px); font-weight: 900; line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; }
+.emptyActions { display: grid; gap: 8px; margin-top: 16px; }
+.emptyActions button { min-height: 44px; }
+.emptyWiden:global(.primary-button) { color: #493a10; background: #ffda61; border-color: #d9ac19; }
+.emptyWiden:global(.primary-button):hover { background: #ffce38; }
+.emptyWiden:global(.secondary-button) { color: #493a10; border-color: #e8ca71; }
+.emptyWiden:global(.secondary-button):hover { background: #fff4cc; }
+.emptyTextAction { min-height: 44px; margin-top: 12px; padding: 0 14px; border: 0; border-radius: 12px; background: #efedff; color: #4438bb; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.emptyTextAction:hover { background: #e3ddff; }
+.emptyPlaceSearch { margin-top: 12px; }
+.emptyOr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #5c566b; font-size: 14px; }
+.emptyOr::before, .emptyOr::after { content: ''; flex: 1; height: 1px; background: #e3dff0; }
+.emptyPlaceSearch :global(.place-search) { margin: 0; padding: 0; border: 0; }
+.emptyPlaceSearch :global(.place-search) label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.emptyPlaceSearch.emptyPlaceSearch :global(.place-search-field) input { padding: 8px 10px; border-color: #d8d1ee; }
+.emptyPlaceSearch.emptyPlaceSearch :global(.place-search-submit) { position: static; width: auto; display: inline-flex; padding: 0 12px; border: 1px solid #d8d1ee; background: #fff; color: #4438bb; }
+.emptyPlaceSearch.emptyPlaceSearch :global(.place-search-submit) span { display: inline; }
+.emptyPlaceSearch.emptyPlaceSearch :global(.place-search-submit) svg { display: none; }
+.emptyPlaceSearch.emptyPlaceSearch :global(.place-search-submit):disabled { opacity: .62; }
+.emptyPlaceSearch :global(.place-search-dropdown) { position: static; width: auto; margin-top: 6px; border-color: #e3dff0; box-shadow: none; }
+.panel.panel.panel button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+.sort.sort { position: relative; flex: 0 0 auto; }
+.trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 44px; min-width: 130px; padding: 10px 14px; border: 1px solid #d8d1ee; border-radius: 12px; background: #fff; color: #4438bb; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.trigger svg { width: 18px; height: 18px; flex: none; }
+.trigger:hover, .trigger[aria-expanded='true'] { background: #f4f1ff; border-color: #b3a6e5; }
+.menu { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 190px; padding: 6px; border: 1px solid #d8d1ee; border-radius: 16px; background: #fff; box-shadow: 0 4px 0 #ede9f6, 0 8px 24px #29293212; }
+.menu button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 10px 12px; gap: 12px; border: 0; border-radius: 10px; background: white; color: #292932; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible, .menu button[aria-checked='true'] { background: #f1edff; color: #4438bb; }
+.menu svg { width: 18px; height: 18px; flex: none; }
+
+.panel.panel.panel :global(.report-result) { border: 0; box-shadow: none; border-radius: 18px; }
+.panel.panel.panel :global(.report-result):hover { background: #faf8ff; box-shadow: none; }
+.panel.panel.panel :global(.report-result-reward) { background: #efedff; color: #5146bf; }
+
+.toolbarFilters.toolbarFilters.toolbarFilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; overflow: visible; }
+.toolbarFilters.toolbarFilters button { flex: none; min-height: 40px; padding: 8px 12px; border: 1px solid #e3dff0; border-radius: 12px; background: #fff; color: #514b61; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.toolbarFilters.toolbarFilters button:hover { background: #f7f5ff; border-color: #b3a6e5; color: #4438bb; }
+.toolbarFilters.toolbarFilters button[aria-pressed='true'] { background: #efedff; border-color: #b3a6e5; color: #4438bb; }
+.toolbarFilters.toolbarFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+
+/* Presets are shortcuts; only this removable row describes applied filters. */
+.filterBar { min-width: 0; max-width: 100%; }
+.activeFilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; }
+.activeFilters.activeFilters button { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; min-height: 40px; padding: 8px 10px; border: 1px solid #b3a6e5; border-radius: 12px; background: #efedff; color: #4438bb; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.activeFilters button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activeFilters button svg { flex: none; width: 16px; height: 16px; }
+.activeFilters.activeFilters button:hover { background: #e3ddff; }
+.activeFilters.activeFilters button:focus-visible { outline: 3px solid #b3a6e5; outline-offset: 2px; }
+.activeFilters.activeFilters .clearFilters { padding-inline: 6px; border-color: transparent; background: transparent; }
+.presetRemove { display: inline-block; width: 14px; height: 14px; margin-left: 6px; vertical-align: -2px; }
+@media (min-width: 761px) {
+  .activeFilters[data-inline-only='true'],
+  .activeFilters.activeFilters .coveredByPreset { display: none; }
+}
+
+/* One outer card frame contains both the report action and author footer. */
+.panel.panel.panel :global(.report-card-container) { border: 1px solid #e3dff0; border-radius: 18px; box-shadow: 0 3px 0 #eeeaf8; background: #fff; }
+.panel.panel.panel :global(.report-card-container):is(:hover,:focus-within) { border-color: #b3a6e5; box-shadow: 0 3px 0 #d8d1ee; }
+.panel.panel.panel :global(.report-card-container):has(:global(.report-author)) :global(.report-result) { border-radius: 17px 17px 0 0; }
+.panel.panel.panel :global(.report-card-container) > :global(.report-author) { border: 0; border-top: 1px solid #eeeaf8; border-radius: 0 0 17px 17px; }
+.panel.panel.panel :global(.report-card-container):has(:global(.report-result-selected)) { border-color: #5146ed; box-shadow: 0 0 0 2px #b3a6e5; }
+
+/* Phones match the app: no quick-filter pills. Every pill choice remains in the Filters panel,
+   whose button shows how many filters are active. */
+@media (max-width: 760px) {
+  .toolbarFilters.toolbarFilters.toolbarFilters,
+  .panel.panel.panel :global(.report-browser-filters) { display: none; }
+  :global(.website-experience.website-experience .discovery-quick-filters):has(.activeFilters) { display: block; grid-column: 1 / -1; min-width: 0; }
+  .activeFilters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 0; padding: 2px 0; }
+  .activeFilters::-webkit-scrollbar { display: none; }
+  .activeFilters.activeFilters button { flex: none; min-height: 44px; max-width: 200px; }
+}

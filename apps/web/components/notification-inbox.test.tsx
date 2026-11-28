@@ -48,6 +48,25 @@ it('does not let an older fetch restore unread status after acknowledgement', as
   finish({ data: [notice('one')], error: null });
   await waitFor(() => expect(document.querySelector('.notification-unread')).toBeNull());
 });
+it('links each nearby alert to its own results and acknowledges only the one opened', async () => {
+  const alert = { event_type: 'nearby_reports_daily', report_id: null, contribution_id: null, report: null };
+  const otherAlert = { ...notice('nov-16'), ...alert, created_at: '2026-11-16T22:00:00Z' };
+  const openedAlert = { ...notice('nov-17'), ...alert, created_at: '2026-11-17T22:00:00Z' };
+  mocks.load.mockResolvedValueOnce({ data: [openedAlert, otherAlert], error: null });
+  mocks.load.mockResolvedValue({ data: [otherAlert], error: null });
+  mocks.acknowledge.mockResolvedValue({ error: null });
+  render(<NotificationInbox userId="owner" view={{ filter: 'unread', page: 1 }} />);
+
+  const links = await screen.findAllByRole('link', { name: 'New litter near you' });
+  expect(links.map(link => link.getAttribute('href'))).toEqual([
+    '/account/notifications/nov-17?filter=unread',
+    '/account/notifications/nov-16?filter=unread',
+  ]);
+  fireEvent.click(links[0]);
+
+  await waitFor(() => expect(screen.getAllByRole('link', { name: 'New litter near you' })).toHaveLength(1));
+  expect(mocks.acknowledge).toHaveBeenCalledExactlyOnceWith('acknowledge_cleanup_notifications', { target_notification_ids: ['nov-17'] });
+});
 it('clears old notices and pending retry IDs when the account changes', async () => {
   mocks.acknowledge.mockRejectedValue(new Error('offline'));
   const view = render(<NotificationInbox userId="owner" />);
@@ -57,7 +76,7 @@ it('clears old notices and pending retry IDs when the account changes', async ()
   view.rerender(<NotificationInbox userId="other" />);
   expect(screen.queryByText('Creek cleanup')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Retry marking read' })).toBeNull();
-  await screen.findByText('No updates yet. Cleanup activity will appear here.');
+  await screen.findByText('No updates yet.');
 });
 it('retains updates on refresh failure and provides an accurate reload action', async () => {
   const view = render(<NotificationInbox userId="owner" />);
@@ -68,7 +87,8 @@ it('retains updates on refresh failure and provides an accurate reload action', 
   expect(screen.getByText('Creek cleanup')).toBeTruthy();
   mocks.load.mockResolvedValue({ data: [{ ...notice('one'), report: null }], error: null });
   fireEvent.click(screen.getByRole('button', { name: 'Retry updates' }));
-  await screen.findByText('Report details unavailable');
+  await waitFor(() => expect(screen.queryByText('Creek cleanup')).toBeNull());
+  expect(screen.queryByText('Report details unavailable')).toBeNull();
   expect(mocks.acknowledge).not.toHaveBeenCalled();
 });
 
@@ -111,8 +131,8 @@ it('uses a quiet placeholder without declaring an empty inbox before loading fin
   render(<NotificationInbox userId="owner" />);
   expect(screen.getByRole('status', { name: 'Loading account section' })).toBeTruthy();
   expect(screen.queryByText('Loading updates…')).toBeNull();
-  expect(screen.queryByText('No updates yet. Cleanup activity will appear here.')).toBeNull();
+  expect(screen.queryByText('No updates yet.')).toBeNull();
   resolve({ data: [], error: null });
-  expect(await screen.findByText('No updates yet. Cleanup activity will appear here.')).toBeTruthy();
+  expect(await screen.findByText('No updates yet.')).toBeTruthy();
   expect(screen.queryByRole('status', { name: 'Loading account section' })).toBeNull();
 });
