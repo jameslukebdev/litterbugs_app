@@ -4,7 +4,8 @@ import { supabase } from './supabase';
 import { withTimeout } from './asyncTimeout';
 
 export const MEDIA_QUARANTINE_BUCKET = 'media_quarantine';
-export const MEDIA_PROCESSING_URL = 'https://litterbugs.app/api/media/process';
+const WEBSITE = process.env.EXPO_PUBLIC_WEBSITE_URL || 'https://litterbugs.app';
+export const MEDIA_PROCESSING_URL = `${WEBSITE}/api/media/process`;
 const MEDIA_MAX_SOURCE_BYTES = 5 * 1024 * 1024;
 
 const MIME_EXTENSIONS = Object.freeze({
@@ -31,7 +32,7 @@ export async function uploadSecureMedia({
   fetchImpl = fetch,
 }) {
   const extension = MIME_EXTENSIONS[mimeType];
-  if (!userId || !['report', 'cleanup', 'avatar'].includes(kind) || !extension) {
+  if (!userId || !['report', 'cleanup', 'avatar', 'issue'].includes(kind) || !extension) {
     throw new Error('The selected photo is not supported.');
   }
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 1 || bytes.byteLength > MEDIA_MAX_SOURCE_BYTES) {
@@ -68,11 +69,12 @@ export async function uploadSecureMedia({
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'X-Litterbugs-Photo-Review': 'approved-v1',
           },
           body: JSON.stringify(body),
           signal: controller.signal,
         }),
-        35_000,
+        55_000,
         'Photo safety checking is taking too long. Please try again.',
       );
     } catch (error) {

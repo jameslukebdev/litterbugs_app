@@ -7,9 +7,9 @@ describe('Stripe payout connection presentation', () => {
     expect(payoutConnectionPresentation({
       status: { onboardingStatus: 'complete', payoutsEnabled: true },
     })).toMatchObject({
-      label: 'Ready to receive cleanup rewards',
+      label: 'Ready to receive payouts',
       icon: 'checkmark-circle',
-      color: '#2F7D32',
+      color: '#5146ED',
     });
   });
 
@@ -21,7 +21,7 @@ describe('Stripe payout connection presentation', () => {
     expect(payoutConnectionPresentation({ status })).toMatchObject({
       label: 'Set up payouts',
       icon: 'wallet-outline',
-      color: '#59636A',
+      color: '#4A4857',
     });
   });
 
@@ -35,4 +35,4 @@ describe('Stripe payout connection presentation', () => {
   });
 });
 
-it('retains known payout status during background refresh', () => { expect(payoutConnectionPresentation({ loading: true, status: { payoutsEnabled: true } }).label).toBe('Ready to receive cleanup rewards'); });
+it('retains known payout status during background refresh', () => { expect(payoutConnectionPresentation({ loading: true, status: { payoutsEnabled: true } }).label).toBe('Ready to receive payouts'); });

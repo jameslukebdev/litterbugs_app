@@ -100,7 +100,10 @@
         "ENABLE_APPLE_PAY": "false",
         "ENABLE_IOS_ASSOCIATED_DOMAINS": "false",
         "IOS_BUNDLE_IDENTIFIER": "com.litterbugs.app",
-        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app"
+        "ANDROID_PACKAGE_IDENTIFIER": "com.litterbugs.app",
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "true",
+        "EXPO_PUBLIC_ANALYTICS_ENVIRONMENT": "production",
+        "POSTHOG_UPLOAD_SYMBOLS": "true"
       },
       "autoIncrement": true,
       "channel": "production"
@@ -111,6 +114,10 @@
       "autoIncrement": false,
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "false",
+        "POSTHOG_UPLOAD_SYMBOLS": "false"
       }
     }
   },
@@ -118,6 +125,10 @@
     "production": {
       "ios": {
         "ascAppId": "6757313862"
+      },
+      "android": {
+        "track": "production",
+        "releaseStatus": "draft"
       }
     }
   }

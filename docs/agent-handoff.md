@@ -24,6 +24,1304 @@ They cannot talk to each other directly. This file is how they share context.
 
 ## Log
 
+### 2026-11-27 — Claude (store 2.2.0: Community tab, leaderboards, in-app tips — iOS in review)
+
+- **Source:** branch `claude/mobile-2.2.0-community` in `/private/tmp/litterbugs-mobile-2.2.0-20261127`
+  (pushed to `origin/claude/mobile-2.2.0-community` = `29cacb5` at Grant's request): `6b07dbc` app +
+  `29cacb5` eas.json Android submit = production draft.
+  Base = live OTA source `21fe67c` (store 2.1.2 + today's OTA). Codex's uncommitted map-first /
+  anonymous-donation work in the main checkout is NOT included.
+- **What's new:** tabs Reports · Map · Community · Profile. Community = Global/town leaderboards
+  (Cleaners/Reporters/Funders, month/all-time, your standing, town picker; same public RPCs as the
+  website), Tip on payable cleaners/reporters → new Tip screen (Stripe PaymentSheet via
+  `create-cleaner-tip`, $5/$10/$20/other, name, note, fee shown), "Leave a tip" on finished reports
+  (asks cleaner vs reporter when both payable). Crowned champion beetle added to app bugs.
+  749 tests pass (1 skipped); simulator walk-through with live data (no live tip paid).
+- **EAS builds:** iOS 2.2.0 (32) `43dca57c-5f2f-456c-92b4-f01ff4b4c8ca`, Android 2.2.0 (28)
+  `bd9e78a5-fcea-49ba-bb9a-1b751f5f82cf`; runtime 2.2.0, channel production.
+- **Apple:** uploaded with `eas submit` (EAS-stored ASC key); version 2.2.0 created in ASC,
+  What's New + review notes (tips = voluntary gift, 100% to recipient, fee on top) updated,
+  build 32 attached, **Waiting for Review, Manually release** (owner OK: "Yes, build and submit").
+- **Google:** EAS has no Play service-account key (`eas submit -p android` fails), so the AAB
+  (`~/Downloads/Litterbugs-2.2.0-28.aab`, sha256 331b69f1…) was uploaded through Play Console in
+  Chrome (sent in <10 MB pieces, reassembled in the page, hash-checked). Production release 7 =
+  28 (2.2.0) only, notes added, 0 errors, 1 optional deobfuscation warning, no device loss;
+  **Changes in review, managed publishing ON**. Public release on both stores needs Grant's later
+  instruction.
+- **For Codex:** your uncommitted mobile changes in the shared checkout (`codex/map-first-navigation`:
+  anonymous donation choice in Fund, $35 tour copy, EmailPreferences screen route, ContributionSupporters
+  on the report sheet, analytics tweak) are NOT in store 2.2.0 or today's OTA. Rebase them onto
+  `origin/claude/mobile-2.2.0-community` (runtime 2.2.0) before the next OTA/store build. JS-only
+  parts can ship by OTA on 2.2.0 once it's live.
+- **`main` is out of date:** `origin/main` is 48 commits ahead of the live sources but 300–500 behind
+  today's release branches (`origin/claude/stripe-payouts-release-20261127` = live website,
+  `origin/claude/mobile-2.2.0-community` = store 2.2.0). Reconciling `main` needs a deliberate merge
+  and Luke's review; no PR opened.
+- **Cleanup:** removed my temp worktrees (branches kept; 2.1.1 OTA branch is local-only, also saved
+  as `artifacts/mobile-payouts-tips-ota-20261127/source-runtime-2.1.1.bundle`) and the downloaded AAB.
+- **Next (planning only, not to build yet):** Community must hold more than leaderboards (street
+  sweeps later). Layout sections can ship by OTA on runtime 2.2.0; GPS route tracking needs a later
+  native build.
+
+### 2026-11-27 — Claude (mobile OTA: in-app Stripe payouts, debit card wording, tip notices — live)
+
+- **OTA PUBLISHED** to the EAS `production` branch with Grant's OK ("Yes, publish it"), frozen
+  dist + `--skip-bundler` (no rebundle at publish):
+  - runtime 2.1.2 iOS: group `23cb091d-3e56-49b2-a629-f232bb595564` (update `01a21fe8-7f35…`),
+    source `21fe67c` = live `8dfd9c6` + one commit. Previous group `d08bc7cb…`.
+  - runtime 2.1.1 iOS + Android: group `53e5a68f-7060-437f-bddf-a2afeceb4250`, source `d91c4e4`
+    = live `07fce91` + the same commit (identical diff). Previous group `30544721…`.
+  - Rollback: republish the previous group (`eas update:republish --group <previous>`).
+- **What changed (JS only, 6 files):** ready payout accounts open Stripe's embedded payouts view
+  (`ConnectPayouts`, uses the live `create-cleaner-onboarding-link` manage mode) instead of the
+  browser dashboard; "bank or debit card" wording; `tip_received` notices in Updates ("Sarah tipped
+  you $5.00" + note → Payments) via a `cleaner_tips` join. No native/dependency change; ConnectPayouts
+  shares the WebView path of the already-live embedded onboarding (stripe-react-native 0.72.0).
+- **Regression checks:** 728 tests (1 skipped) on both sources; `authenticated` can SELECT
+  cleaner_tips (RLS own tips) so the Updates query works for all users; walk-throughs on iOS 2.1.2
+  and 2.1.1 store shells (map, sheet, list, report page, Profile, Payments, payouts view, Updates)
+  and Android 2.1.1 QA APK on the Pixel (signed out; QA app removed after). One blank Profile
+  frame after rapid taps did not reproduce on the update or the live bundle. Hosted manifests
+  for all three targets serve bundles byte-identical to the tested ones; an unmodified 2.1.2 shell
+  with updates on downloaded `01a21fe8-7f35…` and launched it twice with 0 failures.
+- Record: `artifacts/mobile-payouts-tips-ota-20261127` (dists, publish logs, git bundles).
+- **Pending:** 2.2.0 store build (Community tab + leaderboards, in-app tips) — needs Apple/Google
+  review; public release held until Grant says so.
+
+### 2026-11-27 — Claude (reporter tips, Leave a tip picker, tip notes + notifications — all live)
+
+- **Website RELEASED:** Cloudflare version `b5930dbe-a2df-42eb-baf1-cb2dc637677a` from `4786ca7`
+  (branch `claude/stripe-payouts-release-20261127`, now pushed). Rollback:
+  `npx wrangler rollback 2a92cf88-1d8b-4dd2-96df-f2ab475dc55b --config wrangler.production.jsonc`.
+  Adds: Tip on the Reporters board (Funders: none), one "Leave a tip" button on finished report
+  pages (asks "Who would you like to tip?" when both cleaner and reporter are payable), tip page
+  roles (cleanups/reports, back to board or report), "Your name" + "Add a note" fields, Updates
+  inbox "Sarah tipped you $5.00" + note → /account/payments, Terms "cleaner or reporter".
+  Checks: 1,296 web tests (1 skipped), 85 Deno tests, OpenNext build, live curl checks.
+- **Migrations applied:** `tip_recipient_reports` (20261128010000) and
+  `tip_notes_and_notifications` (20261128020000): cleaner_tips tipper_name/note/recipient_role/
+  report_id; cleanup_notifications.tip_id + `tip_received` type (Payments topic); trigger
+  notifies the person tipped when a tip becomes `succeeded`. Constraints rebuilt from the live
+  definitions (cleanup_issue_* kept).
+- **Functions:** `create-cleaner-tip` v3 (names/notes/report link), `send-cleanup-notifications`
+  v28 = live c60db6d bundle + tip push ("Sarah tipped you $5.00", note as body, plain fallback)
+  + missing `reporter_payout_waiting` wording (pushes for it had no wording; none failed yet).
+  Source: release branch `fcb5cd2`, `33def56`. Rollback: v26 bundle (in c60db6d).
+- **Then published** `33def56` (payout-waiting wording in Updates → /account/payments) as Cloudflare
+  version `a67df3d3-7419-4f49-b37f-d9c754ce4815`; rollback to `b5930dbe…`. Verified live chunk.
+- The store app shows tip notifications as a generic "Cleanup update" until its next release
+  (push text is server-side). Release branch pushed to GitHub at the owner's request:
+  `origin/claude/stripe-payouts-release-20261127` = `33def56` (includes the live 8a8ea5e ILC history).
+
+### 2026-11-27 — Codex (PayPal Payouts status recheck)
+
+- After Grant signed back in, the live Burrow Base LLC PayPal Payouts page still displayed Application in review. PayPal says it is reviewing the documents and estimates up to 2–3 business days in some cases. The status check made no account or payment changes.
+
+### 2026-11-27 — Claude (Stripe-only payouts + tips released; tips switched ON)
+
+- **Backend deployed (Supabase `mvaygkflcjswtwchflrk`):**
+  - `create-cleaner-onboarding-link` v34: adds `manage` mode (embedded Payouts, notification banner,
+    account management sessions). Source `bffff93`. Rollback: v33 source (identical minus manage).
+  - Migration `cleaner_tips` (file `20261127230000_cleaner_tips.sql`, `be889a3`): `cleaner_tips`
+    ledger (RLS: cleaner/tipper read own; backend writes), `tips_enabled` flag (**OFF**),
+    `tip_eligible_profiles(uuid[])` and `tip_recipient(uuid)` public RPCs.
+  - `create-cleaner-tip` v1 (`be889a3`): guest or member tips, $3–$1,000, fee 50¢ + 5% on top,
+    one destination charge to the cleaner's connected account (application fee = service fee).
+    Refuses while `tips_enabled` is off.
+  - `stripe-webhook` v28: tip PaymentIntents/refunds go to the tip ledger; all other events unchanged.
+    Deployed from the live v27 bundle + tip lines only. Rollback: v27 / pre-`be889a3` index.ts.
+- **Verified:** 48 Deno backend tests; signed requests only. Owner-approved no-payment dry run:
+  tips on briefly, a $3 guest tip to Grant created an unpaid destination-charge PaymentIntent
+  (Stripe accepted it, Payment Element loaded), ledger row correct, leaderboard showed Tip only for
+  payout-ready cleaners; tips switched OFF again; row marked `failed` /
+  `verification_dry_run_unpaid`. No card charged. The open $3.65 PaymentIntent can be cancelled in Stripe.
+- **Stripe Dashboard (Litterbugs account only):** business icon = App Store icon; Connect
+  external accounts now allow debit cards (one payout destination per account). Instant payouts off.
+- **Website RELEASED (Cloudflare Worker `litterbugs-web-production`, version
+  `2a92cf88-1d8b-4dd2-96df-f2ab475dc55b`, 100%).** Source `1108bf2` on local branch
+  `claude/stripe-payouts-release-20261127` (worktree `/private/tmp/litterbugs-stripe-payouts-release-20261127`),
+  built on live `8a8ea5e` (ILC feed + verification tag preserved). Not pushed to GitHub.
+  Rollback: `npx wrangler rollback f8ccee3b-579a-4d27-887a-11e4c1e239ea --config wrangler.production.jsonc`.
+  Contents: Stripe-only Payouts panel (in-page setup + embedded payouts, no Express dashboard),
+  `/tip/[id]` page, leaderboard Tip pills (payout-ready cleaners only), Terms "Tips" section,
+  privacy tip/debit-card lines. Checks: 1,291 web tests (1 skipped), 82 Deno tests, typecheck,
+  lint, OpenNext build; live curl checks of /, /communities, /tip, /terms, /privacy, robots,
+  sitemap, ILC feed. Owner then switched `tips_enabled` ON: live leaderboard shows Tip for
+  James B., Nevan, Grant G. and Aud; tip page shows the form. First real tip is the first
+  end-to-end paid test — check its Stripe destination charge and ledger row (`succeeded`).
+- Local working tree still has the same tip/payout edits uncommitted (mixed with Codex's edits).
+- **Do not undo:** payout preview/sample earnings removed; Venmo/PayPal hidden (code dormant);
+  local `.env.development.local` preview flags set false. Old `app/local-payout-preview/tip` is unlinked.
+
+### 2026-11-27 — Codex (signed-in PayPal approval check)
+
+- Rechecked the live Burrow Base LLC PayPal Business account after Grant signed in. Pay & Get Paid → Payouts opened the application page, which still shows In review and says PayPal is reviewing the documents. The page estimates a few hours or up to 2–3 business days in some cases. No account or payment changes.
+
+### 2026-11-27 — Codex (PayPal live approval status check)
+
+- The last verified live PayPal Payouts status for the Litterbugs application under Burrow Base LLC is In review. Today the PayPal Business dashboard prompted for sign-in, so a newer decision is unverified. Left the sign-in tab open. No account or payment changes.
+
+### 2026-11-27 — Codex (earnings on the regular local account page)
+
+- Commit `447bde7` shows the earnings and payout setup directly under Account → Payments & payouts at `http://localhost:3000/account/payments`. The active checkout's ignored `.env.development.local` enables the preview with `LITTERBUGS_PAYOUT_PREVIEW_ENABLED=true`. No query parameter is needed. The flag requires a loopback development server.
+- Chrome verified normal account navigation, both wallet choices, a sample $5 Venmo tip showing $4.75 after the fee, and bank setup keeping Venmo selected for tips. The sample earnings and simulated saves display alongside actual contribution history. Scoped lint and 33 tests passed. No live payments, provider changes, or deployment.
+
+### 2026-11-27 — Codex (tips and earnings on the current localhost site)
+
+- Grant asked to use the current website and real leaderboard data at `http://localhost:3000`. Boone’s Cleaners board now has an aligned heart and Tip action beside every score. The same layout is available globally and on town boards. Each action opens the branded read-only tip preview for the row’s public leaderboard name and profile image, with custom amount and fee calculation. The local .env flag enables normal development navigation. The existing in-progress community page and board sources contain the integration edits.
+- Core commit `0827831` adds the localhost preview pages and controls. Open `http://localhost:3000/account/payments?payoutPreview=1` while signed in for one earnings and setup view alongside real account history. The example shows $20 in cleanup earnings and a $5 tip. Chrome verified the three Boone recipient links, custom amount calculation, and a $4.75 tip after selecting PayPal, with bank setup shown alongside the saved-in-memory choice. Typecheck, scoped lint, and 41 focused tests passed. GitHub Sponsors via Refero informed the repeated right-side action.
+- Local preview only. No live payments, bank changes, provider settings, or deployment. The existing isolated test worker and guest sandbox branch are unchanged. Live Venmo delivery and public launch remain pending.
+
+### 2026-11-27 — Codex (automatic wallets and Tip beside cleaner names)
+
+- Commit `ac37b50` adds sandbox PayPal/Venmo routing to the local worker. A paid $5 Stripe tip showed waiting before setup. PayPal Sandbox rejected Venmo delivery and the tip remained waiting without a batch. After saving the personal PayPal sandbox account, PayPal confirmed one successful $4.75 payout and a $0.25 fee. Chrome verifies the net amount and open setup controls at `http://127.0.0.1:3000/account/payments`.
+- Grant clarified that joining the leaderboard means a Tip action beside the cleaner’s name. Core commit `3ca7a76` adds the action and redirects the retired support-count page to Cleaners. Small integration edits are also present in the existing work-in-progress leaderboard sources. The isolated runner overlays that actual board component with synthetic entries. On `http://127.0.0.1:3000/communities?board=cleaners`, verified the Tip action beside Maya and that Stripe Checkout is bound to her test account. Guest branch `8268e9e` populates the existing recipient heading for the new entry and validates the cleaner across Checkout. No new checkout design or live activity.
+- Python wallet tests, scoped lint, typecheck, 40 account/board tests, and 24 guest tests passed. Refero research recommends putting pending balance and setup together, with sent/refunded activity below. Review remains sandbox-only and live Venmo delivery remains unverified. Temporary browser/service state and the leaderboard overlay script are under `/private/tmp/litterbugs-payout-review.om80Yb`.
+
+### 2026-11-27 — Codex (automatic local tip transfer, refund, and community support)
+
+- Main commits `ab309c0` and `0740bd2` add a development-only Stripe sandbox worker with a local SQLite ledger, idempotent transfer/refund actions, and a signed-in earnings view backed by the ledger snapshot plus an approved cleanup fixture row in local Supabase. Guest branch `7003bc8` gives the existing guest form an opt-in pending destination. Guest UI source is unchanged.
+- Observed a paid $5 sandbox tip waiting with no destination, then Stripe confirmed one $5 transfer to the connected sandbox account after the local bank-ready fixture was set. Used the existing guest form for a separate $10 tip ($11 charged). With no destination, it stayed pending one second before day 30. At day 30 on the targeted test clock, Stripe confirmed one full $11 sandbox refund. The guest receipt showed the refund.
+- Verified `http://127.0.0.1:3000/account/payments` shows the approved $20 test cleanup, sent tip and refunded tip. `http://127.0.0.1:3000/local-payout-preview/tip-support` counts one delivered tip and excludes the refund. Sandbox worker and review server remain running. State and harness live under `/private/tmp/litterbugs-payout-review.om80Yb`.
+- Web typecheck, scoped lint, 32 focused account tests, and 21 guest sandbox tests passed. Automatic PayPal/Venmo settlement, live Venmo access, funded-cleanup claim changes, a live webhook-backed worker, and public leaderboard integration remain pending. No live payments, provider settings, or production deployment changed.
+
+### 2026-11-27 — Codex (real Stripe sandbox tip in combined earnings)
+
+- Commit `5ccdd8f` replaces the $5 display fixture with a server-verified Stripe Sandbox Checkout receipt for the isolated local cleaner. On port 3000 the total moved from $20 to $25 after Checkout captured $5.75 ($5 tip and $0.75 fee). The 30-day deadline uses the charge time. No destination transfer was created. The $20 cleanup is still a fixture.
+- The existing guest tip page and receipt on port 3029 were reused without source changes. Chrome verified the test receipt and signed-in earnings. Typecheck, scoped lint and 32 focused tests passed. The sandbox reader is pinned to one configured session. A persistent webhook-backed tip ledger, automatic payout/refund and funded claim changes are pending. No live charges, payout, refund, or deployment.
+- Community Funders counts distinct qualifying funded reports for signed-in contributors. Cleaner ranking credits completed work. Leaderboard rules and public tip recognition remain open.
+
+### 2026-11-27 — Codex (combined earnings on port 3000)
+
+- Commit `3536df4` adds a combined earnings review to the normal Payments & payouts page for an explicitly opted-in, isolated local account only. It shows a $20 approved cleanup and a $5 paid-tip fixture, a 30-day tip setup deadline and one setup entry. Selecting a wallet in the tested view applies the 25¢ deduction to the tip amount.
+- Chrome is signed in as the synthetic Maya Thompson account at `http://127.0.0.1:3000/account/payments`. Verified the total, deadline and the bank and wallet setup entry points. The original Casey bank-connected fixture still exists. The runner and new fixture setup are under `/private/tmp/litterbugs-payout-review.om80Yb`.
+- Typecheck, scoped lint and 57 focused tests passed, including deadline expiration at day 30 and isolation from other accounts and hosted data. Guest tip checkout was untouched. Live earnings data, payouts and automatic refunds are outside this review. No production deployment or provider changes.
+
+### 2026-11-27 — Codex (pending tips and shared earnings view)
+
+- Grant wants guests to be able to tip before the cleaner sets up payouts, with approved cleanup rewards and paid tips in one waiting-for-payout total. Proposed itemized status, a single payout setup entry, and showing the 25¢ wallet deduction on the cleaner’s side after method selection.
+- A paid tip with no destination requires tracking money owed until payout setup or refund. The unclaimed-tip window and guest refund policy remain open. No payment-flow changes, live charges, or deployment.
+
+### 2026-11-27 — Codex (earnings before payout setup review)
+
+- Current funded-cleanup claim RPC requires an enabled U.S. Stripe recipient and age confirmation. The payout worker assumes an enabled destination and lacks a waiting-for-setup state. Discussed moving the Stripe setup gate from claim to payout after approval, while retaining eligibility and review.
+- A captured tip before a payout destination exists would introduce a hold and refund workflow. Suggested keeping launch tips payable to cleaners with a usable bank, Venmo, or PayPal destination. Product design discussion only. No payment-flow changes or deployment.
+
+### 2026-11-27 — Codex (existing Stripe login requirement)
+
+- Confirmed the local review’s real Stripe sandbox account has Stripe-managed requirements and Express dashboard access. Stripe rejected a test Account Session requesting bank management using only platform login (HTTP 400). Stripe also documents that the direct bank-account creation API requires platform-managed requirements.
+- Stripe’s embedded verification opens a Stripe-hosted popup. The screenshot shows the sandbox’s existing name, icon, and color, while the verification form is Stripe-owned. Buy Me a Coffee’s official payout guides also direct users to Stripe to edit bank details. No product code, bank details, provider settings, or deployment changed.
+
+### 2026-11-27 — Codex (payout wording and Stripe verification)
+
+- Web commit `2f69487` explains the bank default for tips and offers “Choose where tips go” until a wallet is selected. Bank details now explain why Stripe verifies an already signed-in Litterbugs member before showing bank information.
+- Verified the wording and the real sandbox verification prompt together in Chrome on `http://127.0.0.1:3000/account/payments`. The local review remains open. Typecheck, scoped lint, and 55 focused tests passed. No production deployment or provider changes.
+
+### 2026-11-27 — Codex (one bank-first payout setup)
+
+- Commits `1796961` and `838b5ef` show one payout status and one setup/manage button on Payments & payouts. A connected bank receives cleanup earnings and tips by default. Optional Venmo/PayPal choices are clearly for tips, and the saved destination is separate from the edit form.
+- Ready accounts open Stripe Account Management inline for bank details. The signed-in Edge Function returns a short-lived, management-only session for the member’s own existing ready account. Stripe authentication stays required, with the existing hosted route available if the component fails.
+- Chrome verified PayPal-to-bank save and reload against the isolated local account, and the real Stripe sandbox component opened to its verification prompt within Litterbugs. Bank edits beyond that prompt were not exercised. The review stays open on `http://127.0.0.1:3000/account/payments`. Typecheck, scoped lint, 68 focused web tests on Node 22, and nine Edge Function tests passed. No production deployment or provider configuration changes. Live guest tips remain gated on Venmo.
+
+### 2026-11-27 — Codex (unified payout settings for local review)
+
+- Website commits `84b243d` and `0ddd98a` bring funded-cleanup bank controls and guest tip destinations into one Payments & payouts card. The account page saves tip destinations to the signed-in account. Removed the preview badge, sample copy, and browser-only preference fallback.
+- Review is running at `http://127.0.0.1:3000/account/payments` with a test account and isolated local database. The original IPv6 listener on port 3000 is still running. The review runner and detached source are under `/private/tmp/litterbugs-payout-review.om80Yb`.
+- In Chrome, PayPal remained selected after reload alongside a connected bank. Verified bank status against Stripe sandbox and opened the bank controls inline. Type checking, scoped lint, and 49 focused tests passed. No production deployment or payment activity in this pass. Live guest tipping is held until Venmo is ready.
+
+### 2026-11-27 — Codex (tip preferences sync across signed-in sessions)
+
+- Main source `002905a` on `codex/map-first-navigation` wires Receive tips
+  on the signed-in website to the member's private wallet preference row.
+  It checks the signed-in member during saves and preserves the wallet when
+  a funded-cleanup bank is ready. The hosted-backed localhost preview still
+  uses sample details and browser-tab storage.
+- Tested the normal account page against isolated GoTrue, PostgREST and
+  PostgreSQL. Saved Venmo in one browser origin, signed in independently
+  on the other, verified the saved handle, saved PayPal there, and reloaded
+  the first session to see the saved PayPal email. Confirmed a different
+  signed-in member could not read, update or delete that preference.
+- Web typecheck, scoped ESLint and 28 focused tests passed. Production flag
+  `LITTERBUGS_TIP_PAYOUT_SETTINGS_ENABLED` defaults off. The two migrations
+  were applied only to the test database. No deployment or payout activity.
+
+### 2026-11-27 — Codex (actual PayPal sandbox tip and local account preview)
+
+- Confirmed the signed-in account in the screenshot uses the main site at
+  port 3000. Added a loopback-only Receive tips preview above contributions
+  on `/account/payments`, with a sample connected-bank switch and PayPal and
+  Venmo controls. Main source commits `a17f912` and `8829663`. The
+  preview saves only to the browser tab. Scoped lint, web typecheck, and the
+  owner's exact signed-in URL passed.
+- Used an isolated local web server and a real PostgreSQL/PostgREST synthetic
+  cleaner to complete a $5 tip through Stripe test Checkout. Stripe captured
+  $5.75 with a $0.47 processing fee and no Connect transfer. PayPal Sandbox
+  batch QUT5GAKL8XM3J item PFAX8WSLYCT62 returned SUCCESS with one $4.75
+  wallet payout and a $0.25 sender fee.
+- The actual repeat request returned an existing-batch link under
+  `details[].link`. Fixed recovery in `a0d8fe5` on the guest-tips branch,
+  added regression coverage, and verified the local checkout showed PayPal
+  confirmation for the original batch. All 24 focused tip tests passed.
+- No deployment, production database write or real funds movement. Live
+  guest tipping remains gated on Venmo readiness.
+
+### 2026-11-27 — Codex (signed-in tip preference and 25¢ sandbox routing)
+
+- Source `1b7065f` on `codex/stripe-guest-tips-20261127`. In the
+  signed-in local account, a ready bank coexists with a saved wallet. Switching
+  tips to the bank clears the wallet override using the owner-only policy.
+- The local guest rehearsal can read a configured synthetic cleaner's saved
+  wallet, retain its routing on the Stripe Checkout Session and settle through
+  PayPal Sandbox. A $5 tip routes $4.75 with one $0.25 sender fee, no Stripe
+  Connect transfer on the wallet route and a stable PayPal batch per payment.
+  Verified Checkout capture, destination matching and blocked refund cases in
+  integration tests with provider stubs. Stripe accepted a fresh test Checkout
+  Session through the real route. The earlier $5.75 Stripe sandbox charge shows
+  $0.47 processing.
+- Verified the new migration in isolated PostgreSQL for owner-only edit and
+  clear, alongside typecheck and lint. No production migration, real payout,
+  deployment, or change to funded cleanup payouts.
+- PayPal Developer requested sign-in. Actual $4.75 delivery through the new
+  integration was unverified. The earlier real PayPal sandbox wallet test
+  reported a separate $0.25 fee. Venmo delivery was rejected by PayPal sandbox.
+  Live tipping stays gated on Venmo readiness and production settlement.
+
+### 2026-11-27 — Codex (keep tip wallet after bank setup)
+
+- Preview source `e6fc2e5` on `codex/stripe-guest-tips-20261127`. The
+  same Payments & payouts dashboard shows the bank for funded cleanups and
+  keeps a saved Venmo or PayPal selection for new tips. Once a bank is
+  connected, it is available as a tip option and is the default when no
+  wallet is saved.
+- Verified wallet retention, switching to the bank and back, and desktop
+  and phone layouts. Typecheck, scoped ESLint, and five existing tests passed.
+- Local preview only. Next is persisting the choice in the signed-in flow
+  when a bank is ready and verifying checkout-to-payout routing. Live guest
+  tipping remains gated on Venmo readiness.
+
+### 2026-11-27 — Codex (tip wallets in the funded payout dashboard preview)
+
+- Preview source `0719911` on `codex/stripe-guest-tips-20261127`. The
+  local Payments & payouts preview opens with funded bank setup and an inline
+  Receive tips form with official Venmo and PayPal logos. The connected state
+  shows the bank as the destination for cleanup rewards and future tips.
+- Verified both sample wallet saves, validation, and the transition from
+  wallet setup to a connected bank. Checked desktop and phone layouts.
+  Typecheck, scoped ESLint, and five existing tests passed.
+- This is a local review preview. No provider calls or deployment. Live
+  guest tipping remains gated on Venmo readiness.
+
+### 2026-11-27 — Codex (one-dashboard funded payout preview)
+
+- Built and left open the local responsive dashboard preview at
+  `http://127.0.0.1:3029/dev-review-preview/payout-dashboard`. It uses the
+  existing account navigation, Litterbugs branding and sample data to show
+  bank setup, a connected destination, and funded cleanup payout history.
+- Verified setup, updating the sample bank, payout details, and navigation
+  back from My activity using desktop and phone layouts. Web typecheck and
+  scoped ESLint passed. Preview source is commit `513b578` on
+  `codex/stripe-guest-tips-20261127`. No deployment or payment provider calls.
+- Pending Grant's design review. Live Stripe onboarding and native app
+  behavior are outside this preview.
+
+### 2026-11-27 — Codex (actual Buy Me a Coffee Stripe field comparison)
+
+- On Grant's signed-in supporter account, Become a creator required a
+  photo, name, bio, and website or social link. Saved an authorized private
+  Litterbugs Payout Test profile using the existing app icon and litterbugs.app.
+  File chooser selection worked but S3 denied the upload through that path.
+  Chrome's native picker succeeded and opened the branded U.S. payout page.
+- Connect opened Stripe with the creator email prefilled. Stripe identified
+  an existing account and required Google sign-in, which Grant completed.
+  Verified Stripe offered reuse of an existing account or a fresh account.
+  The reuse option had its own agreement and was never submitted.
+- For a fresh U.S. account, selected Unregistered business and no EIN.
+  Observed the legal first/last name, email, DOB, home address, phone, and
+  last four SSN fields. Payout details, Public details, Fraud protection,
+  and Tax calculation appeared in the progress menu. Stopped at the
+  personal form without entering identity/bank details or connecting payouts.
+- Litterbugs already configures a U.S. individual recipient and embeds
+  onboarding. The ready Manage payouts action opens Stripe Express. Separate
+  provider records can sit behind one Litterbugs Payments & payouts view.
+  Stripe offers embedded Account management on web and Payouts on React Native.
+  Native bank editing with our configuration still needs a sandbox check.
+  No Litterbugs code, deployment, Stripe settings, or money movement.
+
+### 2026-11-27 — Codex (onboarding branding and mobile comparison)
+
+- Grant pointed to Buy Me a Coffee's branded creator signup screenshot.
+  That is its own pre-Stripe page. Litterbugs' web sign-in sits over the
+  map, and its payout form opens in a dialog. The embedded web form already
+  sets colors, spacing, button styles and radius. Native PayoutSetupScreen
+  already embeds Stripe Connect, with a smaller appearance configuration
+  and hosted fallback.
+- Buy Me a Coffee has iOS and Android apps. Public listings show creator
+  tools and payment history. First-time Connect setup inside its native
+  app was not verified. No Buy Me a Coffee app on the booted simulator,
+  and its creator Stripe field audit still needs a signed-in account.
+- Discussed a Litterbugs-branded payout screen with one action, consistent
+  supported Stripe styling, and branded bank-ready confirmation across web
+  and app. No artwork, code, Stripe setting, build, or deployment changes.
+
+### 2026-11-27 — Codex (Buy Me a Coffee field audit awaiting login)
+
+- Opened Buy Me a Coffee creator signup. Continuing explicitly accepts its
+  terms, and the connected Stripe form requires the creator dashboard.
+  Left the tab for Grant to sign in or create a test account. The actual
+  Buy Me a Coffee Stripe form is still unobserved.
+- Reviewed the Litterbugs live form captures and synthetic test review,
+  including eligibility, Stripe phone check, legal name, bank selection or
+  manual routing/account entry, and review. Stripe can request tax or
+  identity details. Current integration creates U.S. individual recipients
+  and requests only fields currently due.
+- Stripe's public U.S. reference for an illustrative full-dashboard
+  card-accepting account showed additional business/activity and statement
+  descriptor fields compared with a transfers-only Express account. That
+  reference does not establish Buy Me a Coffee's exact private setup.
+  No new account, agreement, code, deployment, or payout change.
+
+### 2026-11-27 — Codex (Buy Me a Coffee Connect comparison)
+
+- Grant chose to keep Stripe Connect for funded cleanup payouts. Reviewed
+  Buy Me a Coffee's public signup, current help and terms, and the Litterbugs
+  Connect source. Buy Me a Coffee lists Standard Connect in the US and Express
+  in some other markets. Its US setup is Stripe-hosted and asks for contact,
+  bank/card and tax information before the creator page can receive support.
+  Its 5% is separate from Stripe processing, with optional fee pass-through.
+- Buy Me a Coffee collects for a creator named at checkout as their limited
+  payment collection agent. Litterbugs collects an open report pool as
+  merchant of record before the cleaner is known, then pays after approval.
+  Buy Me a Coffee's internal Stripe terms and charge type are unverified, and
+  its model does not establish support for switching the Litterbugs payout rail.
+- Recommendation for discussion: keep current recipient-only Connect,
+  make bank setup visible ahead of the first funded claim, and keep one
+  confirmation that payouts are ready. Current embedded flow already prefills
+  known identity details and collects fields currently due. No new signup,
+  Stripe ticket, code change, or deployment.
+
+### 2026-11-27 — Codex (PayPal funding and Venmo sandbox limits)
+
+- PayPal Business live dashboard still shows Payouts application in review.
+  The application described guest tips. Standard Payouts uses the Business
+  balance. PayPal's separate delayed disbursement product names an onboarded
+  seller at checkout and automatically releases at 28 days. Support for
+  Litterbugs' live pre-claim cleanup pool is unconfirmed. No new Stripe case,
+  provider approval submission, live transfer, product deploy, or code change.
+- PayPal sandbox rejected $10 requests explicitly routed to VENMO with both
+  USER_HANDLE and EMAIL. Both returned HTTP 400, Recipient wallet not
+  supported in sandbox. Debug IDs f406587c4ab26 and f4065876f1be3. No Venmo
+  batch or delivery. PHONE recipient type is also unavailable in sandbox per API docs.
+- Linked standalone sandbox test captured $7.20 and $4.80 before a cleaner
+  was assigned, then an approved fixture with no Stripe account triggered
+  $10 PayPal payout HKK27PYGXH54Y / 554HHR3UVAFCU. Item SUCCESS, fee $0.25,
+  same batch key rejected on retry. Example fees were test amounts and the
+  existing reporter payout was not executed.
+- A separate $3.60 checkout was fully refunded. After payout, a $4.80 refund
+  also completed while the $10 reward stayed SUCCESS. Attempted cancellation
+  of that paid reward was rejected. A simulated unclaimed PayPal item
+  HJ2UQGA2ZP5UJ stayed UNCLAIMED after two internal errors on cancellation
+  after batch settlement. Test-only code and evidence are outside the repo.
+  Temporary credentials removed.
+
+### 2026-11-27 — Codex (funded wallet payout confirmed in PayPal sandbox)
+
+- Existing default PayPal sandbox app had Payouts enabled. A sample approved
+  cleanup used two cleared contributions totaling $10 and excluded a refunded
+  contribution. The test cleaner had no Stripe account. PayPal credited $10
+  to the personal sandbox wallet and recorded a separate $0.25 sender fee.
+  Batch X8VHYB895FBKJ and item JEFSGCYRTZQAU both reached SUCCESS. Retrying
+  the same sender batch ID returned the original batch and no second payout.
+- This tested disbursement with fixture contributions from the sandbox Business
+  balance. Collecting and holding live pooled contributions and Venmo delivery
+  were outside this test. The submitted live PayPal application described tips.
+  Keep the current Stripe funded claim and payout rules pending provider
+  coverage for pooled rewards. Existing Stripe case notes reviewed and no
+  new ticket opened. No live changes, new credentials, or deployment.
+- The one-off harness is outside the repo. Temporary sandbox credential file
+  removed. Existing source remains 09177d0 on codex/stripe-guest-tips-20261127.
+
+### 2026-11-27 — Codex (unified payout preview and wallet-only funded question)
+
+- Source 09177d0 on codex/stripe-guest-tips-20261127. The local Get paid panel
+  is inside Payments & payouts. A payout-ready bank displays one destination.
+  The wallet view shows Funded cleanup rewards / Bank account required first.
+  Both official wallet choices are labeled for guest tips. Account saves
+  recheck bank readiness, and the old local tip settings URL redirects.
+- Browser checked both preview views and a test wallet save. Local SQL checked
+  owner-only reads. Scoped lint, typecheck, and 1,308 web tests passed (one
+  skipped). No deployment, production migration, or live wallet payout.
+- Grant identified Stripe onboarding as the main hurdle and asked if funded
+  rewards could also go to PayPal/Venmo. PayPal Payouts supports wallet
+  disbursements and requires a funded balance and account access. Litterbugs
+  must verify coverage for its pooled, pre-claim contributions, preserve
+  refunds and splits, and implement wallet reward reconciliation before
+  changing funded claim eligibility. Current claim gate and payout code
+  are still Stripe Connect. Guest tip launch still waits for Venmo readiness.
+
+### 2026-11-27 — Codex (simpler payout proposal after platform research)
+
+- DoorDash and Instacart include tips in earnings. Buy Me a Coffee offers
+  guest tips with bank payouts. Patreon uses one payout method setting.
+  Ko-fi's Venmo option is at supporter checkout for eligible PayPal-connected
+  pages.
+- Proposed one Get paid row and one active destination at launch. A verified
+  Litterbugs bank receives rewards and tips. A cleaner without bank setup
+  can use Venmo for tips, with the 25¢ wallet deduction. Explain that future
+  earnings will go to the bank when the cleaner confirms bank setup. Propose
+  deferring a separate PayPal wallet option and a tip-method switch.
+- Research only. Product UX and routing await owner direction. No code
+  shipped and the public guest-tip launch remains gated on Venmo readiness.
+
+### 2026-11-27 — Codex (bank payout default proposal)
+
+- Stripe Connect supports bank payouts and eligible debit cards. PayPal
+  Payouts is the separate integration for PayPal and Venmo wallet balances.
+  The previous guest-tip sandbox successfully transferred tips to a test
+  connected account.
+- Proposed one Payments & payouts screen. Reuse a payout-ready Litterbugs
+  bank connection for rewards and tips by default. Offer a wallet for tips
+  when available, with the agreed 25¢ wallet deduction. Keep existing funded
+  reward routing and show the destination when the two differ. Bank tips
+  skip PayPal fees and remain subject to Stripe Connect pricing.
+- Product discussion only. No payout routing or settings changed. Keep the
+  public guest-tip launch on hold until Venmo is ready.
+
+### 2026-11-27 — Codex (tip wallet account saving and official logos)
+
+- Source 459e528 on codex/stripe-guest-tips-20261127. Venmo and PayPal
+  wordmarks are served locally from the providers' brand kits. On the signed-in
+  preview, Account > Payments & payouts > Tip payout settings now saves one
+  destination per member. The standalone demo keeps its test preference in the tab.
+- Supabase migration 20261127172753_cleaner_tip_payout_preferences.sql was applied
+  only to an isolated local database. Two independent sessions shared the saved
+  setting. Other members, anonymous guest sessions, and signed-out clients could
+  not access it. Funded cleanup rewards still use cleaner_payout_accounts and Stripe.
+- Desktop and phone-width logo checks, typecheck, scoped lint, and 1,306 web tests
+  passed (one skipped). No deployment or live payout. Public guest tipping stays
+  on hold until Venmo is ready. PayPal Payouts approval and live wallet payout
+  wiring are pending.
+
+### 2026-11-27 — Codex (signed-in tip settings path)
+
+- Source 94f0c5c on codex/stripe-guest-tips-20261127. The local site's
+  Account > Payments & payouts now shows Tip payout settings near the top.
+  It opens /account/payments/tips and keeps Payments selected in navigation.
+  The direct route requires a signed-in permanent account and returns to the
+  same page after sign-in.
+- The wallet form is shared with the standalone demo. Account test choices
+  are scoped to the signed-in member within the tab and separate from demo
+  choices. Both routes are local previews pending Venmo readiness.
+- Browser verified the sign-in redirect and that the original demo opens.
+  Forty-one focused tests covered the signed-in route, entry link, and test
+  preference isolation. Typecheck and scoped lint passed. No deployment,
+  account data write, or live payout.
+
+### 2026-11-27 — Codex (tip fee calculation and cleaner copy removal)
+
+- Source 9147cc7 on codex/stripe-guest-tips-20261127. Removed the
+  25¢ deduction line from the cleaner's local settings at Grant's request.
+  This only changes preview copy. The agreed wallet payout calculation
+  still takes the 25¢ fee out of the tip when implemented.
+- For a $5 tip, guest pays $5.75 with the 75¢ service fee. The existing
+  $5.75 Stripe Sandbox charge confirms 47¢ in processing. With a domestic
+  PayPal Payouts API fee of 25¢ and a $4.75 cleaner payout, Litterbugs
+  retains 28¢ before overhead or taxes, with no reporter reward.
+- Local browser verification, four focused tests, and scoped lint passed.
+  No live payout or deployment.
+
+### 2026-11-27 — Codex (simplified tip amount and payout fee copy)
+
+- Source 865c64c on codex/stripe-guest-tips-20261127. The guest checkout
+  uses Tip amount. The cleaner's wallet settings disclose the 25¢ deduction
+  once and omit the example calculator and extra placeholder explanation.
+- Confirmed published Stripe checkout processing and PayPal Payouts API fees
+  are separate. In the proposed wallet flow, the service fee covers Stripe
+  processing and the cleaner deduction covers the PayPal payout fee.
+  PayPal-only checkout plus payouts still has two fee line items.
+- Verified both local screens and both wallet choices. Thirteen focused
+  tests, typecheck and scoped lint passed. No payment-flow changes, live
+  payout or deployment.
+
+### 2026-11-27 — Codex (guest trust badge and tip wallet settings preview)
+
+- Source 7ddf549 on codex/stripe-guest-tips-20261127. Guest checkout now
+  says Continue to checkout and shows Stripe's official Powered by Stripe
+  badge. The amount range appears only as a validation alert for invalid
+  input. Verified the alert clears when the guest corrects the amount.
+- Local cleaner preview at /dev-review-preview/guest-tips/payouts, also
+  linked from the signed-in local Payments & payouts page. Choose a Venmo
+  username or PayPal email. Enter an example tip and see a 25¢ deduction
+  and the net in cents. Sample preferences save for that browser tab only,
+  with no provider call or account data write.
+- Verified both methods, reloading the tab, the mobile layout, and hidden
+  preview content on non-loopback hosts. 1,297 web tests passed and one
+  skipped. Typecheck and scoped lint passed. No live payout or deployment.
+  The latest verified PayPal decision status remains in review. A later
+  dashboard visit showed the login page.
+
+### 2026-11-27 — Codex (guest tip recipient header)
+
+- Grant asked to remove the line below the checkout button and show the person
+  receiving the tip. Source 49d72a9 on codex/stripe-guest-tips-20261127.
+  The header now names the completed report's cleaner and uses their public
+  avatar, with an initial or person icon fallback. The Stripe test-mode label
+  above the card remains visible. The avatar uses the anonymous profile read
+  and existing avatar resolver.
+- Verified a real public avatar and the initial fallback in the local preview.
+  Verified the longer name fits at 390px. Fifty focused tests, typecheck and
+  scoped lint passed. No payment or deployment. Public launch remains on hold
+  until Venmo payouts are ready.
+
+### 2026-11-27 — Codex (Litterbugs tip branding and custom amounts)
+
+- Grant asked for website and app branding and custom tips. Source 5389db4
+  on codex/stripe-guest-tips-20261127 in the same local preview worktree.
+  The form uses the site's shell, Nunito, flower and completed-cleanup mint,
+  existing funding controls, and the purple action. Stripe Checkout receives
+  per-session Litterbugs branding.
+- Guests can choose $5, $10 or $20 or enter $1–$1,000 USD with up to two decimal
+  places. The $1–$1,000 bounds match cleanup funding. The server recalculates
+  the tip and fee in cents and rejects invalid amounts.
+- Desktop and 390px layouts verified. A custom $12.34 tip displayed a $1.12
+  fee and $13.46 total, succeeded using a Stripe test card, and credited the
+  test cleaner $12.34. Confirmed invalid amounts disable checkout.
+- 1,289 web tests passed and one skipped with bounded workers and Node browser
+  storage disabled. Typecheck and scoped lint passed. No live charge or
+  deployment. Launch remains gated on Venmo readiness at Grant's request.
+
+### 2026-11-27 — Codex (Stripe guest tips verified in sandbox)
+
+- Grant chose to launch guest tipping after Venmo is ready. Stripe bank payout
+  is the verified sandbox path. PayPal Payouts for Burrow Base LLC is in review.
+- Source 1311e3b on codex/stripe-guest-tips-20261127 in
+  /private/tmp/litterbugs-stripe-guest-tips-20261127. Verified completed public
+  reports show a local-only tip link. Checkout rechecks eligibility, binds the
+  Stripe session and return to the report, and reuses the session on retry.
+- In the private Litterbugs sandbox, a guest paid $5.75 and the test cleaner
+  received $5.00. From Greenwood Lot's completed report, the guest paid $11.00
+  and the cleaner received $10.00. Stripe refunded $11.00 and reversed the
+  $10.00 transfer. The guest receipt reflected the refund. A canceled $21.50
+  checkout retained the selection and retried the same session.
+- 68 targeted web tests passed along with typecheck and scoped lint. Local
+  preview at http://127.0.0.1:3029/dev-review-preview/guest-tips. Test access
+  is held by the loopback process and the Stripe key was not saved to disk.
+- Live guest tipping remains disabled. No real charges, transfers, or
+  deployment. After PayPal review, verify the eligible live wallet flow,
+  reconcile a single payout per confirmed guest charge, and preserve the
+  disclosed 25¢ wallet payout deduction and no reporter reward.
+
+### 2026-11-27 — Codex (PayPal Payouts application in review)
+
+- Grant explicitly authorized Agree and Submit. The Litterbugs use case was submitted under Burrow Base LLC for U.S. cleaner tips paid out to PayPal or Venmo with a disclosed 25¢ deduction.
+- The submit page showed a generic error (PayPal debug ID f78178805d733). Reopening Payouts from the business dashboard confirmed the application was received and is in review. PayPal estimates a few hours or up to 2–3 business days in some cases.
+- Live wallet payout access and the recipient-facing sender name remain unverified pending review. No deployment or disbursement took place.
+
+### 2026-11-27 — Codex (PayPal Payouts application prepared)
+
+- The signed-in Burrow Base LLC PayPal Business dashboard routed Payouts to onboarding. The application is filled and the live tab is left on **Agree and Submit**, pending Grant's confirmation to accept the PayPal Payouts Terms.
+- The description names Litterbugs, describes Stripe website tips for verified U.S. cleanups, and specifies PayPal or Venmo disbursement with a disclosed 25¢ deduction. A separate sender Venmo account is unnecessary. The application has no separate display-name field.
+- PayPal says it may take a few days to email a decision after submission. No application submission, account rename, bank linking, payment, payout, or deployment took place.
+
+### 2026-11-27 — Codex (existing Stripe options and local guest tip preview)
+
+- Grant asked to use current capabilities without waiting for Stripe support.
+  Verified live Litterbugs default payment configuration shows Cards, Apple
+  Pay, Google Pay, Link, and Cash App Pay enabled. The unsent Stripe draft
+  was closed. PayPal remained at sign-in, so existing Payouts/Venmo access
+  and the 25c deduction policy are unverified. No support request sent.
+- Local bank payout preview source 8764984 on codex/stripe-guest-tips-20261127,
+  in /private/tmp/litterbugs-stripe-guest-tips-20261127. Preview at
+  http://127.0.0.1:3029/dev-review-preview/guest-tips. Test-only Stripe
+  Checkout uses destination charges and rejects live keys. Five tests, lint,
+  typecheck, and mobile browser pricing/disabled checkout passed. Requires
+  an isolated Litterbugs sandbox key and synthetic recipient for an actual
+  Stripe test. No charge, payout, live settings change, or deployment.
+
+### 2026-11-27 — Codex (supporter checkout and cleaner payout choice)
+
+- Grant wants to keep the payout deduction and is open to Stripe checkout.
+  Clarified that supporters choose their payment method and cleaners set
+  their payout destination. Ko-fi ties checkout options to linked creator
+  accounts; Patreon offers separate payer and payout choices plus withdrawal
+  fees; Buy Me a Coffee uses Stripe payouts.
+- Proposed guest Stripe card/wallet checkout first, with bank payout via
+  Stripe or approved PayPal/Venmo wallet payout and 25c deducted from the
+  cleaner's proceeds. Show the net and actual fee. One provider processes
+  each supporter charge. Cross-provider approvals remain unverified.
+  No requests, accounts, payments or deployments.
+
+### 2026-11-27 — Codex (one-provider tip checkout direction)
+
+- Grant clarified that tips should avoid paying both Stripe and PayPal. Novo
+  dashboard shows Burrow Base LLC. Actual bank linking is unverified.
+- Prioritize PayPal multiparty checkout with immediate settlement to a linked
+  cleaner PayPal account and a partner fee to Burrow Base LLC. Confirm guest
+  cards, U.S. personal recipients, partner fee and all-in pricing. Venmo is
+  documented as an eligible payer method; direct Venmo wallet receipt and
+  one-fee pricing remain unverified. PayPal Checkout plus standalone Payouts
+  retains two fee lines. No application, bank link, payment or deployment.
+
+### 2026-11-27 — Codex (tip provider approvals and Novo banking)
+
+- Checked published Stripe, PayPal and Novo requirements. Reuse Novo if its
+  account title matches Burrow Base LLC and PayPal accepts the link. Ordinary
+  Stripe Payments is the processor, not PayPal's linked bank. PayPal Payouts
+  requires a verified bank-linked Business account, use-case approval, and
+  a funded PayPal balance. Official paths are Pay & Get Paid > Payouts or
+  Developer Dashboard > My Account > Payouts > Enable.
+- Ask Stripe to approve guest card tips for third-party cleaners with external
+  wallet disbursement. Ask PayPal to confirm this tip flow, individual payout
+  eligibility versus batching, 25c API fee and cleaner deduction for both
+  destinations. Keep one supporter charge and one linked payout, with separate
+  processing and payout costs. Account eligibility unverified. No requests
+  submitted, accounts linked, money moved or settings changed.
+
+### 2026-11-27 — Codex (guest tip checkout and wallet payout setup)
+
+- Proposed guest hosted Stripe Checkout on verified completed cleanups.
+  Cleaner opts in once with a private PayPal email or U.S. Venmo handle and
+  consents to the 25c payout deduction. Proposed checkout fee is 50c + 5%.
+  A $5 tip costs $5.75 and pays $4.75. No reporter reward.
+- Track payment and payout separately. Stripe paid confirmation queues a
+  deduplicated PayPal payout. Reconcile per-item status, failures, returns,
+  refunds, and destination changes. PayPal funds payouts from the business
+  balance. Live Stripe use-case and PayPal Payouts approval are unverified;
+  PayPal describes that product as intended for bulk and recurring needs.
+  No implementation, provider outreach, payment or deployment.
+
+### 2026-11-27 — Codex (tip checkout with cleaner covering payout)
+
+- Grant prioritized the supporter checkout total. Modeled taking the 25c
+  wallet payout cost from cleaner proceeds and reducing the service fee to
+  50c + 5%. On $5/$10/$20 tips, supporter totals are $5.75/$11/$21.50,
+  cleaner proceeds are $4.75/$9.75/$19.75, and modeled remainder is
+  28c/38c/58c. Disclose the net to both parties. PayPal bills Litterbugs
+  for the payout. No pricing, provider or production change.
+
+### 2026-11-27 — Codex (daily crawler licensing mail check scheduled)
+
+- Grant replaced live polling with a daily cron check for ILC and Cloudflare.
+  Created the active local Codex automation
+  litterbugs-crawler-licensing-inbox-check in Litterbugs Partner, scheduled
+  for 9 a.m. Eastern daily. It checks iCloud and Gmail for new substantive
+  crawler licensing mail, archives uneventful runs, and reports access
+  problems. The first scheduled run has not taken place.
+- Last live check found Cloudflare's application acknowledgement and ILC's
+  enrollment-setting notice, with no substantive reply from either.
+  No new vendor outreach, agreement acceptance, or crawler changes.
+
+### 2026-11-27 — Codex (modeled tip prices at $5, $10 and $20)
+
+- Proposed a 75c + 5% service fee for tips with full cleaner payout and no
+  reporter reward. With modeled Stripe domestic card and 25c PayPal API
+  payout, platform remainder is 28c, 37c, and 57c respectively before other
+  costs. Deducting 25c from the tip reduces cleaner proceeds and adds 25c to
+  those margins at the same checkout price. Recommended showing the exact
+  amount the cleaner receives. No price adopted or provider changes made.
+
+### 2026-11-27 — Codex (cleanup funding fee breakdown)
+
+- Used the verified $18 Winkler Creek charge to illustrate the service fee.
+  $15 funds the cleanup, $3 is the service fee, 82c went to Stripe processing,
+  and 75c is the allocated reporter reward if eligible. $1.43 remains before
+  payout and operating costs. Suggested explaining the fee under the guest
+  checkout total. No payment, checkout, pricing or deployment changes.
+
+### 2026-11-27 — Codex (ILC and Cloudflare reply watch)
+
+- At Grant's request, watch for ILC's feed eligibility and Yahoo-only
+  licensing scope answer, and Cloudflare's Pay Per Crawl beta decision or
+  confirmation of paying crawlers. Checked relevant Gmail and forwarded
+  iCloud correspondence. ILC's enrollment-settings notification and
+  Cloudflare's application acknowledgement were present. As of 10:10 a.m.
+  Eastern, neither contained a substantive response. Watch is in progress.
+- No new vendor outreach, agreement acceptance, licensing, or crawler
+  setting change. No scheduled automation was created.
+
+### 2026-11-27 — Codex (tip platform fee economics)
+
+- Buy Me a Coffee's 5% platform fee is separate from Stripe processing and
+  payout fees. Creators cover card processing by default and can choose to
+  have supporters cover it. Ko-fi likewise charges processor fees separately.
+- For a $5 cleaner tip, published Stripe domestic card pricing and a 25c
+  PayPal API payout leave a 45c loss with a 25c add-on fee, break even around
+  72c, and leave 28c with a $1 fee, before operating costs. These are modeled
+  rates. No price decision, provider change, charge or deployment.
+
+### 2026-11-27 — Codex (tip payouts to existing PayPal and Venmo wallets)
+
+- Grant identified Stripe Connect onboarding as the tip hurdle. Buy Me a
+  Coffee uses Stripe with a 5% platform fee. Ko-fi demonstrates direct
+  PayPal payouts to linked personal or business accounts with a 0% or 5%
+  one-time tip fee. Venmo at Ko-fi checkout is the payer's method, not the
+  destination wallet.
+- Prioritize checking a Litterbugs tip checkout plus PayPal Payouts to
+  existing PayPal/Venmo wallets. Confirm providers allow the exact use case,
+  including fee treatment, payout access and refund/chargeback responsibility.
+  PayPal marketplace checkout with U.S. personal seller onboarding and a
+  partner fee is the single-provider alternative. Confirm fee eligibility
+  for Litterbugs before promising that route. No provider outreach, changes,
+  payment or deployment.
+
+### 2026-11-27 — Codex (guest funding and tip payment design)
+
+- Proposed web guest Stripe Checkout, an anonymous contribution and private
+  receipt lookup, with the current fee, reporter share, eligibility, payout and
+  full-refund rules. Keep guest attempts distinct from member payment recovery
+  and reconcile provider-confirmed payments idempotently. Update account-required
+  language in the terms before launch.
+- Start with cards and eligible Apple Pay, Google Pay and Link. Confirm live
+  wallet settings after sign-in (Chrome reached Stripe login). Cash App Pay
+  depends on eligibility and reconciliation testing. PayPal's approved
+  marketplace flow supports platform fees and eligible Venmo. Its standard 28-day
+  delayed disbursement names a seller up front, so it does not fit the open pool.
+- For completed-cleanup tips, reuse the verified Stripe recipient and transfer
+  the tip on confirmation with a separately disclosed fee. PayPal/Venmo is a
+  potential second rail if it supports the fee and promised cleaner net. Tip
+  pricing, approval and end-to-end tests remain open. No deployment or settings
+  changes, and no test or live payments created.
+
+### 2026-11-27 — Codex (payments roadmap review)
+
+- Read Grant's full November roadmap and traced Stripe checkout, contributor
+  privacy, payouts, and the website Funders board. Recommend guest web funding
+  and verification of Stripe wallet options first, then mobile leaderboards
+  and one rank point per distinct cleanup funded by a member, then optional
+  tips on verified completed cleanups with an eligible recipient.
+- Public funder scores already exclude anonymous and refunded contributions.
+  Tips should leave scores alone and can later power leaderboard/profile and
+  Street Sweeper entry points. Tip eligibility, fee handling and store-policy
+  fit remain open. PayPal/Venmo is a separate provider evaluation. No roadmap
+  edit, checkout changes, testing charges, or deployment.
+
+### 2026-11-27 — Codex (ILC publisher support inquiry submitted)
+
+- Grant authorized contacting ILC Publisher Support. Submitted the official
+  contact form under Burrow Base LLC (Litterbugs) with admin@litterbugs.app
+  as the reply address. ILC displayed a receipt and confirmed that address.
+- Asked if the automatic aggregate counts qualify under section 3.6 and
+  for Yahoo Scout, and whether Yahoo-only enrollment covers just the
+  configured Access URL while leaving ordinary public crawl access free.
+  Awaiting reply. No agreement signed, enrollment started, or website
+  crawler settings changed.
+
+### 2026-11-26 — Codex (Yahoo enrollment staged and agreement reviewed)
+
+- Enabled Manual approval in ILC Enrollment. Verified that new websites and
+  licensees require explicit approval. Yahoo retains its existing approval
+  but enrollment is Off, and it has no start date. Manage websites shows
+  no licensable website until the agreement is accepted.
+- Reviewed Publisher Participation Agreement v1.0. Sections 5.4 and 8 grant
+  enforcement authority including power of attorney and impose indemnity
+  for specified rights claims. Section 3.6 requires meaningful human
+  authorship. ILC URL validation did not resolve whether this aggregate
+  feed qualifies. Yahoo's detailed terms are gated by agreement acceptance.
+- Requested Grant's authorization to ask ILC publisher support to confirm
+  eligibility and that designation is limited to the Access URL. No
+  support message sent, agreement signed, license activated, or production
+  change. Browser-style and representative crawler requests passed after
+  the settings update. Robots, sitemap, and mobile files matched baseline.
+
+### 2026-11-26 — Codex (ILC aggregate cleanup feed validated)
+
+- Deployed the unlisted HTTPS feed at
+  https://litterbugs.app/data/ilc/cleanup-stats.json from 8a8ea5e on
+  codex/ilc-cleanup-stats-20261126. Worker version
+  f8ccee3b-579a-4d27-887a-11e4c1e239ea is at 100%. It uses anonymous RLS
+  and returns only the total and UTC monthly counts of completed cleanups
+  on published, non-sample, non-moderated, non-cancelled reports. No
+  individual records, photos, locations, or contributor data are exposed.
+- ILC Websites set to Access URL (HTTP), saved the feed, and displays
+  Validated. No RSL, web crawler policy, agreement, or licensee enrollment
+  change. The agreement and choosing licensees are the next gates.
+- HTTPS GET/HEAD passed, with noindex on the feed. Initial total 18, matching
+  Supabase counts (2 September, 4 October, 12 November). OpenNext build and
+  two tests passed. Representative crawler and browser-style requests served
+  the public homepage and cleanup pages successfully. robots.txt, sitemap,
+  and native association files were byte-identical. No DB migration applied.
+
+### 2026-11-26 — Codex (ILC enrollment and payout status checked)
+
+- ILC overview shows Not enrolled. The organization is complete and domain
+  verified. The remaining steps are to define licensable content via RSL
+  or an Access URL, accept the publisher agreement, and select licensees
+  and enroll. A dedicated rights-cleared cleanup feed is the preferred
+  option to preserve open crawl and live AI access on the public site.
+- The portal lists Yahoo Scout as the sole effective licensee, with no
+  start date and no active licensees. Payments confirms Stripe onboarding
+  can wait until ILC emails about the first payout. Read-only review.
+  No agreement, site settings, enrollment, or payment changes.
+
+### 2026-11-26 — Codex (ILC ownership verified)
+
+- Saved the Burrow Base LLC organization profile using the address Grant
+  entered. Removed Reference/How-to on Grant's correction that Litterbugs
+  documents real cleanups. After Grant added more categories, left those
+  additions alone.
+- Deployed the homepage-only ILC ownership meta tag from e84ff98 on
+  codex/ilc-site-verification-20261126. Cloudflare Worker version
+  dd61e884-0224-481e-ab4d-e40bdc19bbce is at 100%. ILC displays the
+  domain as Verified. Preserve the tag in subsequent website releases.
+- OpenNext build and two focused tests passed. Browser-style and 11
+  search/AI user-agent probes returned 200 with the tag and canonical in
+  the head. Robots, sitemap, and both mobile association files were
+  byte-identical. Agreement, RSL declaration, and licensing remain pending.
+
+### 2026-11-26 — Codex (ILC website added for verification)
+
+- Grant asked to continue onboarding. Burrow Base LLC was filled in, but
+  Save and continue focused the blank street address. City, state, and ZIP
+  were also blank. The organization form remains open and unsaved.
+- Added litterbugs.app in Websites. The portal lists it as unverified and
+  requires an ilc-site-verification meta tag in the homepage head, plus an
+  RSL declaration or Access URL before enrollment. No agreement accepted,
+  no content enrolled, and no site or crawler changes deployed.
+
+### 2026-11-26 — Codex (ILC legal name clarified)
+
+- Project legal records identify Burrow Base LLC as the Litterbugs operator.
+  Use the LLC's legal name for the ILC publisher organization if it has
+  licensing authority for the selected content, and Litterbugs as the
+  display name. The LLC's registered address is still needed. No portal
+  submission or website changes.
+
+### 2026-11-26 — Codex (ILC account verified and profile prepared)
+
+- Grant used Google sign-in. ILC displays the publisher account as ready.
+  Prepared the organization form with Litterbugs as the display name,
+  environment and how-to topics, web content, and English. ILC requires
+  the publisher's legal name and registered address before saving.
+- The Publisher Participation Agreement v1.0 requires separate acceptance
+  and grants enforcement authority for designated content. No organization
+  submission, agreement, website enrollment, payout setup, or deployment.
+  Live robots.txt still allows public pages and excludes /api/.
+
+### 2026-11-26 — Codex (ILC signup prepared)
+
+- Grant authorized a free Internet Licensing Collective publisher account
+  using admin@litterbugs.app, conditional on keeping search and AI crawler
+  access free. ILC website terms confirm that account registration alone grants
+  no licensing authority. The official email form was prefilled and left for
+  Grant to set the password and submit. Account creation is unverified.
+- No site enrollment, license, crawler rule, or production deployment.
+
+### 2026-11-26 — Codex (AI licensing research and search access)
+
+- Grant prioritized SEO and generative search visibility over crawler revenue.
+  Keep public indexing and user-requested fetches free for Google Search and
+  Gemini, ChatGPT, Claude, Bing/Copilot, Grok, Perplexity, Meta AI, Apple
+  Search, DuckDuckGo, and Brave. Preserve Google-Extended access for Gemini
+  grounding and avoid blanket AI blocks, challenges, redirects, or charges.
+  Grok has no documented crawler identity in xAI's public Web Search docs.
+- Search Console showed Search generative AI set to Include for
+  litterbugs.app. Read-only probes of the live About page and robots.txt
+  returned 200 using representative browser and crawler user-agent strings.
+  These probes did not authenticate the real crawler networks.
+- Verified the Internet Licensing Collective and TollBit signup forms. ILC
+  is the first candidate because it offers free, nonexclusive, per-license
+  opt-in without changing crawler routing. Yahoo Scout is its first announced
+  commercial licensee. Start with rights-cleared, Litterbugs-authored pages.
+  TollBit's Cloudflare integration would affect Worker routing and is deferred
+  unless paid access can be isolated from search and normal user fetches.
+- Cloudflare Pay Per Crawl application remains pending. No additional accounts
+  opened and no license, crawler setting, or production change deployed.
+
+### 2026-11-26 — Codex (Pay Per Crawl beta application submitted)
+
+- With Grant's approval, submitted the official Cloudflare Pay Per Crawl
+  private beta form for litterbugs.app as a US publisher and current customer
+  using admin@litterbugs.app. Cloudflare displayed “Thank You” and said it
+  would follow up. Beta access is pending. No crawler billing, access or
+  production deployment changes.
+
+### 2026-11-26 — Codex (Pay Per Crawl application prepared)
+
+- Rechecked Cloudflare after the Workers move. The account configuration
+  still has no Pay Per Crawl tab, the zone has no Payments or Charge controls,
+  and Monetize shows only Monetization Gateway. The publisher private beta
+  application is available. Prefilled the public site, customer status and
+  publisher role, and requested approval to submit contact information with
+  its marketing opt-in. No application submitted or crawler policies changed.
+- Googlebot, OAI-SearchBot, Claude-SearchBot and PerplexityBot are currently
+  allowed in the dashboard. Live robots.txt retains its existing rules.
+  No paid crawler or accepted offer was verified for Litterbugs.
+
+### 2026-11-26 — Codex (Vercel downgrade readiness rechecked)
+
+- Before Grant confirmed, the live homepage, sitemap and beta returned 200
+  directly from Cloudflare. The www redirect returned 308 from Cloudflare.
+  Vercel's confirmation showed immediate Hobby downgrade and a $16 unused-time
+  refund. Read-only check. No deployment, DNS or billing change.
+
+### 2026-11-26 — Codex (website moved from Vercel to Cloudflare Workers)
+
+- Cloudflare Workers Paid active after Grant completed the $5/mo checkout.
+  Live Worker `litterbugs-web-production`, version
+  `16871046-03d0-491f-9514-9825b33ca497` at 100%. Deployed application source
+  `53ec4f7` on `codex/cloudflare-cutover-20261126`. Config tip `6d4d51d`
+  records the live routes and required secrets; routes were applied in Cloudflare.
+  Use `npm run cloudflare:build -w @litterbugs/web` and Wrangler's
+  `apps/web/wrangler.production.jsonc` for subsequent releases.
+- Apex `litterbugs.app/*` goes to the Worker. `beta.litterbugs.app` is a
+  Worker custom domain, with noindex. Proxied A records for apex and www
+  use `192.0.2.0`, with an exact www-only 308 redirect preserving path/query.
+  Unrelated DNS, email, `auth.litterbugs.app`, Supabase deploys and native
+  releases untouched. Pay Per Crawl still awaits beta access.
+- Compared live Cloudflare against preserved Vercel `dpl_DvrC95L7AjhmLB7vaTECPgr9TfBC`
+  (`c60db6d`): all 64 sitemap URLs match, with Googlebot statuses and
+  canonicals matching. Robots and native association files byte-identical,
+  sampled legacy/missing/report photo/share image routes pass. Googlebot and
+  OAI-SearchBot can read the live site. Two recursive resolvers see Cloudflare.
+- Live signed-in account, real synthetic mobile-format report photo upload
+  and read-only $5 funding quote ($6 total) passed. JPEG EXIF stripped,
+  returned checksum matched, clean audit and quarantine deletion verified.
+  Synthetic account/draft/images/audit removed. No real charge or payout test.
+  1,279 web tests passed (one skipped); 15 focused tests passed after the
+  geocoding lifetime fix. Live owner analytics rendered; GA, GSC, PostHog
+  and Clarity reads passed with Cloudflare-only secrets. Previous keys still
+  exist for rollback. No raw phone camera or separate owner-excluded tests.
+- Rollback while Vercel is available: edit apex and www back to DNS-only
+  CNAME `aa4292ba76f2ab83.vercel-dns-016.com` (Auto). Restore beta DNS-only
+  A `76.76.21.21` (Auto) after removing its Worker custom domain if needed.
+  Ignore the earlier note about keeping the legacy Vercel crons for the app:
+  they used the site built with retired Supabase `syvgqzfbhkczkwozvola`.
+  Current prod jobs run on Supabase; multiple recent runs succeeded.
+- Litterbugs has no Vercel hosting dependency after cutover. Grant owns
+  the downgrade; no billing change was made on Vercel. The other four
+  Vercel domains returned DEPLOYMENT_PAUSED; the account has zero connected
+  stores. Vercel may ask about attached domains during downgrade.
+
+### 2026-11-26 — Codex (read-only Cloudflare cost and cutover audit)
+
+- Cloudflare account is Workers Free today. Workers Paid starts at $5/mo
+  versus shared Vercel Pro at $20/mo. Vercel Oct 27–Nov 25 showed $3.81
+  effective Litterbugs web usage and $0 billed overage. Moving the website
+  while retaining Pro will not remove the base fee. Potential base-plan
+  savings are $15/mo before Workers usage and any scanner/image costs.
+- Four other Vercel projects remain paused with cron disabled. Legacy
+  litterbugs has two enabled daily cron routes. Last three runs each:
+  daily-ai HTTP 200, daily-maintenance HTTP 503. Verify or replace the
+  jobs before removing Pro. No direct hits or changes to cron routes.
+- Live Vercel c60db6d vs Nov 8 Workers a67a844: sitemap 64 vs 58 page URLs;
+  46 live URLs absent from candidate sitemap. Two live readable reports
+  gave 200 on Vercel and 404 on Workers. Tested legacy report URL redirected
+  live but rendered directly on preview. Existing candidate is a no-go.
+- iOS/Android association responses were direct 200 JSON and byte-identical.
+  Mobile code calls website media processing and resized photos. Current
+  hosted end-to-end uploads, linked report pages and web funding/cleanup
+  are still unverified on Workers. Existing auth bridge and Expo update
+  host are outside the apex/www move. No deployments, settings, or app changes.
+
+
+### 2026-11-26 — Codex (Cloudflare migration and Pay Per Crawl checklist)
+
+- Rechecked Cloudflare authoritative DNS and the live Vercel HTTP response.
+  The Nov 8 Worker preview passed direct photo processing with the preview
+  scanner and basic hosted flows. Its source predates the recent website
+  releases. Production scanner configuration and current hosted end-to-end
+  workflow verification remain open before custom-domain cutover.
+- Pay Per Crawl remains a closed beta. Cloudflare's beta form is the next
+  contact route. Buyer availability, dedicated Stripe Connect, a narrow bot
+  and page configuration, and a verified charge remain open.
+- Planning only. No site build, deployment, domain or account change.
+
+
+### 2026-11-26 — Codex (Cloudflare inquiry bounced)
+
+- Checked the sent conversation and searched Gmail for a Cloudflare reply or
+  delivery notice. Gmail reported delivery failure for aeo@cloudflare.com.
+  Cloudflare did not receive the inquiry, and no paid crawler is confirmed.
+  Cloudflare's published Pay Per Crawl route is the closed beta access form.
+- The practical setup costs are routing requests through Cloudflare, separate
+  Stripe Connect onboarding, and the minimum payout threshold. Keep search
+  crawlers free in any later test. No follow-up sent or configuration changed.
+
+
+### 2026-11-26 — Codex (contacted Cloudflare about paying crawlers)
+
+- At Grant's request, sent “Pay Per Crawl availability for litterbugs.app”
+  to Cloudflare's published AI search team address, aeo@cloudflare.com, from
+  the Cloudflare account mailbox. Gmail confirmed the send. The inquiry
+  asks if any paying operators are available, which names Cloudflare can
+  share, and whether the domain is eligible. A reply is pending.
+- Cloudflare's Free support portal offered no relevant private case topic.
+  No beta enrollment, public outreach, configuration change, or deployment.
+
+
+### 2026-11-26 — Codex (verified Cloudflare crawler-buyer evidence)
+
+- Cloudflare still documents Pay Per Crawl as closed beta. Checked the
+  Litterbugs Cloudflare account General settings and found no Pay Per Crawl
+  control. Existing zone and Monetize checks also showed no payments tab or
+  buyer offer. No change, enrollment, or outreach.
+- Public documentation and transaction research did not establish a named
+  settled Pay Per Crawl buyer or a buyer for litterbugs.app. An HTTP 402
+  demonstrates that payment was requested. A paid delivery records a charge.
+  Ceramic.ai and You.com are announced Pay Per Use experiment partners.
+- Vercel's prior 30-day AI Traffic snapshot shows OpenAI, Amazon, Meta and
+  Anthropic crawling; visits do not indicate willingness to pay. Revisit if
+  Cloudflare identifies a billed crawler or a specific site offer.
+
+
+### 2026-11-26 — Codex (litter data pricing and hosting research)
+
+- Pittsburgh approved a $4,500 Litterati allocation and confirmed account
+  purchase. Wake County commissioned a field study at an undisclosed price.
+  Boone already collects stream cleanup data. Blue Ridge Energy's foundation
+  awarded $7,500 to MountainTrue's broader Riverkeeper program. Surfrider Long
+  Beach advertises $500 to $2,000 for private cleanups with an impact report.
+- Estimated $750 to $1,250 for a brief using existing data, with $950 as a pilot
+  quote. Estimated $1,000 to $2,000 for a sponsored cleanup and impact recap,
+  including project costs. Both ranges are untested. Verify geography, label
+  reporting coverage, and avoid extrapolating to area-wide litter rates.
+- Hosting changes the path for crawl payment enforcement. Beta eligibility and
+  buyer demand still apply. November 8 hosting model estimated $5 to $7 for
+  Workers vs. $20 shared Vercel Pro. Any savings depend on retiring the shared
+  plan and validating the current site workflows on Workers.
+- Research only. No outreach, enrollment, roadmap edit, DNS change or deployment.
+
+
+### 2026-11-26 — Codex (Cloudflare AI monetization research)
+
+- Read Grant’s roadmap item and the Cloudflare product docs. Pay Per Crawl is a
+  closed beta with a $0.001/request minimum. Pay Per Use is a buyer-offer beta.
+  The Litterbugs Cloudflare dashboard exposed neither a Payments tab for the
+  zone nor a Pay Per Use menu. Cloudflare serves DNS; the live website is
+  served directly by Vercel.
+- Vercel AI Traffic, production project, Oct 27–Nov 26: about 5.2K crawler and
+  5.6K assistant requests, including about 5.2K OAI-SearchBot requests. At
+  $0.001, converting every crawler request would gross $5.20 at that volume.
+  Paid demand and actual payout are unverified. Keep public search access
+  and treat any later buyer offer or aggregate cleanup data license as a
+  separate revenue experiment.
+- Research only. No enrollment, pricing, DNS, deployment, or Google Doc edit.
+
+
+### 2026-11-25 — Codex (Apple2.1.2 and cleanup-issue OTAs released; native activation verified)
+
+- Grant explicitly authorized public release. Apple2.1.2(31) released7:03p.m.
+  Eastern; ASC READY_FOR_SALE and public US listing2.1.2 verified. Store IPA
+  SHA592113c6... unchanged; native crash fix preserved in this store binary.
+- Production runtime2.1.1 iOS+Android group30544721-ccb7-467d-9b97-f0cb256c4f71,
+  publication commitd4a0221 / frozen source07fce91. iOS2.1.2 groupd08bc7cb-0db1-
+  4d37-9388-02b7a804b914, publication commit41c23ca / frozen source8dfd9c6.
+  Frozen dist/skip-bundler; existing channel mapping unchanged. Prior holds for
+  these exact artifacts superseded. No Google native store release this pass.
+- All3 targets downloaded real hosted OTAs via native updater and ran twice,
+  zero failed launches, cached bundle hashes exact. No updateDB/cache injection.
+  All75 hosted assets hashed; prior67 assets/platform and $35/email/privacy/
+  hearts/Timeline features retained. Local727pass+1skip and runtime15pass retained.
+- QA simulator/emulator only; no physical phones or signed store IPA execution.
+  Android QA Maps tiles certificate-limited; production keys unchanged. Live
+  checks read-only; authenticated workflow previously tested locally. No customer
+  writes, account blocks/deletion, provider tests, backend/website changes.
+- Expo source maps uploaded; direct PostHog Hermes symbols pending (existing EAS
+  secret unavailable locally). Maps retained, no new credentials/permissions.
+  Our QA devices stopped; other project's simulator untouched; ADB shell restored,
+  memory46%free. Durable artifacts have new RELEASE.md/release final records.
+- Release verification committed9d939ca in primary isolated branch.
+- Review: `docs/reviews/2026-11-25-cleanup-issues-ota-publication.md`.
+
+
+### 2026-11-25 — Codex (cleanup issue OTAs prepared and verified; NOT published)
+
+- Owner authorized preparation/verification only. Frozen production exports:
+  runtime2.1.1 iOS+Android source07fce91, and runtime2.1.2 iPhone source8dfd9c6.
+  Current compatibility checkout `/private/tmp/litterbugs-cleanup-issues-ota-211-20261125`;
+  primary feature checkout `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`.
+- Durable packages/source bundles/evidence under
+  `artifacts/mobile-cleanup-issues-ota-20261125`. All146 export files/config hashes
+  verified. Exact production bundles ran in isolated iOS2.1.1, Android2.1.1 and
+  crash-fixed iOS2.1.2 shells. Live report/photos/history and $35 tour retained;
+  authenticated full issue flow previously passed locally (727 tests +1skip).
+  Target runtime configuration15 tests passed; verifier rejects tampering/publish flag.
+- All67 prior assets/platform byte-identical; key prior feature blobs unchanged.
+  Both native crash patches and dependencies preserved. Submitted iOS31 IPA
+  SHA592113c6... unchanged. OTA does not install native patches into2.1.1.
+- Latest live group remains63bc12bc / runtime2.1.1; no channel/backend/website/store
+  or OTA mutation. Publication remains held. After later approval, use frozen
+  dist/skip-bundler and recheck baseline; verify actual download/activation then.
+- QA-only updater disabled; Android's20 unchanged hashed fonts seeded into its
+  own cache to compensate for embedded resource names; bundle/native code intact.
+  Android Maps tiles still QA-certificate-limited. Temporary ADB root restored to
+  shell. Our QA devices stopped, other project's simulator untouched, memory47%free.
+- Review: `docs/reviews/2026-11-25-cleanup-issues-ota-readiness.md` (6576105 plus
+  final documentation). No physical phones, real payments/provider/push tests.
+
+### 2026-11-25 — Codex (OTA readiness assessed; packaging still required)
+
+- Fresh read-only EAS production-channel check confirms both live platforms still
+  use runtime2.1.1, group63bc12bc / publication source8c9a0eb3. No update published.
+- Cleanup-issue source a06bcdc is tested locally but app.json inherits2.1.2 with
+  appVersion runtime policy. Existing local test exports are not production OTA
+  artifacts. Prepare/validate production-environment bundles for the intended
+  installed runtimes before calling this publish-ready; do not use the default
+ 2.1.2 export as an update for2.1.1 clients. Preserve submitted native crash fix.
+- Native iOS map correction still requires its2.1.2 store binary; OTA cannot add
+  that native patch to2.1.1. User asked readiness only; publication hold unchanged.
+
+### 2026-11-25 — Codex (mobile cleanup issues local acceptance complete)
+
+- Grant resumed testing after desktop interference. Code `a06bcdc` unchanged;
+  final verification review `3a98910` in isolated branch/worktree
+  `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`.
+- Final iOS signed conversation/full-size/editor photos passed on a separate
+  Litterbugs Issues QA simulator A88A56B4-F6E9-49D8-ADBB-B315EEBB6ADB. Android
+  reporter private reply/photo, cleaner exact inbox, team hold/no premature
+  resume, simulated local staff-ready decision, follow-up/cancel and explicit
+  same-claim resume into the cleanup form all passed. Title/option spacing fixed.
+- Local assertions: exact paused time restored, $35 fund/contribution/payout
+  status unchanged, original evidence revision retained, outsider/guest private
+  access denied. 727 tests passed +1 existing skip; source244 modules/0 errors.
+- No app/backend/website/store/OTA publication. Crash-fix baseline aa836cc and
+  both native patches/config/dependencies preserved; submitted iOS31 untouched.
+  Android Maps tiles remain unverified for disposable QA signing certificate;
+  production keys unchanged. No physical phones/push/payment/provider tests.
+- Our dedicated iPhone and Android devices stopped after checks; other project's
+  pre-existing simulator/container left untouched. Final memory43% free. No more
+  clipboard paste used. Ready for owner local review; publication still held.
+  Details: `docs/reviews/2026-11-25-cleanup-issues-mobile-local.md` in isolated tree.
+
+### 2026-11-25 — Codex (mobile cleanup issues local; desktop input interference)
+
+- Implemented in isolated `/private/tmp/litterbugs-cleanup-issues-mobile-20261125`,
+  branch `codex/cleanup-issues-mobile-20261125`; code `a06bcdc`, review `dce03b4`.
+  Based on crash-fix `aa836cc`; native patches, dependencies/config and submitted
+  iOS31 candidate unchanged. No website/backend/store/OTA publication.
+- Native issue requests/private conversations, funded report corrections,
+  notification routes, pause/resume guards and owner-requested heading/option
+  spacing are built. 727 mobile tests passed, one existing skip; 244-module
+  source check clean. iOS full local flow passed on b68ac79. Android request,
+  pause, reporter notification and funded correction passed; signed-photo bug
+  caught/fixed and final Android conversation photo visibly verified.
+- Shared desktop/clipboard interference picked up another project's text in an
+  UNSENT Android draft. Visibly cleared; local DB confirms only original message.
+  No foreign app source found. Android emulator stopped; other project's booted
+  iPhone simulator/build left untouched. Do not perform simultaneous desktop
+  keyboard/clipboard automation. No customer messages or credentials changed.
+- Pending: Android reply/attachment -> staff gate -> cleaner resume, final editor
+  photo visual check and final iOS signed-photo retest. Android map tiles remain
+  unverified due disposable QA signing credentials; production Maps unchanged.
+  Review: `docs/reviews/2026-11-25-cleanup-issues-mobile-local.md` in isolated tree.
+
+### 2026-11-25 — Codex (iOS2.1.2(31) submitted; public release held)
+
+- Grant explicitly authorized Apple review without waiting for a physical iPhone.
+  Exact sourceaa836cc / IPA SHA592113c6... unchanged. Apple build
+  c3df2d45-20c7-4b0a-81ec-090d4ba95b80 is VALID and attached to2.1.2.
+  Submission2c0fd550-9442-40d7-987e-4d59d0339dac and version both
+  WAITING_FOR_REVIEW; releaseTypeMANUAL, read back4:00p.m. Eastern.
+- EAS uploadbc02d31e remained queued13minutes and was confirmed CANCELED.
+  Apple altool uploaded the same verified IPA successfully, zero errors. Warning
+  90725 requires iOS27 SDK/Xcode27 starting April2027; no current upload blocker.
+  Temporary key copy removed; existing account/developer credentials unchanged.
+- Updated release/review notes, retained dedicated review login/contact and all16
+  approved screenshots byte-for-byte. No public release, OTA, Android, backend or
+  website deployment. Source/config untouched; physical-device acceptance remains
+  unverified by owner choice. This supersedes the earlier submission hold only.
+- New mobile issue-workflow work should retain baselineaa836cc and both native
+  patches as detailed below; do not overwrite this frozen submitted candidate.
+  Review: docs/reviews/2026-11-25-ios-2.1.2-apple-review-submission.md.
+
+### 2026-11-25 — Codex (iOS31 review authorized; mobile integration baseline)
+
+- Grant explicitly waived the final physical-iPhone check and authorized Apple
+  review submission. Exact signed2.1.2(31), EAS6d30606b, is queued for upload:
+  submissionbc02d31e-2adc-4d74-958b-883dbb3e919f. NOT yet Apple review-submitted.
+  New ASC version09e434a2-5a97-45c3-9c4c-9d8833553e59 has MANUAL release,
+  inherited16 screenshots and review login; no public-release authorization.
+- Coordination baseline for new mobile cleanup-issue work: frozen app source
+  aa836cc7e7ce4658ed898fe13aa17136950cc456 remains latest prepared source.
+  Worktree /private/tmp/litterbugs-ios-2.1.2-build-20261125; simulator340bdb3 adds
+  ONLY its EAS profile. Retain both native patches react-native+0.81.5.patch and
+  react-native-maps+1.20.1.patch (source1db75fc), all existing Android patch hunks,
+  latest returned-litter/history OTA2797676 and location/draft recovery.
+- Runtime2.1.2 / production channel, existing live OTA runtime2.1.1 unchanged.
+  Do not OTA the native crash fix. Review docs contain test/config/evidence.
+  iPhone17Pro/iOS26.5 simulator49C7B41E-83FD-42F0-853F-3A4BA7B62C9A has separate
+  com.litterbugs.ios212simqa; preserve its container/artifacts and original app.
+  Native UI15 groups passed; physical touch/device/SSO/payment unverified.
+- Owner's new cleanup-issue app integration is separate local work. This chat
+  is not editing app code or simulators/emulators. Existing resource caps should
+  remain; no local native build needed for submission, no RAM disk remains.
+  Submission status is still progressing; follow final entry before publication.
+
+### 2026-11-25 — Codex (iOS submission readiness review)
+
+- Reviewed signed2.1.2(31) preparation and latest15-case simulator record.
+  Candidate is built/signature-verified; no new simulator regression identified.
+- Recommend a final physical-iPhone check of exact31 before App Review: map/pins,
+  touch navigation, login, location/photo draft recovery and site history/renewal.
+  Simulator used same source, not the signed device IPA; provider exclusions remain.
+- No upload, submission, release or OTA authorized/performed. No app code changed.
+
+### 2026-11-25 — Codex (cleanup issues website/backend published and verified)
+
+- Owner authorized publication. Promoted exact frozen website source c60db6d,
+  Vercel dpl_DvrC95L7AjhmLB7vaTECPgr9TfBC, now live at litterbugs.app. Production
+  issue flag persisted. Only send-cleanup-notifications deployed (v26); admin,
+  payment functions and all app/native/OTA work unchanged. Prior updates preserved.
+- Applied atomically with data/function preservation guards and exact source hashes:
+  20261125171211_cleanup_site_issues.sql,
+  20261125175248_cleanup_issue_team_decisions.sql,
+  20261125193511_cleanup_issue_notification_links.sql.
+- Full hosted request/reply/resume/staff/privacy/funded-edit/legacy-app SQL suite
+  passed in ROLLBACK, plus anonymous-sign-in access checks. Test-only9c5c555 fixes
+  fixture pricing version; no pricing change.16 website+6 backend HTTP checks pass;
+  real signed-in canonical redirect, Timeline/all photos verified; no runtime errors.
+  No committed test accounts/reports/issues, customer pushes or real refunds.
+-61 security WARNs vs58 before: three generic anonymous-policy warnings reviewed;
+  participant permanent-user/message RLS denies private access; published revisions
+  intentionally public. No ERROR advisories. Phone receipt not tested; unchanged
+  native apps open report, reply on website. No persisted live customer issue cycle.
+- Rollback website dpl_6dT24qAxFCwMi31yqS6ekiaCDYGW/ba1feca; retain additive DB,
+  history/holds and compatible staff/sender. One QA tab closed, testing excluded
+  from analytics; memory caps retained, other chats/simulator untouched. Full record:
+  docs/reviews/2026-11-25-cleanup-issues-website-release.md in isolated worktree.
+
+### 2026-11-25 — Codex (latest2.1.2 simulator checks passed; release held)
+
+- Same frozen release app sourceaa836cc. Separate simulator profile340bdb3/EAS
+  a69e4350-33a2-4547-a377-11df978e1d50 completed. Native code unchanged by local
+  arm64 thinning/signing; separate com.litterbugs.ios212simqa, OTA/analytics off.
+  Simulator Info build1 is static target metadata; store IPA remains2.1.2(31).
+-15 observed UI groups passed: startup, pin/cluster/filter/style/list/cold launch,
+  report Timeline and before/after photos, guest renewal gate, local email login/
+  settings, denied-location retry/success and full five-step photo draft. Save/
+  cold restart/Resume retained photo hash, pin and all answers. Local server
+  draft revision12/editing/1photo;0 UI publications and0 contributions.
+- No fatal app errors captured. One OS permission change terminated with explicit
+  tcc(11)/code0; other stops deliberate. Setup disk/signing/cache issues resolved;
+  temporary RAM stage removed. Tool scroll gestures ineffective; touch scrolling,
+  Terms/waiver acceptance, final submission/payment, SSO and physical OS unverified.
+- Store IPA SHA592113c6... unchanged. NOTHING uploaded/submitted/released/OTA,
+  no hosted/backend/website/Android changes. Original app/container retained.
+  Simulator left on separate QA public-data map. Review:
+  docs/reviews/2026-11-25-ios-2.1.2-simulator-verification.md; ignored evidence:
+  artifacts/mobile-ios-2.1.2-simulator-20261125. Local credentials stay private tmp.
+
+### 2026-11-25 — Codex (website release package ready; live publication held)
+
+- Frozen runtime candidatec60db6d; READY but UNPROMOTED Vercel build
+  dpl_DvrC95L7AjhmLB7vaTECPgr9TfBC / litterbugs-qrtdk6yqz-grant-9890s-projects.vercel.app.
+  Live stilldpl_6dT24qAxFCwMi31yqS6ekiaCDYGW/ba1feca. No app/native/OTA changes.
+- Completed issue push templates/private destination lookup, legacy event preservation
+  and unchanged-app report fallback (reply on website). New third migration
+  20261125193511_cleanup_issue_notification_links.sql remains LOCAL ONLY. First
+  issue migration now preserves older-app unfunded edits with safe version advance.
+-257 web+7 payload tests pass; real local Deno queue/staff/MFA/photo access,
+  hold/ready/resume/close safeguards, downloaded deployed staff source, cold atomic
+  migration/data/function preservation and13 staging checks pass. Real production
+  photo services all200 in staged build. Expo gateway simulated; no real pushes.
+- No hosted DDL, function publication or promotion. Approval-dependent whitelist:
+  ONLY send-cleanup-notifications, three issue migrations via guarded generator,
+  persistent production flag, exact READY stage promotion, then hosted smoke.
+  Do NOT redeploy admin or bulk functions: its helper has unrelated Stripe changes.
+- Original347ca014 request preserved; local3001 restored1GB, Deno62344 capped256MB,
+  push test worker stopped, inactive own246MB Next cache removed. Shared3000,
+  other chats and simulator untouched. Review/limits/order/rollback/evidence in
+  docs/reviews/2026-11-25-cleanup-issues-release-readiness.md in isolated worktree.
+
 ### 2026-11-25 — Codex (website live-readiness inspection; not ready yet)
 
 - Owner asked readiness only. Read-only Vercel inspection confirms prior live
@@ -57,6 +1355,57 @@ They cannot talk to each other directly. This file is how they share context.
   tabs and simulator/native crash work untouched. Existing test tab374 stalled
   in CDP focus setup; refresh/open local report link to see consolidated view.
   Implementation record and final screenshot live in existing local plan/temp folder.
+
+### 2026-11-25 — Codex (current iOS2.1.2(31) built; submission/release held)
+
+- Owner authorized BUILD ONLY, with latest app changes. Frozen aa836cc on
+  codex/ios-crash-build-2.1.2-20261125 combines published OTA63bc12bc/2797676
+  (Timeline/returned litter, email, donor/funder, $35 tutorial) with shared local
+  location recovery and newer draft/types, plus exact native crash fix1db75fc.
+  No inherited files removed;436 unchanged/42 artwork files identical. Shared
+  mobile unchanged since freeze. Preserve both source lines; do not build the
+  older dirty shared app directly or use the simulator QA branch as release code.
+- EAS6d30606b-00b6-4d2d-9dbb-0dba7431ee22 FINISHED. Signed IPA verified arm64,
+  com.litterbugs.app/2.1.2(31), runtime2.1.2/production, backend/analytics and full
+  signature. Existing signing reused; both native fix files compiled from source.
+  Mobile710 passed/1 existing skip; draft27/typecheck/source pass. Five older
+  contract parity checks fail identically on published source; recorded, not passed.
+- Owner recheck: six returned-litter/history files match published2797676 exactly;
+  signed IPA contains Needs cleaning again/Timeline and MapScreen retains hooks.
+- Platform scope rechecked: native correction is iOS-only; current Android/web
+  unchanged. Physical iPhone acceptance should cover other flows too. Shared JS
+  recovery/draft updates need platform QA before any later Android/web delivery.
+- NOTHING uploaded to Apple/TestFlight, submitted, released or OTA-published.
+  No Android/backend/website changes. New build/runtime requires separate later
+  upload/review/release instruction; physical iPhone acceptance remains pending.
+  Review: docs/reviews/2026-11-25-ios-2.1.2-build-preparation.md; ignored evidence
+  and signed IPA: artifacts/mobile-ios-2.1.2-20261125/. Existing test exclusions kept.
+
+### 2026-11-25 — Codex (release held; OTA applicability checked)
+
+- Owner explicitly said not to deploy yet. Native crash fix remains held. No
+  update/build submission/publication was performed in this follow-up.
+- Checked existing EAS channels and Expo update documentation: both platforms
+  support JS/assets OTA, but the tested crash corrections are iOS native .mm/.m
+  patches. An OTA cannot install them. This pass contains no new Android fix.
+  A new iOS store binary is required; do not present an OTA as this crash fix.
+
+### 2026-11-25 — Codex (iPhone native map crash fixes verified)
+
+- Native product fix1db75fc on codex/ios-map-crash-native-20261125: identity-based
+  legacy child removal, immediate middle insertion, nil/bounded AIRMap insertion.
+  Only two patch files change from frozen mobile df20701; mirrored here and
+  applied to dependencies. Preserve existing Android/iPhone patch hunks.
+- Rebuilt simulator QA4b12aaaf passed720 changes/75 native pin checkpoints,
+  persistent markers/circle, insertion guards; old crash sequence passed240 more.
+  Production mobile tests705 passed/1 existing skip. Actual clustered App map
+  passed available/completed selection, cluster expansion, empty filter/removal,
+  restored pins and clean-export selection/closure/movement with stable coords.
+- NOTHING deployed/submitted/OTA. Native fix requires a new iOS binary. Exact
+  customer gesture and physical iPhone/iOS27.2.1 verification remain unverified.
+  Retired ReportMapMarkers fixture is not the current MapScreen renderer.
+  See docs/reviews/2026-11-25-ios-map-crash-fix-verification.md and ignored
+  artifacts/mobile-map-crash-20261125. Simulator left on separate LB Map Native QA.
 
 ### 2026-11-25 — Codex (report header/responsive regression fixed; broader local QA)
 
@@ -106,6 +1455,22 @@ They cannot talk to each other directly. This file is how they share context.
   verification; provider/payment operations disabled. Startup/evidence/limitations
   in implementation plan. VM2GB/Next1.5GB; viewport reset; no simulators started.
 
+### 2026-11-25 — Codex (map crash reproduction and upstream cause research)
+
+- Current renderer completed240 native zoom/filter/selection changes on isolated
+  iPhone17Pro/iOS26.5. Historical zIndex/unsorted-order variant crashed5/5 at the
+  same AIRMap/interop offsets, with NSRangeException. Exact production nil-view
+  exception was NOT freshly reproduced. Two-marker/independent-child checks pass.
+- Found RN57872 identity-removal/deferred-wrapper defect on exact0.81.5 source,
+  and maps1.29.3's published nil/index guard5cc4a25. Research candidate patches
+  apply cleanly; NOT applied/compiled/runtime-verified. Existing source-build/fmt
+  setup supports testing a backport. Review records sources and remaining checks.
+- Evidence/candidate diffs: /private/tmp/litterbugs-ios-map-crash-20261125/.
+  Separate QA app removed; simulator stopped. No product-source/build/OTA/store
+  change. Current production63bc12bc preserved; unrelated shared edits retained.
+  Pending: isolated patched iPhone build, exact crash and pin/overlay retention
+  verification, then owner-directed release work.
+
 ### 2026-11-25 — Codex (real cleanup issue workflow, local website only)
 
 - Implemented620b0d7 in isolated /tmp/litterbugs-cleanup-issues-web-20261125,
@@ -129,6 +1494,24 @@ They cannot talk to each other directly. This file is how they share context.
   scan/AI responses use local fixtures; native push/email delivery not verified.
   Future release needs notification worker/native routing integration against
   latest source. See implementation plan for local recovery/testing paths.
+
+### 2026-11-25 — Codex (iOS build 30 map crash investigation)
+
+- Xcode Organizer has one symbolicated App Store crash for 2.1.1 (30),
+  iPhone 15 Pro Max, iOS 27.2.1. The log is Nov 23 at 7:33:46 p.m. ET
+  (Nov 24 at 00:33 UTC). PostHog issue 01a20afa-6214-7cf1-9155-7c6ef9ebeea6
+  matches the time and stack and records a second fatal event on Nov 24
+  at 4:26 p.m. ET (iOS 26.6.1), two PostHog users total. Apple's aggregate
+  screenshot has no incident ID for a one-to-one match.
+- React Native Fabric's legacy interop passes a missing native child view to
+  react-native-maps 1.20.1 at AIRMap.m:138, aborting on the main thread.
+  The September dense-map fixture reproduced the same native path. Both
+  events predate the Nov 24 evening and Nov 25 morning OTAs. Exact current
+  gesture and per-device OTA identity remain unknown. A native correction
+  needs an iOS binary and should be verified on dense maps, zoom and selection.
+- App Store Connect shows one written five-star review and three ratings.
+  Apple exposes written-review nicknames and aggregate standalone ratings.
+  No app code, production settings, build, OTA, or store changes.
 
 ### 2026-11-25 — Codex (full private issue/reply/resume preview)
 
@@ -180,6 +1563,117 @@ They cannot talk to each other directly. This file is how they share context.
   preserved. Safety/closure rules and escalation timing remain recommendations.
   Other shared edits preserved. No simulator/emulator started; shared server reused.
 
+### 2026-11-25 — Codex (returned-litter OTA published and native-verified on both)
+
+- Owner authorized publication. LIVE production group63bc12bc-4571-4650-8ed2-954de6bee32f
+  at11:01a.m. Eastern, runtime2.1.1. iOS01a21370-92e6-7d80-9e82-20a381a5f128;
+  Android01a21370-92e6-746c-830f-17d9dd394ee2. Frozen app2797676; EAS publication
+  source8c9a0eb (identical app scope; documentation only).
+- Both real native updaters downloaded exact frozen/hosted bundles, launched twice,
+  zero failures. Actual live Timeline/attribution and Needs cleaning again verified
+  on both; fresh wizard has no old photos/Next disabled. Local test drafts discarded,
+  no real report or upload. Owner assisted one iPhone scroll; assistant observed
+  actual Timeline and tested action. Android cold relaunch passes. Devices stopped.
+- All74 hosted bundle/asset hashes pass;425 inherited files and67 assets/platform
+  preserved. $35/funders/privacy/hearts/email retained.705 tests/1 existing skip;
+  native/runtime unchanged. Silent updates; staff analytics excluded. Websiteba1feca,
+  hosted schema and stores untouched. No account blocked or block settings changed.
+- Review: docs/reviews/2026-11-25-recurring-cleanups-mobile-ota-publication.md;
+  evidence/source bundles: artifacts/mobile-recurring-cleanups-20261125/. Use this
+  published source for future mobile work; shared dirty app/website/other-assistant
+  store edits preserved. Prior hold superseded. Recovery republishes5c8ab976,
+  never embedded. No further publication or deployment is pending for this release.
+
+
+### 2026-11-25 — Codex (returned-litter mobile OTAs prepared; publication held)
+
+- Prepared both full production2.1.1 Hermes exports from2797676 on isolated branch
+  codex/recurring-cleanups-mobile-20261125; NOT PUBLISHED, pending owner approval.
+  Current production group5c8ab976 and both update IDs/mapping remain unchanged.
+- Added single Timeline below Reported by in opened detail; blue dragonfly Needs
+  cleaning again opens ordinary five-step flow with fresh photos/new owner/fixed
+  site. Separate durable drafts/journals, retry/race guards, linked-site browsing;
+  historical ownership/evidence/funds retained. Websiteba1feca/backend already live.
+-705 mobile tests pass/1 existing skip;236-module check/lint pass. Both production
+  exports/78 hashes verified.425 inherited files, all67 assets/platform retained;
+  $35/funders/privacy/hearts/email preserved; native/dependencies unchanged.
+- Sequential iPhone/Android native UI harness checks with real public history pass
+  through Review/cancel; no report/upload/provider write. Full production exports
+  compile; actual OTA download/activation awaits publication. Android local QA
+  signature map-tile limitation retained. Original apps/data unchanged; owned test
+  devices stopped, memory65% free. No store/backend/website publication in this task.
+- Final draft-store correction separates site photos from ordinary cleanup; local
+  deleted-account purging covers new keys/files. Two-way draft isolation and
+  journal-retirement checks pass. Initialb18dda0 export archived/superseded and
+  publication disabled; final UI source is unchanged from native-tested version.
+- Review: docs/reviews/2026-11-25-recurring-cleanups-mobile-ota-readiness.md;
+  artifacts/mobile-recurring-cleanups-20261125/. Use frozen source/export, not dirty
+  shared tree. Recover by republishing5c8ab976, never embedded. Other assistants'
+  shared mobile/location-recovery, website and store screenshot work preserved.
+
+### 2026-11-25 — Claude (new-look store screenshots submitted on both stores)
+
+- Built 8 screenshots from the live 2.1.1 iPhone app (production data, Boone) in the
+  new pastel style, using the October PPO winner's wording and order:
+  See litter / Make real money / Donate / Map / See the difference / Track / Next
+  cleanup / Get others involved. Outside members' names and photos are blurred.
+  Source, renderer and exports: `release-assets/store-screenshots-2026-11-25/`
+  (`node render.cjs apple|google`).
+- Google Play: replaced the 8 phone screenshots in order 01–08, chose "Don't label
+  assets", and sent 1 change ("Change Phone screenshots") for review. Managed
+  publishing is still ON, so publish it from Publishing overview once approved.
+- Apple: a live version's screenshots can't be edited. Created PPO test "New look
+  screenshots - November 2026" (4fb6f1e6-2081-4ef8-a009-14a24487831f), 1 treatment,
+  50% traffic, English (U.S.). Treatment A's 6.9" iPhone slot holds the new 8 in
+  order; the 6.5" slot was cleared so it scales from 6.9". iPad 13" now has the new
+  6 (see update below). Submitted to App Review (up to 48h).
+- Pending: once Apple approves it, apply Treatment A to the original product page.
+  This makes the new set the main listing and stops the test. On Google, publish
+  the approved change. No code, build, OTA or deployment.
+- Update (same day): added a 6-image iPad 13" set (2064x2752, captured from the
+  live app on an iPad Pro 13" simulator; Report/Fund left out because they need
+  sign-in) to Treatment A, replacing the old 3. To edit, the waiting submission
+  2b604be7 was cancelled and the test resubmitted (Waiting for Review again).
+  Files: `ipad-2064x2752/`, `source/ipad/`; `node render.cjs ipad`.
+- Update 2: Grant signed the iPad simulator into his own account so Report Litter
+  and Donate could be captured (draft report discarded, no payment). iPad set is
+  now the same 8 slides/order as iPhone; submission 31cac5cb cancelled and the
+  test resubmitted (Waiting for Review). Google: the approved phone screenshots
+  were PUBLISHED (Last published Nov 25); new 7" and 10" tablet sets (same 8,
+  1440x2560, `gtablet-1440x2560/`, `node render.cjs gtablet`) sent for review.
+  Still pending: publish the Google tablet change once approved (managed
+  publishing ON) and apply Apple Treatment A once approved.
+- Update 3: Google approved the 7"/10" tablet changes; published at Grant's
+  request (publishing queue now empty). Google phone + tablet sets are all live.
+  Apple test submission (10:57 AM) still Waiting for Review; apply Treatment A
+  after approval.
+- Update 4: Apple approved the test (Review Completed). At Grant's request,
+  applied Treatment A to live 2.1.1 ("Immediately Update on the App Store"); the
+  test stopped. Live 2.1.1 Media Manager now shows the 8 new iPhone (6.9") and
+  8 new iPad (13") screenshots in order. App icon unchanged. Both stores are now
+  fully on the new screenshot set; nothing pending.
+
+### 2026-11-25 — Codex (recurring-cleanup website published)
+
+- Owner explicitly authorized website release. Source ba1feca (feature d56f7c3)
+  deployed as dpl_6dT24qAxFCwMi31yqS6ekiaCDYGW; litterbugs.app points there/READY.
+  Previous live00ed676 / dpl_ChohVa5bmXref91Qze5TH8a8Ewr7 is website rollback.
+- Applied ONLY20261125013903_recurring_report_sites.sql to production
+  mvaygkflcjswtwchflrk; exact source/history SHA256 verified.85 existing reports
+  have separate site IDs. Guarded transaction proved original report/evidence,
+  cleanup/contribution/reward rows and publish/claim/review definitions unchanged.
+- Live pages/photos/API/sitemap/email-preference routes200. Browser renewal form
+  opens; blue dragonfly action, compact Share and inset single map Timeline verified.
+  No false recurrence/upload posted. Staff analytics exclusion retained. Legacy
+  mobile-style read passes; anonymous reserve denied. Security58→58/no new issues;
+  final deployment runtime error scan0. Vercel login refreshed and working.
+- No native/Edge Function edit/deploy, OTA, store release, payment or send. Existing
+  OTA5c8ab976 unchanged; native UI remains pending. Do not drop site/history schema
+  or email suppression on website rollback. Other shared changes preserved.
+- Details: docs/reviews/2026-11-25-recurring-cleanups-website-release.md.
+  Evidence: /tmp/litterbugs-site-history-release-20261125/ .
+
+
 ### 2026-11-25 — Codex (website release readiness; no deployment)
 
 - Optimized Next16.3/Turbopack production build of d56f7c3 passed, including TS
@@ -217,6 +1711,16 @@ They cannot talk to each other directly. This file is how they share context.
   stopped, overrides cleared, retired4.2GB generated cache removed. Other shared
   changes and Claude’s latest handoff entries preserved.
 
+
+### 2026-11-25 — Codex (Apple screenshot test stop investigation)
+
+- Read-only ASC check: exact October screenshot PPO test a046d8a4 is Stopped by
+  Developer, November 2–5. Existing November 5 handoff records Grant requested
+  stopping it while preparing replacement screenshots; upload controls were disabled.
+- Analytics: original9.34%/15 unique impressions; Treatment A19.88%/11,
+  +112.85% estimated improvement,3.5% confidence, Inconclusive. No proven winner.
+- No store/test/settings/code change, restart, deployment or publication. Other
+  assistants' existing work preserved. This entry is the only change from this check.
 
 ### 2026-11-24 — Codex (real website recurrence integration, local only)
 
@@ -346,6 +1850,50 @@ They cannot talk to each other directly. This file is how they share context.
   Actual backend/site identity/concurrency/financial-history work remains pending.
   Preserve unrelated shared work and in-progress public report timeline.
 
+### 2026-11-24 — Codex (email preferences OTA published and native-verified on both)
+
+- Grant explicitly authorized publishing and download/run checks. LIVE production
+  group5c8ab976-b063-4497-b5be-d15045622988 at7:31p.m. Eastern, runtime2.1.1.
+  iOS01a2101d-affe-71ae-91a6-3520ab426438;
+  Android01a2101d-affe-7799-af82-c27f73cba200. Frozen app source4cb2161;
+  EAS publication commit3db81d5 (identical app scope, later tooling/docs only).
+- Both native updaters downloaded the exact published bundles; each launched twice,
+  zero failures. Real review-account Settings/preference save/reload/cross-platform
+  sync passed; Android cold restart persisted sign-in and preference. Original on
+  preference restored and confirmed in production DB. Temporary password copy removed.
+- $35 tutorial visually retained on both; funders/privacy/hearts source unchanged,
+ 426 inherited files and67 assets/platform unchanged. Only12 email-related files
+  differ from prior live8855578. All74 hosted unique asset/bundle checksums pass.
+- Final channel/group readback and runtime checks pass. Scope is existing iPhone
+  simulator and Android QA emulator with released27 native code/local QA signature;
+  no physical phones connected. Known Android QA-certificate map tiles limitation.
+- No new website/schema/store build, payments or sends. Silent updates retained;
+  both staff devices analytics excluded and apps left open. Previous email OTA
+  publication hold is superseded. Website/backend remains00ed676; provider exclusions
+  unchanged. Shared unrelated edits preserved, no shared reset/staging.
+- Review: docs/reviews/2026-11-24-email-preferences-ota-publication.md; full evidence:
+  artifacts/mobile-email-preferences-20261124/. Recovery republishes prior22df191b
+  group to preserve previous OTA improvements; never rollback to embedded.
+
+### 2026-11-24 — Codex (both email-settings OTAs ready; prior updates preserved)
+
+- Prepared, NOT PUBLISHED, full production iOS/Android Hermes OTA exports for2.1.1
+  from4cb2161; toolingd4e06f4. Website/backend00ed676 already live and unchanged.
+- Compared against current live8855578/group22df191b-5980-40c9-9a09-ec76a43cb2bb:
+  $35 tutorial/funders/donation privacy/hearts retained,426 inherited files unchanged,
+  zero removals, all67 prior assets/platform byte-identical. Only12 email-related
+  app/shared files differ; native configuration/dependencies unchanged.
+- 683 mobile tests pass/1 existing skip;231-module check and scoped lint pass.
+  Both full frozen exports/78 hashes and EAS offline inputs validated. Prior local
+  native flow checks passed; actual published OTA download remains pending.
+- Production channel/group unchanged. Publication tool now stops if the live OTA
+  baseline changes; simulated freshness guards pass, no actual update invoked.
+  Recovery plan republishes the prior OTA group, never rolls back to embedded.
+- Evidence: artifacts/mobile-email-preferences-20261124/; review:
+  docs/reviews/2026-11-24-email-preferences-ota-readiness.md. Use isolated mobile
+  checkout/source bundle, not the website branch or dirty shared tree. Publication
+  remains held; no store builds, sends or unrelated shared changes.
+
 ### 2026-11-24 — Codex (email website/backend published; app OTAs still held)
 
 - Grant explicitly authorized website/backend publication. LIVE source00ed676
@@ -370,6 +1918,621 @@ They cannot talk to each other directly. This file is how they share context.
   suppression on rollback. Gmail sending-policy finding remains; no sends enabled.
 - Details: docs/reviews/2026-11-24-email-preferences-website-release.md; evidence:
   /tmp/litterbugs-email-web-deploy-20261124/. No shared reset or force-push.
+
+### 2026-11-24 — Codex (localhost preferences error diagnosed; deployment hold preserved)
+
+- Confirmed localhost3000 uses the hosted Supabase project. Its application RPC
+  returns404/PGRST202: get_weekly_email_preferences is absent from schema cache.
+  The prepared email migration remains unapplied, so the real-account screen
+  cannot load there yet. Earlier passes used isolated local PostgreSQL/PostgREST
+  and synthetic Auth/native harnesses; they were not hosted-account verification.
+- Explained this distinction to Grant. No behavior/source changes, hosted schema
+  changes, website/app deployment, OTA or email sends. Existing hold preserved;
+  feature source remains dc4b506. A localhost UI does not make a hosted backend
+  migration a local-only change.
+
+### 2026-11-24 — Codex (Android emulator repaired; local native email checks passed)
+
+- Replaced the failing disposable profile's incorrect system-partition mapping
+  with a valid isolated QA profile. Android16 reached home and completed a full
+  OS restart. Saved ADB GUI preference explicitly to the installed SDK binary.
+  New durable launcher: ~/Applications/Litterbugs Email QA.app; profile:
+  ~/.android/avd/Litterbugs_Email_QA.avd. Uses the installed emulator37.1.11,
+  cold boot/no snapshot saves. Newer37.3.10 was tested separately and removed.
+- Local Android production EmailPreferencesScreen/SessionProvider/Supabase client
+  ran in a native2.1.1 harness. Save persisted in real local PostgreSQL/PostgREST;
+  public website unsubscribe appeared after native refocus; simulated failed
+  save left DB unchanged and showed an error; retry and cold-app relaunch passed.
+  Native libraries/DEX/Kotlin resources matched the original payload. Corrected
+  QA-only package resource stripping and refreshed fixture auth; app source was
+  unchanged. This supersedes the previous Android-runtime pending status.
+- Fixtures use synthetic Auth against a disposable backend, not hosted login or
+  production preferences. No real user changes or sends. Tests/photos/results in
+  /tmp/litterbugs-email-e2e/. QA app removed after testing; local services stopped;
+  temporary index/client/Next config restored. Original app data preserved.
+- Disk cleanup removed generated QA builds/caches. Obsolete Small_Phone and
+  Litterbugs_API_36 Quick Boot caches were archived and verified under
+  ~/Library/Application Support/Litterbugs/QA/ before removing the raw caches.
+  Installed apps/userdata were preserved; recovery instructions are beside the
+  archives. The new launcher avoids RAM snapshots.
+- Source dc4b506 remains the latest feature fix; this pass changes verification
+  records only. NO hosted migration, website deployment, app/OTA/store publication
+  or email send. Backend/website/app deployment remains on hold; hosted checks
+  must follow a separately authorized release. Gmail-policy finding persists.
+
+### 2026-11-24 — Codex (local email flow verification; release still held)
+
+- Source dc4b506 fixes public unsubscribe origin validation behind a reverse
+  proxy using the configured site origin, and renames the remaining admin link
+  to Email list. Five endpoint tests passed; own edits mirrored to shared.
+- Actual website forms/admin and the production iOS preference screen passed
+  against disposable PostgreSQL17 + PostgREST16.4 using synthetic test sessions:
+  website save/reload, iOS save → website refresh, public unsubscribe → iOS focus
+  refresh, failed native save/retry, Admin → Email list, and fresh Bcc/CSV export
+  after resubscribe/withdrawal. Local-only helper auth and native harness; this
+  does not prove hosted Auth/MFA integration or physical-store-device behavior.
+- REST role checks passed: anon preferences denied; non-admin/non-MFA admin list
+  denied; signed-in member cannot call service-only unsubscribe. Latest full app
+  iOS/Android Hermes exports passed; native config/dependency diff from published
+  8855578 is empty, so the feature remains OTA-compatible with runtime2.1.1.
+- Android native runtime is NOT verified: local Android36 emulator fails its
+  first-stage partition mount before the app can launch. ADB discovery fixed
+  using the installed SDK path; failed emulator stopped. Pixel connection
+  requested for a separate QA-namespace test, without replacing its store app.
+- Evidence/logs/screenshots: /tmp/litterbugs-email-e2e/. Hosted migration remains
+  UNAPPLIED; no website deploy, OTA/store publication, real preference changes or
+  email sends. iOS QA app was isolated from the existing simulator app. Release
+  order remains backend → website → apps; hold and Gmail-policy finding persist.
+
+### 2026-11-24 — Codex (concise email UI; frequency wording removed)
+
+- Owner copy preference: new screens should rely on headings, field labels and
+  actions, without explanatory subheadings, directions or developer/meta copy.
+  No promised email frequency. Use Email list / Litterbugs emails in the UI.
+- Changed unsubscribe heading to Unsubscribe from email list; removed the two
+  helper paragraphs and example placeholder. Email input is empty. Removed the
+  standalone member email beneath Email preferences on website/apps/previews.
+- Simplified confirmation, preferences and admin/export/footer copy; preview
+  helpers removed. Prepared privacy disclosure no longer promises a frequency.
+  Essential form errors and privacy-policy disclosure remain functional.
+- Source fd4fbd9 on codex/email-preference-implementation-20261124 in isolated
+  checkout; mirrored own edits to shared, preserving unrelated work. TypeScript,
+  scoped lint,13 web and3 native screen tests passed. Browser confirmed blank
+  unsubscribe field/no placeholder, concise headings and no email subtitle.
+  Screenshots: /tmp/litterbugs-email-copy/. No backend/behavior changes.
+- Nothing deployed, no migration applied, no app/OTA published or email sent.
+  Earlier native export artifacts precede this copy pass; regenerate from final
+  committed source during any later authorized release. Existing release hold
+  and Gmail-policy finding remain in force.
+
+### 2026-11-24 — Codex (website then apps implemented; deployment explicitly held)
+
+- Grant authorized the approved default-on email concept to be built, website
+  first then apps, with no deployment. No signup checkbox or newsletter wording.
+- Website: /account/email-preferences, public /unsubscribe, existing-admin/MFA
+  /admin/email with fresh Bcc/CSV and copyable footer; prepared privacy text.
+  Migration20261124211058_weekly_email_preferences.sql is UNAPPLIED on hosted DB.
+  Private RLS/address-hash suppression/history; owner-only preference RPCs and
+  service-only unsubscribe; withdrawal survives recreation/email changes.
+- Both apps: Settings → Email preferences; shared RPC, server-confirmed saves,
+  focused/foreground refresh, replay disabled. Phone notifications unchanged.
+- Source checkpoints in isolated codex/email-preference-implementation-20261124:
+  website db31a0b; apps05dab6b; verification/hashing8094f48. Own edits mirrored to
+  shared checkout without reverting/staging others' changes. Review record:
+  docs/reviews/2026-11-24-email-preferences-implementation.md.
+- Website production build/TS/lint passed;19 selected web +3 shared +52 native
+  tests passed;232 native source modules clean; iOS and Android Hermes exports
+  passed locally. Disposable PostgreSQL migration/role tests passed. Actual public
+  page checked desktop/390px and signed-out access gates. No live authenticated
+  cross-device verification yet; backend is intentionally not deployed.
+- Existing account-dialog draft-deletion test fails also with pre-change source;
+  other24 tests pass. Existing social-card-bugs filesystem-tracing build warnings
+  remain. Neither issue was changed. Evidence in /tmp/litterbugs-email-implementation.
+- NO hosted migration, website deploy, app installation/upload, OTA, or email send.
+  No automation. Gmail silent-enrollment policy gap persists; postal address must
+  be supplied in real footers. Later authorized order: backend, verify, website,
+  apps/OTA. Preserve suppression on rollback. Existing unrelated work preserved.
+
+### 2026-11-24 — Codex (default subscription concept; Gmail/privacy checks)
+
+- Grant superseded the unchecked signup concept: existing and new accounts start
+  subscribed, with no newsletter checkbox or email messaging in signup. Preview
+  only; no live implementation, account writes, sends or policy publication.
+- Updated seven-screen sample gallery, including a separate Privacy draft. New
+  sample Jamie increases subscribed count200→201, is labeled Signup default,
+  and unsubscribe restores200 with1 unsubscribed. No signup checkbox/marketing
+  copy in product form; desktop/390px reviewed, ESLint/targeted TS pass and no
+  console errors/warnings. Prior Gmail clipboard readback limitation remains.
+- Live Gmail program policy (updated Oct20) prohibits unsolicited commercial mail;
+  sender guidance recommends opt-in and discourages automatic subscription.
+  U.S. CAN-SPAM opt-out allowance is not Gmail approval. The requested silent
+  enrollment concept is NOT cleared for Gmail sends; a privacy update alone
+  does not establish permission. Consumer Gmail's published500-recipient/message
+  threshold is a separate volume limit, not consent or delivery assurance.
+- Live litterbugs.app/privacy describes operational email/providers but not weekly
+  marketing/default enrollment/email unsubscribe. Draft disclosure exists only
+  in preview; no live policy edit. Evidence with official Google/privacy links:
+  artifacts/email-opt-in-20261124/gmail-policy-review.json.
+- Source checkpoint2eb339b, branch codex/email-preference-previews-20261124 in
+  /tmp/litterbugs-mobile-funders-20261120; own files mirrored to shared checkout.
+  Preview: http://localhost:3000/dev-review-preview/email-opt-in?screen=signup.
+  New screenshots: /tmp/litterbugs-email-previews/signup-default-on.jpg and
+  privacy-draft.jpg. No deployment/migration/OTA/store work. Gmail permission,
+  actual sending workflow and business postal address remain unresolved.
+
+### 2026-11-24 — Codex (Gmail email preference previews; sample data only)
+
+- Grant wants a simple Gmail workflow for Luke at teamlitterbugs@gmail.com;
+  explicitly excludes Resend for now and requested previews before live changes.
+  Current accounts should remain subscribed until withdrawal; new signup choice
+  starts unchecked. Existing account default is not represented as explicit consent.
+- Added development-only /dev-review-preview/email-opt-in with app preferences,
+  signup, sample Gmail/footer, public unsubscribe + confirmation, website
+  preferences, and recipient Bcc/CSV export. All 200 initial records are fake;
+  in-memory state only, no database/network writes or email sending. Reset restores
+  the fixtures. Production route returns notFound. Business address is a placeholder.
+- Source checkpoint 7ce0121 on codex/email-preference-previews-20261124 in
+  /tmp/litterbugs-mobile-funders-20261120; own files mirrored to shared checkout.
+  Existing Claude/shared edits preserved. No website, OTA, store or DB deployment.
+- Browser checks passed: current member starts on; saved opt-out and footer
+  unsubscribe update setting/list; unchecked signup stays out; checked signup
+  joins; CSV has 199 sample addresses after Alex opts out, excluding Alex.
+  Copy reports success but browser clipboard readback is empty, so independent
+  clipboard content verification is pending. Scoped ESLint/TypeScript passed;
+  desktop and 320/390px layouts checked, no console warnings/errors.
+- Local gallery: http://localhost:3000/dev-review-preview/email-opt-in.
+  Screenshots and QA evidence: /tmp/litterbugs-email-previews/. Live integration,
+  mailing address and actual Gmail copy/paste workflow remain future work.
+
+### 2026-11-24 — Codex (email opt-in research recovered; silent OTA choice confirmed)
+
+- Grant explicitly chose to keep OTA updates silent for now; do not add a
+  restart/applied popup without a new request. No lifecycle/UI change made.
+- Recovered original November20 research in Research email opt in setup,
+  ChatGPT6b006b52-0dc8-83ea-8d6f-149012600584, from its backing history.
+  Initial recommendations: optional unchecked signup choice, dismissible existing
+  member invitation, account Weekly emails setting, public confirmed subscription
+  form; consent/withdrawal evidence and sender unsubscribe/suppression sync.
+  Keep transactional mail separate; account creation alone is not opt-in.
+- It was research only; no marketing implementation or emails/list edits were
+  made. Current reviewed mobile notification settings remain phone-alert controls.
+  Resend Broadcasts was a candidate, not an established provider decision.
+- Luke's weekly sending service and current list consent provenance remain
+  unverified. Read-only Resend domain/broadcast discovery returned401 because
+  connector key is restricted to sending. No send, contact edit, expanded access
+  or retry with other credentials. Need Luke's sending-platform name to select
+  the integration. Recovered findings saved in
+  artifacts/email-opt-in-20261124/recovered-research.json.
+- No app/backend/website/OTA/store deployment or database change. Other shared
+  work preserved; research handoff checkpoint committed in isolated checkout.
+
+### 2026-11-24 — Codex (latest OTA tutorial verified on both; silent-update research)
+
+- Grant requested actual latest OTA download/run and $35 tutorial checks plus
+  research into optional restart messaging. No new publication or app code edit.
+- Latest group22df191b verified natively: iOS01a20f3c-2fa6-79f0-afeb-1394efa0a864
+  downloaded and launched on current2.1.1 simulator,1 successful/0 failed launches;
+  Android01a20f3c-2fa6-73e4-8ccd-e4e81d54d573 downloaded/launched on released27
+  native QA harness,2 successful/0 failed launches. Cached SHA256s match latest
+  exports. Both visibly show tutorial pin $35 and card Pays $35. Android compact
+  720x1280 hides its card summary by design; normal-height720x1600 verifies Pays.
+- Screenshots/native DB/hash evidence: artifacts/mobile-tutorial-20261124/
+  device-activation/activation-verification.json and adjacent PNGs. No physical
+  phones connected; Android temporary-signature Maps limitation remains. Native
+  startup fatal-error scan zero. No real payment or donor/favorite mutation.
+- Device analytics explicitly excluded; Android's restored old snapshot had no
+  saved choice but embedded analytics-disabled config/simulator detection; opted
+  out before downloaded OTA activation. Its tutorial preference/display override
+  restored after checks. Android emulator/Studio stopped before reopening iPhone.
+  iPhone remains open, signed in, normal real map visible; local simulator-only
+  production request header retained so it can run latest published OTAs. Original
+  prepared production-preview app preserved; only local header/signature differ.
+- Used Refero Design/Firecrawl research: Expo documents default asynchronous
+  download/next cold-start activation; Slack/Spotify desktop offer optional
+  badge/menu restart; Refero REKKI user-initiated Settings check and FoodNoms/
+  Daylish What's New examples inspected. Evidence/links and caveats saved in
+  artifacts/mobile-tutorial-20261124/update-messaging-research.json.
+- Recommendation only: keep routine OTA fixes silent. For important updates,
+  optional dismissible Update ready / Restart now / Later notice after completed
+  download and outside active report/photo/payment/cleanup work. Applied means
+  already running; do not say applied and then ask to restart. No popup, update
+  lifecycle, website/backend/store or production configuration changes made.
+
+### 2026-11-24 — Codex ($35 tutorial follow-up OTA published to both apps)
+
+- Grant explicitly requested publishing the $35 tutorial change to both apps.
+  Published at15:25 EST from committed8855578 (feature505fb96), production
+  environment/channel/runtime2.1.1. Against the preceding publication2ab8143,
+  only FirstRunTour.jsx changes: both sample pin states and Pays label from
+  $6 to $35. All earlier funder/privacy/heart changes are retained. No native,
+  dependency, permission, real fund/payment, backend or website changes.
+- New latest group22df191b-5980-40c9-9a09-ec76a43cb2bb;
+  iOS01a20f3c-2fa6-79f0-afeb-1394efa0a864;
+  Android01a20f3c-2fa6-73e4-8ccd-e4e81d54d573. Both EAS source maps uploaded.
+  Earlier group1e72e3f9 remains history and is superseded for new downloads.
+- Both Hermes exports include Pays $35. Scoped lint/onboarding4 tests passed;
+  all78 saved files verified. Server/channel readback confirms exact latest IDs;
+  production manifests and downloaded bundles match the exports; all74 unique
+  hosted bundles/assets fetched and SHA256 verified. Artifacts/evidence live in
+  artifacts/mobile-tutorial-20261124/, including publication-verification.json.
+- The artifact publish helper's local JSON parser initially rejected an EAS
+  warning prefix AFTER successful publication. Recovered the IDs with read-only
+  server readback and corrected the parser. No second publication was attempted.
+  Ignore that local postpublication exit as an app/upload failure.
+- Native device activation was not repeated for this text-only follow-up;
+  both download/run paths passed on current2.1.1 native test devices for the
+  preceding group earlier today. No simulator/emulator change for this release.
+  Clients receive the newer complete bundle on normal launch/restart. No store
+  submission or new permission needed. Earlier local-only tutorial hold is
+  superseded; no publication remains pending. Shared unrelated work preserved.
+
+### 2026-11-24 — Codex (tutorial example fund changed to $35; not published)
+
+- Owner requested replacing the tutorial's $6 example with $35. Updated
+  FirstRunTour.jsx: the resting pin, selected pin and Pays label now use $35;
+  shared component covers iPhone and Android. No real report fund changed.
+- Scoped lint passed; existing firstRun tests4/4 passed. Source commit505fb96
+  on codex/tutorial-fund-35-20261124 in the existing isolated mobile checkout;
+  shared source matches. Earlier frozen OTA artifacts/production group unchanged.
+- No new export, OTA publication, native/store build or backend/website change.
+  This additional tutorial change is local and is not in the earlier published
+  funder/privacy/heart OTA. Preserve unrelated shared website/mobile changes.
+
+### 2026-11-24 — Codex (both published OTAs downloaded and run natively)
+
+- Owner requested actual app download/run verification after publication and
+  separately reported their phone appeared to update automatically. No physical
+  device was connected; direct testing used current2.1.1 simulator/emulator.
+- iPhone17Pro: device analytics explicitly opted out first. Temporarily changed
+  only the local simulator Expo request header to production and ad-hoc signature;
+  app JS/assets unchanged. Native expo-updates downloaded published iOS ID
+  01a20f2c-2b62-7481-93e2-45d21cc61d23. After restart its DB recorded1 successful
+  launch/0 failures; cached Hermes SHA256 exactly matches frozen/published iOS.
+  Real map, funded marker, report/photo and funder rows visibly passed while
+  running that OTA. Original production-preview native shell restored afterward;
+  original channel restoration removes the production cache selection/row.
+- Android16 QA emulator: existing native2.1.1(27) local harness, production
+  channel, unchanged80 native libraries/7 DEX, temporary test signing. Device
+  analytics opted out before launch. Native expo-updates downloaded exact Android
+  ID01a20f2c-2b62-7058-a37d-ef5a7dabd959; restart recorded1 successful launch/0
+  failures. Cached Hermes SHA256 matches published/frozen Android. Running UI
+  visible; zero scanned JS/native fatal startup errors. Known temporary-signing
+  Google Maps tile limitation remains; this is not physical-store Maps acceptance.
+- Evidence: artifacts/mobile-funders-20261124/ota-device-activation/
+  activation-verification.json, per-platform DB/hash readbacks and screenshots.
+  Only one virtual guest ran at a time. Android stopped; original iPhone simulator
+  reopened and app/map visible, analytics exclusion retained. No new OTA/build,
+  store/website/backend deployment, payment or donor/favorite mutation.
+  Production group/source unchanged; earlier device-activation-pending notes are
+  superseded by this scoped native verification. Documentation checkpoint saved
+  in the existing isolated candidate; unrelated shared changes preserved.
+
+### 2026-11-24 — Codex (funder/privacy/heart checks passed; both production OTAs published)
+
+- Current installed iPhone17Pro native/runtime2.1.1 verified again; internal
+  analytics disabled. Existing Google session signed in normally. Real Roby
+  Greene funders appear directly below Get directions, above Litter/Notes;
+  two separate $25 rows and relative dates verified. Anonymous checkbox starts
+  unchecked, toggles with correct text, and was restored before leaving checkout.
+- Existing paid-out Ridge Road donation shows Donation privacy, Your name is
+  shown and Hide my name. No payment or donor-visibility mutation. Selected red
+  photo hearts have no white circle on list/map previews; white outline verified.
+  Temporary favorite add/remove completed; original unselected state restored.
+- Under Grant's existing explicit authorization, published both frozen exports
+  to production/runtime2.1.1 at15:08 EST. Export source ba39bbe; publication
+  checkout2ab8143 (later documentation only). Group1e72e3f9-55ce-4ef8-8377-a8ca25d0bf4f;
+  iOS01a20f2c-2b62-7481-93e2-45d21cc61d23;
+  Android01a20f2c-2b62-7058-a37d-ef5a7dabd959. EAS source maps uploaded.
+- Production channel and native Expo delivery requests verify both exact IDs,
+  runtime and frozen Hermes SHA256s. All74 unique hosted bundles/assets fetched
+  with manifest-provided authorization and content hashes verified. All78 frozen
+  files remain unchanged. Evidence: artifacts/mobile-funders-20261124/
+  publication-verification.json and current-iphone-feature-verification.json;
+  screenshots in ios-simulator-current/. Documentation checkpoint is committed
+  in the isolated candidate; unrelated shared website/Claude work preserved.
+- Production-device OTA activation not claimed: internal simulator targets
+  production-preview. Existing store2.1.1 clients download on a cold launch and
+  activate on a later full restart; older runtimes need the store update first.
+  Android temporary-signing map limitation remains documented. No store/native,
+  website or backend release; no payment or lasting privacy/favorite change.
+  Simulator left open; no automation or forced restart added. No remaining
+  publication hold for these two now-published updates.
+
+### 2026-11-24 — Codex (current iPhone installed and startup verified)
+
+- Grant ran scripts/verify-current-iphone.py in normal macOS Terminal. Saved
+  installed-native-verification.json confirms main com.litterbugs.app native2.1.1,
+  runtime2.1.1, build1, disabled internal analytics, and exact prepared Hermes
+  SHA256cd2e3841e2e43ff79105b3881a8281dfc46a1d902ff74202719b1244a0a606b6.
+  App launched; reviewed current-iphone-installed.png shows real map tiles,
+  report markers, Boone search and normal controls/navigation; no error overlay.
+- Latest-native installation/startup gate is now passed. Feature visual checks
+  remain pending: funder placement, anonymous checkbox interaction, payment owner
+  name-control display, heart appearance. Do not mark these passed from startup.
+- This session still lacks functioning native UI controls; alternate runtime
+  reports missing CODEX_CLI_PATH. Owner asked how to remove restrictions. Saved
+  config already says never/danger-full-access; actual session profile differs.
+  Local Codex CLI help verified explicit --sandbox danger-full-access and
+  --ask-for-approval never flags for a fresh owner-launched local session.
+- Publication of both exact frozen OTAs is authorized; do not request approval
+  again. Source/artifacts unchanged. No OTA/store/backend/website/payment/donor
+  mutation. Continue actual visual checks then publish and verify delivery.
+
+### 2026-11-24 — Codex (iPhone testing continued; verified installation helper)
+
+- Continued at Grant's explicit instruction. simctl remains inaccessible.
+  Alternate native-control runtime reports “Managed execution requires a usable
+  CODEX_CLI_PATH”; no native-control session started. Read-only saved config
+  confirms approval_policy=never and sandbox_mode=danger-full-access, matching
+  Grant's screenshot; no user restriction or rejection inferred.
+- Added scripts/verify-current-iphone.py, ready to run in owner's normal Terminal.
+  Installs only the prepared internal2.1.1 app onto the already-booted iPhone17Pro,
+  preserves app data, verifies actual installed native/runtime/bundle hash and
+  disabled analytics, launches and saves screenshot/JSON evidence. Never publishes,
+  creates payments or claims visual acceptance. Syntax and source-artifact
+  verification passed; source artifact codesign deep/strict passed again.
+- Awaiting execution outside this restricted session. Actual installed2.1.1 and
+  funder/privacy/heart visual acceptance remain pending. Existing authorization
+  to publish both frozen OTAs after final checks remains recorded; no reapproval
+  required. No production/store/backend/website/payment/favorite changes.
+
+### 2026-11-24 — Codex (OTA publication authorized; session access blocks execution)
+
+- Grant explicitly instructed “Okay, do these things now” after the remaining
+  final simulator checks and publication of both OTAs were listed. Publication
+  of this exact prepared release is now authorized; do not request approval
+  again. Prior approval-hold entries are superseded for this release only.
+- Isolated committed source remains unchanged: export ba39bbe; current HEAD
+  bd336a7 before this documentation checkpoint. Verifier passed all78 saved
+  file hashes and app-source consistency. No rebuild or feature edit needed.
+- Current session still cannot connect to CoreSimulator. Read-only installed
+  plists confirm com.litterbugs.app remains2.0.1. Latest-native2.1.1 UI checks
+  remain pending, not passed or waived.
+- Expo prepublication channel check cannot reach the service: DNS resolution
+  fails for api.expo.dev and registry.npmjs.org. The npx registry wait was
+  canceled; installed EAS27.1.0 was used to independently check the service.
+  No publication command executed. No OTA group created or deployment claimed.
+- Needs a session with working native simulator access and Expo network access
+  to finish the authorized checks/release. Do not bypass sandbox restrictions.
+  No website/backend/store/payment/donor/favorite mutation. Shared .git remains
+  read-only; documentation checkpoint is committed in the isolated candidate.
+
+### 2026-11-24 — Codex (continued installation check; manual drag still needed)
+
+- Read-only device/app plist check confirms iPhone17Pro is booted (state3),
+  but its Litterbugs native apps still show2.0.1/runtime2.0.1; no2.1.1 install
+  found. The prepared2.1.1 simulator app remains ready in the artifact folder.
+- simctl still cannot connect to CoreSimulator from this session. System
+  Events automation returned-10827; native-control runtime call was rejected.
+  No alternative install or control attempt made after that rejection.
+- Next owner step remains dragging the prepared Litterbugs.app from Finder
+  onto the open iPhone simulator. Latest-native funder/privacy/heart checks
+  remain pending. No source changes, OTA, store/backend/website deployment or
+  payment/donor/favorite mutation. Shared .git is read-only; log uncommitted.
+
+### 2026-11-24 — Codex (simulator reopened; installation still blocked)
+
+- Grant reopened iPhone17Pro. CUA can operate its UI; simctl still fails with
+  CoreSimulator connection/access errors from this session. The fresh2.1.1 app
+  is ready in Finder, but is not installed (existing installed app remains2.0.1).
+- Opened Apple's Accessibility Inspector while troubleshooting GUI placement;
+  Grant asked what it was. Explained it and quit it; app inventory confirms
+  Inspector/Xcode/Android Studio are closed. No app/security setting changes.
+- Requested one manual drag of Litterbugs.app from the prepared Finder folder
+  onto the open iPhone to finish installation, then resume latest-native checks.
+  Do not claim UI acceptance or publish OTA. Production78-file export unchanged.
+
+### 2026-11-24 — Codex (current iPhone simulator app built; window handoff)
+
+- Owner-approved Expo simulator build13bf4e5c-2f44-4e08-8883-6a234d489f46
+  FINISHED from71d1d1c. Downloaded through Expo's official download helper.
+  Archive SHA256b2b8e1e685d2d919557836f7900f39661cbfe28f757c76c578424967fc24d9f7.
+  Extracted Info/Expo plists verify native/runtime2.1.1, iPhoneSimulator target,
+  analytics disabled/internal; codesign deep/strict verification passed.
+  Simulator build counter resolves to1 (separate from released iPhone30).
+  Native/feature source is current; no production mobile code/config changes.
+- Ready app: artifacts/mobile-funders-20261124/ios-simulator-current/unpacked/
+  Litterbugs.app. Archive/verification and the source bundles are preserved.
+  All78 production OTA files still pass checksum/source consistency checks.
+- INSTALL/UI CHECKS NOT COMPLETE: existing iPhone17Pro remains shutdown; its
+  old installed shell is2.0.1. Session simctl is unable to access CoreSimulator,
+  and CUA cannot target Simulator when no device window is open. Requested
+  Grant reopen the iPhone17Pro window; Finder is already open to the new app.
+  Next: install the fresh app, verify actual installed2.1.1 plists, then funders,
+  anonymous checkbox, payment-privacy display and heart/map regression checks.
+- Removed28 obsolete untracked old native build binaries,1.74GiB total; latest
+  store originals/current OTA/source backups and all evidence retained.
+  No local native compilation; Android emulator/Studio, Xcode and temporary
+  Activity Monitor were closed. Last memory_pressure check63% free percentage,
+  Activity Monitor pressure graph was green. One simulator at a time only.
+- No production/preview OTA, store submission/release, backend/website change
+  or payment/donor/favorite mutation. OTA publication still requires approval.
+
+### 2026-11-24 — Codex (current simulator build authorized; QA ongoing)
+
+- Grant explicitly approved uploading the prepared source to Expo for the
+  current simulator-only build and removing unneeded old builds. This resolves
+  the prior cloud-upload approval rejection; it does NOT approve OTA publication.
+- Submitted existing production-simulator profile from committed71d1d1c:
+  build13bf4e5c-2f44-4e08-8883-6a234d489f46, iOS2.1.1(30), simulator=true,
+  currently IN_PROGRESS. Native/app config and feature source unchanged.
+- Removed28 untracked superseded native build archives/APKs/IPAs/AABs from
+  older artifact folders, freeing1.74GiB. Kept both latest2.1.1 store binaries,
+  frozen OTA/source bundles, all tracked files, source and screenshots/logs.
+  Exact paths/sizes/checksums: old-build-cleanup.json in current OTA artifacts.
+- Heavy build is remote. Android emulator/Studio stopped; Xcode and the temporary
+  Activity Monitor were closed after checking normal/green memory pressure.
+  Read-only memory_pressure reported56–58% system-wide free percentage.
+- Current iPhone simulator remains shutdown/no device window. simctl cannot
+  connect from this session; CUA also cannot target Simulator without a device
+  window. Asked Grant to reopen iPhone17Pro while the build finishes. Do not
+  claim2.1.1 native UI acceptance until installed app Info/Expo plists and the
+  native funder/privacy/heart checks are verified. No OTA/store/backend release.
+
+### 2026-11-24 — Codex (native QA follow-up; current iPhone shell pending)
+
+- Owner accepts emulator/simulator testing but explicitly requires latest
+  versions. Fresh Expo history/Apple listing confirms latest store sources
+  iOS2.1.1(30)/Android2.1.1(27), both4835975. Frozen78 OTA files unchanged.
+- Android16/API36 arm64 QA emulator used1GB RAM/two cores. Local APK embeds
+  exact prepared Hermes code in27 native components (80 native libraries and
+  seven DEX files identical). Analytics disabled/test signing only in this
+  local harness. Startup, report list/deep link/photos and funders placement
+  passed. Map tiles unverified: Google rejects the temporary QA certificate;
+  production maps configuration/signature unchanged. Android signed-in payment
+  controls not exercised. Screenshot/evidence saved in mobile-funders artifacts.
+- Rechecked iPhone funders and anonymous checkbox, then discovered its actual
+  installed native Info/Expo plist is2.0.1(1)/runtime2.0.1 despite current JS.
+  Do NOT claim latest2.1.1 native simulator acceptance. No current simulator
+  build exists locally or in Expo history; fresh2.1.1 build required.
+- Automatic approval review REJECTED cloud simulator build submission because
+  it uploads private source to Expo without explicit owner upload approval.
+  No build ID/replacement artifact; do not retry or bypass. Local native build
+  not started with only~2.7GB free disk. Prepared exact cloud-test plan; await
+  explicit approval for source upload, separate from OTA publication approval.
+- Android emulator/Studio stopped. Original AVD preserved; stopped QA AVD is
+  Small_Phone.avd, display name Litterbugs OTA QA. Generated APK project remains
+  ~/ApkProjects/universal. No payment, donor/favorite mutation, hosted OTA or
+  store/backend/website release. App code unchanged. Full follow-up is in the
+  November24 readiness review; shared .git remains read-only.
+
+### 2026-11-24 — Codex (both OTA packages ready; publication held)
+
+- Revalidated the isolated funder/privacy/heart app source `bf053f6` against
+  approved native baseline `4835975`. No app feature changes were needed.
+  Added local preparation and checksum-verification/release helpers; their
+  default paths do not publish. Export source `ba39bbe`.
+- 677 tests passed/1 existing skip, 229 modules/0 source errors, scoped lint
+  zero errors, all 46 installed direct dependencies match the lockfile.
+  Production iOS/Android Hermes exports passed with one worker and 3 GB heap;
+  EAS offline reader verified 67 assets each and all 78 saved files were hashed.
+  Fixed only isolated dependency/workspace links used for packaging.
+- Signed store artifacts both target runtime2.1.1/production; Apple public
+  listing now2.1.1. Older runtimes require the store2.1.1 update first. Existing
+  November20 iPhone simulator checks retained; no new emulator/native build.
+- Package/evidence/restorable committed source saved under shared workspace
+  `artifacts/mobile-funders-20261124/`; details and release/rollback commands in
+  `docs/reviews/2026-11-24-mobile-funders-ota-readiness.md`. EAS source-map upload
+  is prepared; PostHog secrets remain EAS-only, with matching maps saved locally.
+- Final read-only production-channel check still shows no update groups.
+  NO production/preview OTA, store upload/submission/release, backend/website
+  deployment, payment or donor-setting mutation. Grant must explicitly approve
+  publication. Preserve unrelated Claude/shared work. Shared handoff remains
+  uncommitted because shared .git is read-only; isolated candidate is committed.
+
+### 2026-11-20 — Codex (favorite heart circles removed; OTA held)
+
+- Removed the selected white circle from shared ReportPreviewHero, covering
+  map previews and report/photo cards. Filled red heart, unselected white
+  outline, tap targets, saved favorites, haptics and hop animation retained;
+  subtle photo-contrast shadow applies to both icon states.
+- 32 focused preview/gesture/photo tests and scoped lint passed. Single-worker
+  iOS Hermes export passed; existing iPhone simulator visibly confirmed the
+  already-favorited Roby Greene card shows the red heart directly on its photo.
+  No favorite toggle, real payment or donor-visibility change for this check.
+- Committed `bf053f6b7288df7f7148b0dc773d28870bb9c34c` on the existing isolated
+  `/tmp/litterbugs-mobile-funders-20261120` candidate, following funder commit
+  `a34d464`. Shared heart file matches. Temporary local transport removed after
+  QA. One existing simulator/one capped export worker; no native build.
+- Approval hold remains: NO production/preview OTA, store submission, website
+  or backend deployment. Await Grant's explicit OTA approval. Shared handoff
+  remains uncommitted because this session cannot write the shared .git.
+
+### 2026-11-20 — Codex (mobile funders complete locally; OTA approval required)
+
+- Checkpoint `a34d464a9090376b464c09d2eaca865911aadd1f` in the isolated local
+  clone `/tmp/litterbugs-mobile-funders-20261120`, based on approved `4835975`.
+  All 12 feature/test files also match the shared workspace. Preserve unrelated
+  shared work; its pending location-recovery changes are excluded from candidate.
+- Owner's final placement: donor panel directly below Get directions, above
+  Litter and Notes. Individual names, amounts, relative dates, 3-row expandable
+  list; no donors on listing cards. Checkout has an unchecked Donate anonymously
+  choice; completed payment owners can Hide/Show their name. Old null choices
+  remain public. Reserved choices survive recovery/retry; server mismatch blocks
+  opening Stripe. Existing live website donor APIs reused; no backend changes.
+- Final isolated candidate: 677 tests passed, 1 existing skip; lint passed;
+  source check 229 modules/0 errors. Single-worker iOS/Android Hermes exports
+  passed. Map code, artwork, app/runtime/native config and dependencies match
+  approved source exactly. No native build or Android emulator was started.
+- Reused only the existing iPhone simulator, with analytics disabled. Its old
+  Metro address had unavailable artwork; exact approved-source map/assets plus
+  feature now load via a loopback-only local manifest. Real Roby Greene report
+  shows two separate $25 donations; final higher placement visibly verified.
+  Native anonymous checkbox unchecked/checked verified; returned before payment.
+  Caught/fixed Hermes lacking RelativeTimeFormat; regression test added. Temporary
+  scroll instrumentation was never loaded and is absent from final source.
+- Grant explicitly requires approval before ANY OTA publication, including
+  preview channels. NO OTA, store build/submission, website/backend deployment,
+  charge, payout or donor-visibility mutation. One simulator/one worker and
+  capped heaps used. Local simulator transport removed after QA; full reload
+  would need that local transport recreated. Existing website server retained.
+- Source is committed in the isolated clone; shared handoff edit remains
+  uncommitted because this session cannot write the shared .git directory.
+
+### 2026-11-20 — Codex (roadmap OTA release advice)
+
+- Read Grant's Google Doc roadmap and local Expo configuration. Recommend
+  implementing/testing items individually, publishing small related batches,
+  and shipping urgent fixes or email consent independently when ready.
+- Suggested groups: visual changes; email consent; cleanup lifecycle/issues;
+  leaderboard/funder points; separate payment/tipping work. Web/backend-only
+  items need no OTA. Native dependencies/permissions require new store binaries;
+  respect appVersion runtime matching and older installed clients during rollout.
+- Advice only: no app changes, OTA, build, deployment, document edit or email.
+  Handoff uncommitted because shared .git is read-only in this session.
+- Follow-up: confirmed ON_LOAD with zero startup wait and no custom fetch/reload
+  flow in mobile source. Explained automatic background OTA download on cold
+  launch and activation on a later full restart; no store action or notification
+  by default. No runtime/device update was published or tested in this lookup.
+
+### 2026-11-20 — Codex (weekly marketing email opt-in research)
+
+- Reviewed notification-preference migration, privacy source and prior Resend
+  setup records. Existing preferences control phone alerts; no newsletter
+  consent flow found in the reviewed source. Luke's weekly sending tool and
+  existing list's consent provenance were not verified.
+- Recommend optional unchecked weekly-email signup choice, dismissible in-app
+  invitation for existing members, account email setting and public subscription
+  page. Keep existing documented newsletter consent; treat unproven account
+  addresses as not subscribed. Verify public-form addresses before activation.
+- Record consent time/source/wording version and withdrawals in Supabase;
+  synchronize with sending-provider suppression without silently resubscribing.
+  Resend Broadcasts is a practical candidate given existing SMTP setup. Official
+  FTC/ICO/Resend guidance reviewed; US opt-in law and provider rules differ.
+  Avoid a blanket permission-request email to the unconsented global list.
+- Research only: no emails, list mutations, app/website changes, migration or
+  deployment. Marketing flow remains unimplemented. Handoff entry uncommitted;
+  this session has read-only access to the shared .git directory. Preserve other
+  agents' existing shared changes.
+
+### 2026-11-20 — Codex (cleanup fraud prevention recommendations)
+
+- Grant confirmed an on-site visit proved the Blue Deer cleanup was not done.
+  Reviewed current submission SQL, web/native evidence flows, Gemini prompt and
+  review transitions. Current source queues completion AI only for paid attempts;
+  volunteer submissions use reporter review, with timeout approval when untouched.
+- Recommended verification for both types, fresh on-site evidence with accuracy-
+  aware location checks and manual fallback, positive landmark matching in Gemini,
+  first-cleanup human review and timing/reuse flags. Timing alone is not proof.
+  Location and camera evidence are signals, not guarantees of completed work.
+- Advice only: no code, account restriction, moderation, migration or deployment.
+  Handoff edits remain uncommitted because this session cannot write .git objects;
+  preserve the existing shared changes. Production rollout was not re-inspected.
+
+
+### 2026-11-20 — Codex (fraudulent cleanup account lookup)
+
+- Read-only production lookup matched report `c1482a8c-329f-41d6-85bd-020916d32553`
+  to its submitting cleaner, distinct from reporter James Luke Barber. Checked
+  profile/auth details, all cleanup attempts/submissions, review and payout record.
+- One attempt/one submission, no completed cleanups, no reports and no transfers.
+  Submission claims 120 minutes/50 lb but followed claim by 2m42s; account was
+  created about five minutes before submission. Stripe onboarding remains pending
+  with payouts disabled. Existing review is changes_requested, not a recorded
+  final fraud rejection; auth ban is unset. Findings reported to Grant privately.
+- No account restriction, moderation change, app/website change, deployment or
+  production data mutation. Dashboard SELECT query auto-saved as a private snippet.
+
 
 ### 2026-11-19 — Codex (donor privacy released; Vercel authenticated)
 
@@ -1141,150 +3304,568 @@ They cannot talk to each other directly. This file is how they share context.
   events. Working folder's uncommitted Codex edits (.claude/launch.json, this log)
   and dev-review-preview pages were left untouched and not released.
 
-### 2026-11-15 — Codex (Bing follow-up checked)
+### 2026-11-15 — Codex (MCP business-value estimate)
 
-- Refreshed Litterbugs Bing sitemap report: sitemap.xml now Success,49 URLs
-  discovered,last crawled11/15/2026,zero sitemap errors/warnings. Discovery does
-  not establish that49 pages are indexed. This supersedes Processing above.
-- Recommendations and Backlinks each explicitly return No data available;
-  Search Performance says check back in48 hours while Bing prepares site data.
-  These are unavailable reports,not zero traffic/backlinks or an SEO all-clear.
-- Recommend retaining the previously identified Ahrefs website priorities;
-  Bing currently provides no additional supported fix list. Read-only browser
-  check only; no resubmission,crawl,automation,code,provider or deployment change.
-  Shared Claude checkout/index untouched; note saved in isolated release log.
+- Advisory review found no MCP server implementation in searched web source.
+  Current MCP documentation confirms client connections are required; server
+  publication alone does not establish distribution or customer acquisition.
+- Recommended treating a read-only MCP as a small partner-led experiment.
+  Acquisition figures in the answer are explicitly hypothetical funnel
+  arithmetic, not observed conversion rates or revenue forecasts. Ordinary
+  website widgets would use the API; MCP specifically serves AI clients.
+- No implementation, outreach, production testing, deployment, push, database
+  or store actions. Preserved concurrent staged and working changes.
 
+### 2026-11-15 — Codex (website recovery/analytics and saved drafts deployed)
 
-### 2026-11-15 — Codex (completed Ahrefs Site Audit reviewed; recommendations only)
+- LIVE source `66f823d`, pushed branch `codex/website-recovery-20261115`, based on
+  prior live85adaad. Final deployment dpl_F9z1u3RoMSj71saxGCyr8qkjFJiW,
+  litterbugs-l2khct9qb-grant-9890s-projects.vercel.app, staged/checked then promoted
+  to litterbugs.app. Immediate rollback is dpl_GxE5ogMVWZmKkeEZBZXzEAvWYNTa
+  (sourcee48e040, recovery/analytics only); original live6jERvD7 remains earlier.
+- Website portions of17447cc and branded map recovery646e20c are now deployed:
+  GPS retry/settings recovery,20s location cap,published-build/staff eligibility,
+  split app timing signals/cache policy,and12s visible-time map timeout with
+  Try again/Browse reports. Approved native app timings/builds untouched.
+- Local draft source40c9cf4: Saved drafts now has a single compact summary,
+  caterpillar/Nunito/mint styling,Resume/Continue and Delete draft with inline
+  confirmation. Removed copy/version/sync instructions,coordinates and expiry
+  detail from this section; simplified adjacent draft-attention copy.
+- Deletion uses existing revision-guarded draft RPC/tombstone and local clearing,
+  not published-report deletion or cleanup cancellation. A listed revision can
+  be deleted without downloading its photos; concurrent changes/failures retain
+  the row. Account-switch/inflight-read guards prevent cross-account updates.
+  Successful deletion clears false draft-attention status. No schema migration.
+- Exact final release:1180 web tests passed (Node22,maxWorkers2,testTimeout20s),
+  27 draft-sync tests passed,web typecheck/scoped lint and Vercel production
+  builds passed. Initial Node26/workspace dependency issues and concurrent-test
+  timeouts resolved; no production-code workaround. Full legacy shared mobile
+  parity checks still fail5 historical expectations; not modified or a web gate.
+- Real component browser QA at1100/390/320px: no overflow,confirmation/cancel,
+  mocked revision7 delete and removal passed. No real owner draft deleted.
+  Live map normal tiles loaded; injected map stall offered branded recovery and
+  Browse reports opened real list. Production test browser analytics declined.
+  Screenshots in this chat's visualization directory; fixture route removed.
+- Existing public report-page SEO/location changes preserved. Other agent's
+  header/footer/leaderboard/preview/migration edits excluded and left untouched.
+  No mobile build/OTA/store/provider settings or DB writes/migrations. Earlier
+  native location recovery remains local, pending mobile acceptance/delivery.
 
-- Project10711029 history explicitly shows Completed,15m30s,450 URLs crawled,
-  193 internal pages,255 resources,health100%,1 internal URL with errors.
-  Overview:1 error,234 warning occurrences,651 notices; these are not distinct
-  affected pages. No new crawl,settings change,code fix or deployment this turn.
-- Priority1: stable report canonical/sitemap/internal-link URL generation.
-  Ahrefs flags sitemap entry /litter-reports/trash-by-the-tracks-d4a3dc34-edc1-4492-b6ac-e6dd82375a5c
-  whose canonical adds -greensboro-north-carolina before the id. Live raw HTML
-  and sitemap confirm mismatch persists. Related missing-sitemap report contains
-  that full canonical, /cleanup-safety/acknowledgment and /reports?page=2; do not
-  blindly add all3 without reviewing desired indexability. Read-only source
-  shows sitemap/list town budget300ms versus page2500ms; timing/cache dependency
-  is a plausible cause, not a fully tested diagnosis. Make URL generation stable.
-- Priority2: concise public-report search metadata,29 long titles/31 long
-  descriptions. Live New River Grill report matches117-character title and
-  323-character description. Preserve full report/body content. Seven short
-  descriptions include /get-app with inherited49-character generic summary;
-  prioritize useful app/about copy over padding legal descriptions for a score.
-- Priority3: complete Open Graph details on10 pages including /get-app,/about,
-  /help,/support,/cleanup-safety,/photo-review and policy pages. Live /about and
-  /get-app have og:title/description/image but no og:url or og:type. Retain brand
-  image and add appropriate URL/type defaults or page-specific values.
-- Lower priority:2 slow pages are Greensboro report (TTFB508ms,total1140ms) and
-  nonindexable Boone completed-cleanups page2 (TTFB84ms,total1869ms). Confirm
-  repeat performance evidence before optimization; these are crawler timings,
-  not Core Web Vitals. Schema flags are secondary, not guaranteed AI/rich results.
-- Noindex112/nofollow39 samples include sign-in,account,report forms,filtered maps
-  and cleanup lists. Do not remove exclusions wholesale. Titles/descriptions
-  have no hard Google character maximum; focus on concise relevant copy, not
-  treating vendor length warnings as penalties. Google guidance checked.
-- Notes committed in isolated release checkout only; Claude's shared work/index
-  and live website source5bc2553/deploymentUfyfut4 remain untouched.
+### 2026-11-15 — Codex (branded map recovery and visible-time timeout implemented locally)
 
+- Source `646e20c`: website tile-startup timeout now counts12 seconds of visible
+  page time, pausing while hidden and resuming its remaining budget. Late tiles
+  still recover automatically; missing configuration/auth/initialization failures
+  remain distinct. Analytics retain backgrounded/wall-duration semantics.
+- Branded recovery uses existing caterpillar artwork/Nunito type, mint Try again
+  (#b9e9dd/#8ed7c5) and outlined Browse reports. Retry recreates only the map,
+  cancels old listeners/timers/markers and ignores stale callbacks; URL area,
+  filters and report state retained. Browse opens the existing report list, which
+  remains searchable during retry. No native map/camera/startup changes.
+- Full web suite1178 passed; final map regressions64 passed after listener cleanup;
+  typecheck/scoped lint passed. Actual MapExperience browser QA at1440/390/320px:
+  no overflow,46px buttons,retry and report-list navigation passed. Controlled
+  unresolved SDK verified30s hidden causes no error, return resumes budget.
+  Automatic late-tile recovery verified in component tests, not live Google QA.
+- Final browser run had no runtime errors/overlay; preload-only development
+  warnings remain. Browser plugin unavailable; Playwright used. Temporary local
+  fixture route removed; generated next-env changes restored. Screenshots outside
+  repo in this chat's visualizations. Existing preview/Claude edits preserved.
+- No deploy,push,provider/DB changes,migration,app build,OTA or store change.
+  Website delivery remains pending with earlier local location/analytics source
+ 17447cc; no live-effect claim. Owner approved this map implementation scope.
 
-### 2026-11-15 — Codex (Litterbugs added to Bing Webmaster Tools)
+### 2026-11-15 — Codex (map recovery buttons preview)
 
-- Added https://litterbugs.app/ to the existing signed-in Bing account using
-  manual HTML verification; no Google import/OAuth scope or other-site changes.
-  Litterbugs now opens its own dashboard and Bing reports initial data may take
-  up to48 hours. Public ownership tag msvalidate.01 is in the homepage head.
-- Submitted https://litterbugs.app/sitemap.xml. Initial Bing server error resolved
-  after one normal reload/retry; final UI lists1 known sitemap, submitted
-  11/15/2026, status Processing. Crawling/indexing are not yet confirmed. Direct
-  XML check returned200 with49 URLs, and robots.txt advertises that sitemap.
-- Website code5bc2553 (one metadata line), branch codex/bing-webmaster-20261115,
-  deployed as dpl_Ufyfut4xMLfRbV8TTyXxDaqDVLEx,
-  litterbugs-62wn931f6-grant-9890s-projects.vercel.app, promoted to litterbugs.app.
-  Build/typecheck passed; staged and live HTTP200 HTML heads contain correct
-  Bing and preserved Ahrefs tags. Rollback dpl_5175Z5xjx4AxjJdFBunt3BLEqUMx.
-- Preserve both verification tags in future deployments. No new analytics,
-  IndexNow automation, credentials, recurring job, DB or native app changes.
-  Local SEO CLI Bing API connection remains unset; browser setup is complete.
-  Bing property/sitemap tab retained for Grant. Code pushed to GitHub; all edits
-  in isolated release checkout, Claude's shared work and index untouched.
+- Created conversation-only website timeout preview: mint Try again and outlined
+  Browse reports, with simulated retry/loading/failure and example report-list
+  transition/back. Existing map surface/system type retained; buttons stack on
+  narrow screens. No live requests or product-source edits.
+- Verified interactions and no overflow at736px/320px outer widths, no browser
+  runtime errors; inspected rendered preview. No deploy,push,DB,provider,app,
+  build,OTA or store change. Preview outside repo in this chat's visualizations.
+  Existing location/analytics source17447cc remains local. Other work preserved.
 
+### 2026-11-15 — Codex (map timeout source review and recommendation)
 
-### 2026-11-15 — Codex (Ahrefs Free verified; backlinks and Bing checked)
+- Source confirms website12-second tile startup timer continues while the page
+  is hidden; visibility currently only tags analytics. Late tiles already clear
+  the timeout message. Recommended visible-time timeout plus explicit retry/list
+  recovery. Separate empty report results already have clear-filter/search and
+  closest-report guidance; do not conflate them with failed tile loading.
+- Advice only: no product changes, deploy,push,build,OTA,provider or DB changes.
+  Prior local location/analytics fixes and approved native timings unchanged.
 
-- Created verified Ahrefs Free project10711029 for litterbugs.app/subdomains.
-  Public HTML meta marker only; no Google OAuth connection, new visitor tracking,
-  paid plan or trial. Preserve the Ahrefs meta tag in future website deployments.
-- Website source7e244c9, branch codex/ahrefs-free-20261115, deployed as
-  dpl_5175Z5xjx4AxjJdFBunt3BLEqUMx; litterbugs.app alias, HTTP200 and head marker
-  verified; Ahrefs explicitly confirmed ownership. Build/typecheck passed.
-  Rollback dpl_Fym5dwuZjccVLABfPDT62TkEb7Mv. No product behavior changes.
-- Ahrefs:641 referring domains; first50 by DR all SPAM/zero estimated traffic;
- 12 dofollow domains all SPAM; Non-spammy filter across all types returns0.
-  Expanded two homepage links show unrelated SEO/link-selling content. GSC
-  Manual actions for litterbugs.app returned No issues detected. Recommend
-  earned local/cleanup links; no disavow or link-removal outreach performed.
-- One-time free Site Audit shows Now Crawling; completed results still pending.
-  No recurring schedule/watcher. Bing account accessible after retry, but only
-  retirecityfinder.com/retirementlists.com registered; Litterbugs absent in this
-  account, not added. See docs/reviews/2026-11-15-ahrefs-free-backlinks.md.
-- Isolated checkout only; shared Claude work/index and native apps untouched.
+### 2026-11-15 — Codex (Clarity follow-up and daily analytics review)
 
+- Read-only Clarity/PostHog follow-up through about9:50am Eastern:9 recordings
+  in Last3days. Sampled map timeout was backgrounded; later foreground map ready
+  in0.8s. Sampled dead click coincides with outbound App Store badge click,
+  not a confirmed broken control or install. No participation_failure today.
+- Created active daily9am Eastern heartbeat litterbugs-clarity-and-analytics-review
+  in this chat, analysis/recommendations only; existing weekly SEO unchanged.
+  Baseline:docs/reviews/2026-11-15-analytics-monitoring-baseline.md.
+- No product/provider/DB/store changes, deploy,push,build or OTA. Location and
+  analytics source17447cc remains local; delivery/acceptance pending. No new
+  confirmed fix recommended from this small sample. Other agents' work preserved.
 
-### 2026-11-15 — Codex (free Semrush alternatives researched)
+### 2026-11-15 — Codex (location and analytics fixes implemented locally)
 
-- Verified current vendor documentation: recommend Ahrefs Free for verified-site
-  backlinks/ranking-keyword reports (1000 visible at once) and5000 monthly crawl
-  credits/project, alongside free Google Search Console for Google's own search
-  traffic/indexing/link evidence. Bing Webmaster Tools is another free option
-  for backlinks,keyword research and quota-limited Site Scan. Screaming Frog free
-  tier crawls500 URLs; not needed as an additional setup for this recommendation.
-- Ahrefs Free dashboard access does not include the direct API/MCP integration;
-  vendor says those require Lite or higher. No new service signup,verification,
-  OAuth access,purchase,installation,crawl,website edit or deployment performed.
-  No account-specific free-tool access or data coverage promised. Read-only
-  research notes committed in isolated checkout; Claude's work/index untouched.
+- Source `17447cc`: app pin/submission recovery and web submission recovery offer
+  retry/settings guidance while keeping the pin/answers/journal. Web GPS waits
+  are bounded; a partly submitted web report can retry with editing still locked.
+  Fresh GPS/50-mile checks and approved map/startup/camera timings preserved.
+- Owner dashboard now requires explicit published OS/version/build cutoffs and
+  excludes known prerelease installs across later public-build visits. Old app
+  cache/snapshot values cannot bypass the policy. iPhone fallback and Android
+  loaded timings show separately with samples. Live read-only query verified.
+  Add verified future releases to `app-release-policy.ts`; Apple30 not yet listed.
+- Web full suite1172 passed plus new snapshot regression; app663 passed/1 existing
+  skip;226-module check,typecheck,scoped lint passed. Actual web components checked
+  desktop/390px. Temporary QA route removed; native device acceptance not claimed.
+- No deploy,push,new app build,OTA,DB migration,store change or publication. Frozen
+  icon candidates4835975 unchanged. Website deployment and mobile QA/delivery
+  remain; isolate from unrelated website work. Homepage/funded shortcuts omitted.
+  Review:docs/reviews/2026-11-15-location-analytics-fixes.md. Other edits preserved.
 
-### 2026-11-15 — Codex (limited Semrush review; no product changes)
+### 2026-11-15 — Codex (analytics fixes visual preview)
 
-- Semrush connector discovery returned non-retryable no_api_units for domain,
-  organic,backlink and project reports. No report executions or retries made.
-- Read owner's existing signed-in Semrush backlink UI for litterbugs.app:
-  network graph labels Dangerous/Direct link farms; overview partially shows
-  184 text backlinks,93 follow/91 nofollow;1 new backlink found5 days ago.
-  Daily report limit blocks fuller metrics. These are link counts,not unique
-  sites or measured visits. No complete toxicity audit,source-domain breakdown,
-  keyword rankings,search-traffic estimate or site-health score verified.
-- Recommend inspecting actual referring pages before deciding whether any link
-  action is warranted; Semrush's network label does not prove a Google penalty.
-  Google disavow guidance says most sites do not need the tool. No disavow,
-  outreach,paid upgrade,new campaign,crawl,provider-setting change or deployment.
-- Notes committed only in isolated release checkout; Claude's shared files and
-  index left untouched. Current live source66f823d/redeployFym5dwu unchanged.
+- Owner requested a preview and app/website scope clarification. Created an
+  interactive conversation preview outside the repo: Web CTA/funded entry,
+  iPhone/Android funded shortcut, GPS/permission recovery, owner analytics rules
+  and platform timing labels. Existing art/photo/map evidence reused; list
+  examples and simulated recovery explicitly labelled. No invented clean totals.
+- Checked desktop and narrow mobile rendering, assets, tabs, funded list,
+  location-state changes/dismissal and admin-rule disclosure. Preview only;
+  no product source, device, analytics-provider, DB, store, build, OTA, deploy
+  or push changes. No startup-timing change proposed without clean measurement.
+  Other agents' existing edits preserved.
 
-### 2026-11-15 — Codex (owner-requested isolated website redeploy and GitHub push)
+### 2026-11-15 — Codex (analytics review and fix recommendations)
 
-- Redeployed the exact previously verified production source66f823d, using the
-  existing deployment artifact as source. New live deployment:
-  dpl_Fym5dwuZjccVLABfPDT62TkEb7Mv,
-  litterbugs-2ebn31ahk-grant-9890s-projects.vercel.app, READY and aliased to
-  litterbugs.app. Rollback: dpl_F9z1u3RoMSj71saxGCyr8qkjFJiW. No app-code change.
-- GitHub branch codex/website-recovery-20261115 contains e48e040 (website GPS
-  recovery,analytics eligibility/cache/timing and branded visible-time map
-  recovery) plus66f823d (branded saved drafts,plain copy,confirmed revision-guarded
-  deletion). Built from prior live85adaad; its report-page changes are preserved.
-- Fresh production build passed. Live map tiles loaded with no map/runtime
-  errors; account/report/admin-analytics returned200. Test browser analytics
-  declined. Prior exact-source1180 web/27 draft-sync passing tests remain valid;
-  unchanged code was not retested unnecessarily.
-- All work performed from this isolated checkout. Shared checkout's Claude
-  edits,previews,leaderboards,migration and staged Boone-page deletions were
-  neither changed,staged,committed nor deployed by this redeploy. This handoff
-  entry is committed/pushed only on our release branch to preserve that index.
-- No DB migration/provider settings/native build/OTA/store action. Earlier
-  mobile location recovery remains local pending separate mobile delivery.
+- Read live owner dashboard, PostHog695338 and one Clarity recording. Nov8–14:
+  web87/app32 tracked sessions;2 cleanups,$31 funding,3 reports,4 contributors.
+  Current backlog14,including4 funded;oldest27 days.28-day totals9 cleanups/$77.
+- App totals contain withdrawn iOS28(14 screen sessions),Android25 and other
+  prerelease activity despite production flags. Recommend release-date/build
+  eligibility plus staff-device exclusions before interpreting conversion.
+- Location failures: Android26 location_unavailable and web location_denied;
+  separate tagged QA event excluded. Recommend clearer retry/settings recovery,
+  preserve fresh-GPS/50-mile checks.5.5s map median includes intentional4s iOS
+  fallback; split timing signals/platforms before changing approved startup UX.
+- Recommend funded-cleanup discovery and clearer web map entry. Clarity11.1%
+  dead-click signal not a confirmed broken control: sampled mobile click hit a
+  homepage image. Recommendations only;no app/web/provider/DB/store changes,
+  migrations,deployment,push or publication. Existing unrelated edits preserved.
+
+### 2026-11-15 — Codex (Google27 published; Apple30 publication authorized)
+
+- Owner explicitly requested publication of both icon updates when ready.
+  Verified Google27(2.1.1) approved; publication confirmed, ready queue empty,
+  Last published November15. Managed publishing remains ON for future changes.
+- Apple30 still WAITING_FOR_REVIEW/MANUAL. Active check/release session78077
+  will request manual release for exact2.1.1(30) once approved, under this owner
+  instruction; no scheduled automation and no additional publication approval
+  needed. Earlier2.1.1 public hold superseded. No source/build/OTA/web/backend
+  changes; frozen4835975. Google screenshot and current Apple status saved
+  under artifacts/mobile-2.1.1/device-evidence. Other work preserved.
+
+### 2026-11-14 — Codex (Google27 approved; active Apple30 monitoring)
+
+- Owner requested approval monitoring and notification. Fresh Google Console
+  confirms27(2.1.1) approved/Changes ready to publish; Managed publishing ON.
+  No Publish action taken. Apple API still WAITING_FOR_REVIEW, MANUAL.
+- Continuing Apple checks in this active chat (local session73441); no scheduled
+  automation or automatic release. Neither icon update publicly released.
+  Evidence apple-approval-watch.json under mobile2.1.1/device-evidence. No app,
+  build, submission, website/backend, notification or deployment changes.
+
+### 2026-11-14 — Claude (public report pages: SEO, addresses, location, layout — deployed)
+
+- Live on litterbugs.app. Source `85adaad` on isolated release branch
+  `claude/report-pages-seo-20261114` (cut from the previous live source
+  `d142b2c`, pushed to GitHub). Production deployment
+  `dpl_6jERvD7hHf6wHekXmXt1p3ecL3K4`, built on Vercel and promoted after checks.
+  Previous deployment/rollback: `dpl_8MYNXYQc8CDo2aHCUTCgy3ATLFQT`.
+- Website only. No app changes, no database migrations, no native build. The
+  release branch deliberately excludes this checkout's unreleased work
+  (`cleanup-notifications` changes and `dev-review-preview` pages).
+- Report pages (open, completed, expired) now live at
+  `/litter-reports/<title>-<town>-<id>`. `/reports/<id>` redirects there (307) and
+  stays the address the mobile app, share links, photos and share images use; do
+  not put words into `/reports/<id>`, the published app only routes that shape.
+- Missing or non-public reports return a real 404 (checked in `proxy.ts`, one
+  small database read per report view; a failed read passes through).
+- Town and nearest street address come from OpenStreetMap Nominatim
+  (`lib/report-town-lookup.ts`), cached 90 days in the server Data Cache, one
+  request a second. Town lookups send a position rounded to ~1 km; address
+  lookups send ~10 m. Owner approved both.
+- Owner decision: report pages now show the address, coordinates and a live map
+  pin. The share dialog line "won't see the exact location" was removed.
+- Fund now shows on reports that already have funding (the page no longer treats
+  `funding_locked_at` as "cannot be funded") and on open reports outside Boone.
+- Also: head metadata for answer-engine crawlers (`htmlLimitedBots`), Article and
+  breadcrumb structured data, all photos with tap to enlarge, share dialog on
+  report pages, facts strip, timeline, nearby reports by distance, `llms.txt`,
+  sitemap with readable addresses and completion dates.
+- Checks: 1165 web tests, typecheck and lint passed on the release source. Live
+  spot checks passed for home, listings, map, admin analytics, a report page,
+  redirect, 404, photos, share image, sitemap and the app link file.
+- Pending: the same changes are committed locally on `codex/map-first-navigation`
+  but that branch is not pushed. Not done: town/ZIP listing pages, report page
+  caching, removing the loading shell for non-JS crawlers, clearer "bag/item"
+  numbers (needs the cleanup form). Cleanup time shows only when a cleaner
+  recorded it; no public report has one yet.
+- Do not undo: the `/reports/<id>` → readable-address redirect, the 307 status
+  (the address changes with title and town), or the Nominatim rate limiting.
+
+### 2026-11-14 — Codex (fresh2.1.1 approval check; neither approved)
+
+- Existing ASC API read confirms icon-only iOS2.1.1(30) still WAITING_FOR_REVIEW,
+  releaseTypeMANUAL. Google Console now says changes are in review for27(2.1.1);
+  initial quick-check countdown has gone, Managed publishing remains ON.
+  Neither approved or publicly released. Status evidence:
+  artifacts/mobile-2.1.1/device-evidence/approval-status-20261114.json.
+- Read-only store check; no release, new build/upload/submission, OTA, deploy,
+  notification or watcher. Frozen4835975 unchanged. Other changes preserved.
+
+### 2026-11-14 — Codex (approved full-logo2.1.1 builds checked and submitted)
+
+- Owner approved both full-wordmark icons and explicitly requested otherwise
+  identical apps to yesterday. Build source4835975 from frozen5e0c5fd; shared
+  source1cd2c5b. Only two icon assets plus required2.1.1 version/assertion changed.
+  658 tests pass/1 existing skip;225-module check passes;432 other source/
+  dependency files match. Actual finished iOS/Android JS bundles are byte-identical
+  to29/26; Android80 native libraries identical, manifests/config/entitlements/
+  signatures/splash images preserved apart from versions. Final icons inspected.
+- Native icon-only previews passed physical Pixel and iPhone17Pro simulator;
+  Pixel outer circle matches normal icons. Both temporary apps removed; Pixel
+  retains only Google Play26/data. Physical iPhone unavailable, no full new
+  journey acceptance claimed. Existing provider-test exclusions preserved.
+- iOS2.1.1(30) e0eb7de2 uploaded/attached; submission66f32d96-b03c-44b5-8e22-0714e05e1879
+  WAITING_FOR_REVIEW, MANUAL. Android27 build495a8fd6 uploaded via native picker
+  after generic first-upload failure; draft6 contains27 only, zero blockers/
+  device loss, existing optional deobfuscation warning. Changes in review with
+  quick checks continuing; Managed publishing ON. Store metadata/privacy/screens
+  retained; notes mention icon only. Neither update public;2.1.0 stays live.
+- Pending store checks/reviews and later owner public-release instruction. No
+  OTA, backend/website deploy, notification, GitHub push or automatic watcher.
+  Evidence artifacts/mobile-2.1.1; docs/reviews/2026-11-14-icon-only-release.md.
+  All other Claude/web changes and pre-existing handoff additions preserved.
+
+### 2026-11-14 — Codex (full-logo iPhone and Pixel appearance previews)
+
+- Owner requested icons before proceeding. Used the exact existing white
+  Google Play listing artwork from release-assets/google-play/
+  2026-10-30-refresh/v12/listing-assets/litterbugs-icon-white-512.png;
+  preserved all lettering/colors/bugs. Rendered rounded-square iPhone and
+  circular Pixel previews, enlarged and at60/56 CSS-pixel home-screen sizes.
+- Visually checked all four logo instances render with no clipped bugs. HTML,
+  PNG and reference note saved outside repo in current conversation visualization
+  root as litterbugs-full-logo-icon-preview.* and litterbugs-icon-preview-reference.txt.
+  These are appearance mockups, not native build/device acceptance. No app asset,
+  config, phone, OTA, build, upload or store changes. Owner selection pending;
+  final native icon resources still need implementation/verification if approved.
+
+### 2026-11-14 — Codex (consolidated maintenance-release advice)
+
+- Owner wants to avoid repeated store updates. Recommended one coordinated
+  maintenance release with full-wordmark icons for both platforms, a focused
+  check of native branding/configuration, and owner's preview of actual
+  installed candidate icons before submission. Existing apps can remain live
+  during preparation; group other confirmed fixes before freezing candidates.
+- Future eligible screen/text/logic fixes can use existing Expo OTA; native
+  changes still require store releases. Checked Apple alternate-icon docs:
+  alternate artwork must be included in the binary, so icon-switching support
+  would not remove that limit. Advice only; no source edits, build, OTA,
+  upload, store submission/publication or deployment. Other work preserved.
+
+### 2026-11-14 — Codex (full-logo OTA feasibility checked)
+
+- Current Expo documentation confirms launcher icons are native resources
+  requiring a new binary/store release; OTA updates cover JavaScript/assets.
+  Inspected actual Apple29 Info.plist: no alternate icons (iPhone/iPad).
+  Installed Play26 AndroidManifest contains zero activity aliases; project
+  has no alternate-icon switching dependency/implementation. Full-wordmark
+  installed icons therefore need new store builds for each targeted platform.
+- Advice/read-only verification only; no product edits, OTA, build, upload,
+  submission or publication. Sources: expo.dev/articles/updates-and-rollouts/
+  over-the-air-updates and docs.expo.dev/develop/user-interface/
+  splash-screen-and-app-icon/. Other pending work preserved.
+
+### 2026-11-14 — Codex (Pixel Play listing logo distinction observed)
+
+- Read-only Pixel screenshot shows Google Play listing uses the full black
+  Litter Bugs wordmark with colored bugs, distinct from submitted Apple29's
+  standalone ladybug and installed Android26's adaptive placeholder. Clarified
+  separate store-listing and installed-app artwork; previous "correct" label
+  for Apple ladybug was an assumption about owner's intended logo. No phone,
+  source, artwork, store or deployment changes. Screenshot in /tmp only.
+
+### 2026-11-14 — Codex (icon history traced; Apple29 artwork verified)
+
+- Android adaptive placeholder bytes and configuration are unchanged from
+  initial commit b5888f0 (January2) through frozen release5e0c5fd; August move
+  only relocated the asset. No evidence of a recent logo replacement in this
+  repository. Explained separate Android override and missed release check.
+- Extracted primary AppIcon60x60@2x from actual submitted iOS2.1.0(29) IPA;
+  visually verified correct red/black ladybug on white with green corners.
+  Bundle/version29 confirmed and matched existing Apple release evidence.
+  Apple build does not share Android placeholder defect. No product edits,
+  new build, store mutation or deployment; Android correction remains pending.
+
+### 2026-11-14 — Codex (Pixel duplicate removed; Android icon defect diagnosed)
+
+- Owner requested removal of older Litterbugs copies from the physical Pixel5.
+  Verified Google Play installer for com.litterbugs.app, version2.1.0/code26;
+  uninstalled only com.litterbugs.app.qa successfully. Recheck confirms only
+  the Play package remains, with its original installation/data preserved.
+  The unrelated Business Profile WebAPK was inspected and retained.
+- Owner reported incorrect launcher artwork. Extracted installed Play26 APK
+  confirms adaptive launcher foreground is the grid/circles placeholder from
+  assets/adaptive-icon.png; app.json points Android there while the general
+  icon setting points to the ladybug assets/icon.png. Explained modern Android
+  downloads inherit this release defect; correcting it requires a new Android
+  binary/update. No source/icon/store changes or new build/deployment. Icon
+  correction and any replacement release remain pending. Other work preserved.
+
+### 2026-11-14 — Codex (Apple29 released; update behavior explained)
+
+- Existing ASC API credentials verified2.1.0(29) approved/PENDING_DEVELOPER_RELEASE.
+  Owner had already requested publication of both stores. Manual release request
+  accepted; API now lists live2.1.0(29) READY_FOR_DISTRIBUTION,no pending/in-review
+  version. Android26 already published. Evidence apple29-released-20261114.json.
+- No new binary/code,OTA,website/backend deployment or push. Frozen5e0c5fd.
+  Store propagation can vary. Old app has no store-update popup; explained
+  automatic store updates/manual Update. No announcement notification sent.
+
+### 2026-11-14 — Codex (Android26 published; Apple29 still waiting)
+
+- Fresh Console showed Google26(2.1.0)+Data safety approved/ready. Owner then
+  explicitly requested publication. Publish changes confirmed; Last published
+  November14 and ready queue empty. Managed publishing staysON. Google says
+  usual propagation≤1hour; universal availability not independently verified.
+- Existing ASC API credentials verified2.1.0 attached29 WAITING_FOR_REVIEW,
+  releaseTypeMANUAL; live2.0.1(24).29 TestFlightVALID/internal testing is not
+  store approval. Apple release pending approval; no setting/release mutation.
+- Frozen app source5e0c5fd unchanged. No new build,OTA,website/backend deploy,
+  GitHub push or scheduled watcher. Evidence release-status-20261114.json and
+  google26-publishing-20261114.png under mobile2.1 device-evidence.
+
+### 2026-11-13 — Codex (full refreshed2.1.0 app rebuilt and resubmitted)
+
+- Frozen source5e0c5fdd1637ace4e50b044d56ff3e9d82870ab5 includes all latest
+  approved styles/maps/cards/compact-text fixes. Cloud builds FINISHED:iOS29
+  12ef6048-cb30-49a5-badc-103d4d2103bb;Android26
+  813e0ecf-f422-4a9d-bd6d-dbd8d927e65b. Original artifacts/signatures/version/
+  production analytics verified;Android cert matches25,min24/target36.
+- Withdrew Apple28;29 now Waiting for Review under submission
+  dd3d93ce-b697-44e7-9bbd-2534e11ddb8f. Manual release retained.29 has Luke's
+  existing Burrow Bros group;testing/review notes updated for full redesign.
+- Google25 reached approval during withdrawal but was held from publication;
+  removed/discarded. New draft5 contains26 only;26+retained Data safety now
+  Changes in review,quick checks continuing,Managed publishing ON. No blocking
+  errors/zero device loss;existing optional deobfuscation warning.
+- No public release,OTA,website/backend deploy or GitHub push. Store approvals/
+  actual review feedback and owner public-release instruction remain. Evidence
+  under artifacts/mobile-2.1.0/device-evidence;current candidates/readiness updated.
+
+### 2026-11-13 — Codex (multi-size mobile audit; local responsive fixes)
+
+- Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` keeps compact map pins, card grabber/X and
+  all tutorial Next/Skip controls clear;150% text gets the existing enlarged
+  Report Litter layout. Header drag now dismisses after content scroll. Normal
+  styling and approved iOS/Android motion timings preserved.658 tests pass/1
+  skip; scoped lint and225-module source check pass.
+- Native UI checks: iPhone6s375×667 (current local JS in isolated27 QA shell),
+  iPhone17Pro simulator402×874/default+larger text, Pixel5 virtual displays
+  320×568/default+150%,360×640,412×915. Both phones passed scrolled grabber
+  dismissal. Pixel display/font and simulator text restored; simulator left
+  open. Existing draft preserved; no live publishing/payment/claim test.
+- Evidence: local artifacts/mobile-2.1.0/device-evidence/screen-size-audit.
+  Owner paused rebuild/replacement submissions for size review: no earlier
+  review canceled, new store binary/upload/submission, OTA/deploy or push.
+  Both refreshed store artifacts/checks pending; public release stays manual.
+
+### 2026-11-13 — Codex (local link outreach approach researched)
+
+- Advice/research only;no outreach, forms, partner enrollment, spending or
+  live changes. Recommend one useful ask per prospect:existing Boone resource
+  link, public volunteer/event listing, or editorial cleanup coverage. Businesses
+  can participate in a real cleanup and choose to publish a linked recap.
+- Verified primary routes:App State CEL partner/community pages list
+  cel@appstate.edu for service newsletter requests and jamesba@appstate.edu
+  for volunteer requests (~6 weeks ahead). Formal database targets nonprofits;
+  Litterbugs eligibility unconfirmed. Sources:cel.appstate.edu/community-partners/
+  and /community-partners/partner-with-us/.
+- High Country Press hcpress.com/about-us lists info@highcountrypress.com
+  for calendar/general submissions. Watauga Democrat site/contact.html lists
+  editor Moss Brennan,moss.brennan@wataugademocrat.com;official forms directory
+  includes photo/news-release submissions. Boone Area Chamber correct domain
+  boonechamber.com/contact-us (828-264-2225);excluded unrelated Boone County
+  boonechamber.org result and made no membership/free-placement claim.
+- MountainTrue current site links volunteer opportunities and partnership
+  routes;existing directory entry is not an affiliation. Proposed small
+  personalized batch,existing page URL,original photos/credits,dates,clear
+  request for public website link;one follow-up. No ranking/link guarantees,
+  fabricated partner claims or paid-link arrangement. Prior work preserved.
+
+### 2026-11-13 — Codex (nine external-link sources identified)
+
+- GSC drilldowns identify5 AppAgg copies of the Android listing (cs/fr/hu/it/pl)
+  plus4 Chrome-Stats pages:one /a/ listing and app copies fr/ko/zh-CN. All
+  resolve in GSC to homepage;AppAgg adds referral parameters. Nine recorded
+  pages across two domains, mostly translated app listings. Exact URLs added
+  to live-seo-gap-audit.json. Two source-page web reads inaccessible;current
+  link presence not independently confirmed. No outreach/settings/site/deploy
+  changes;existing work preserved.
+
+### 2026-11-13 — Codex (live SEO gaps audited; earlier story proposal corrected)
+
+- Read-only sitemap health:49/49 HTTP200. Linked crawl100 URLs/180 discovered,
+  capped, JS off. Independently parsed live homepage/Boone/About/Beacon pages
+  to reject false Please wait thin-content counts and streamed-metadata noise.
+  GSC UI reports59 indexed/13 excluded as of Nov8;2 crawled-not-indexed are
+  images,1 discovered-only is old unavailable report outside current sitemap.
+  That old report currently streams200 with Report unavailable/noindex.
+- Fresh focused Google snapshots:homepage, report/clean/fund guides, cleanups,
+  Winkler, Beacon and Boone all indexed. Full sitemap monitor timed out at
+  300s; no complete49-URL indexing claim. Winkler still last crawled Nov6.
+- Actual priorities:GSC Links sample9 external links from AppAgg5/ChromeStats4,
+  all homepage;seek genuine relevant references to existing hub/report pages.
+ 11/31 sitemap report titles lack generated locality outside Boone;Beacon body
+  lacks town/state. Add only verified broad locality. Homepage has zero direct
+  Boone-hub anchors;add contextual link.22 long report-title review candidates;
+  shorten search text while preserving original report titles. No new duplicate
+  story page. Existing guides/local resources/photos/stories/schema retained.
+- Evidence:docs/reviews/2026-11-13-live-seo-gap-audit.json. Semrush insufficient
+  API units;live SERP provider unavailable;no demand/ranking forecasts. GSC
+  Core Web Vitals lacks field data. No site edits/settings/index requests,
+  outreach/deploy/push/database/store changes;HTTP/local reads did not execute
+  visitor analytics. All other Claude/mobile/preview edits preserved.
+
+### 2026-11-13 — Codex (local cleanup story preview)
+
+- Owner requested a concrete preview of a shareable cleanup story. Created
+  conversation-only draft at thread visualization root/boone-cleanup-story.html
+  with story/post tabs and real public Winkler Cemetery report photos/details
+  (ea46b81e-7000-4f5f-82af-64a6c624e040):reported Nov5, completed Nov8 by
+  Nevan, reporter James Luke Barber;3 bags/items and100 lb labeled cleaner
+  recorded. Photos show original litter and collected bags, not matched views.
+- Reference lock: existing Litterbugs rounded sans/purple, owner mint CTA;
+  Airbnb.org photo-first story hierarchy, Clipdrop input/result pairing.
+  No fabricated quotations or impact metrics. Desktop render and390px mobile
+  inspection completed; photo sizing corrected, no horizontal overflow, both
+  tabs work and all embedded photos load. Preview and assets outside repo.
+- No live page/publication/social post/outreach/deploy/push/database/store
+  changes. HTTP-only public evidence; local browser QA generated no visitor
+  traffic. Existing Claude/mobile/preview edits preserved.
+
+### 2026-11-13 — Codex (organic search growth priorities)
+
+- Read-only fresh query export Aug13–Nov10 retains7 query rows/35 impressions,
+  including litterbugs25 and unrelated game/meaning/TV terms; hidden queries
+  prevent a complete intent diagnosis. Evidence at
+  /tmp/litterbugs-gsc-query-growth-2026-11-13.json.
+- Network SEO audits of homepage and Boone hub:200, robots allowed, single
+  matching canonicals, zero tool-reported issues; two-page scope only. Existing
+  Boone hub already has resources/results; reporting, funding and cleaner
+  guides exist. Recommended improve those existing pages, original local
+  cleanup evidence, genuine participant/organization links, then expand hubs
+  where real activity supports them. Candidate search phrases are proposals,
+  not measured keyword-volume evidence. Track nonbrand impressions and useful
+  participation over28-day periods; no ranking forecast.
+- Advice only: no product edits, outreach, index submissions, database/store
+  changes, deployments or push. HTTP/API checks generated no browser visitor
+  traffic. Existing Claude/mobile/preview work preserved.
+
+### 2026-11-13 — Codex (Search Console graph explained)
+
+- Read-only fresh GSC API check matches owner's screenshot:14 clicks,131
+  impressions,10.7% CTR,14.4 weighted position. Final daily rows cover
+  Aug13–Nov10;42 of90 days have zero impressions and78 have zero clicks.
+  Requested Nov11–12 final rows were unavailable, not assumed zero. Sparse
+  volume explains jagged clicks/impressions and gaps in recorded position;
+  no reporting mismatch established. Recommended weekly clicks/impressions
+  and equal28-day comparisons; GSC covers Google Search, not all visitors.
+- Prior Nov11 inspection evidence showed four pending pages newly indexed;
+  no new indexing-health claim or submissions. API-only, no visitor traffic,
+  code/settings/database/store/build/deploy/push changes. Raw evidence:
+  /tmp/litterbugs-gsc-reading-2026-11-13.json. Existing work preserved.
+
+### 2026-11-13 — Codex (removed test-only welcome replay link)
+
+- Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile “Replay the welcome (test builds only)” row/comment from the shared iPhone/Android screen. It was already guarded by __DEV__ and absent from store builds; it is now absent from test builds too. “How Litterbugs works,” normal first-launch welcome and map tour remain unchanged. No map/animation/style changes.
+-8 existing onboarding/discovery-memory tests, Profile lint and225-module source check pass. Two-line source removal applies to both platforms; no additional native UI verification claimed. Local only: no build/upload/resubmission/public release/OTA/deploy/push. Existing manual public-release holds retained; submitted28/25 unchanged. Other work preserved.
+
+### 2026-11-13 — Codex (smooth Android map-card entry and exit)
+
+- Source `00e95d84d295d38964da02072cf149a22aa12cce`: Android floating previews wait for native card layout and translate by measured card height + bottom clearance/shadow, instead of a full screen. Native transform360ms up/280ms down with eased endpoints and hardware texture; retain card until exit completes. Content relayout cannot restart entry; quick reopen reverses from current position; stale exit cannot clear new selection. iPhone retains original240/180ms transition and distance; pins/maps otherwise untouched.
+-648 mobile tests pass/1 existing skip, scoped production lint and225-module source check pass. Physical Pixel QA open/close recordings show continuous movement; owner confirmed “Yes, both directions feel smooth.” Gesture/short-screen/scroll/action/reduced-motion tests pass, with explicit iPhone timing preservation. Evidence android-card-smooth.json/open+close MP4 and frame sheets in local device-evidence. Single existing Metro/mirror; free memory46% during check.
+- Local only, no native build/upload/store review changes/public release/OTA/deploy/push. iPhone simulator stays open, existing manual release holds retained. Submitted iOS28/Android25 still need refresh to include local follow-ups; no iOS rebuild/resubmission during Android pass. Other Claude/dashboard/preview work preserved.
+
+### 2026-11-13 — Codex (Android map steady; drop starts on rediscovery)
+
+- Source `419f6377c1f912e27098df37948882ada3c59f6e`: Android-only clustered map adapter lets Google Maps own gestures; native settled regions update app state without being sent back as camera moves. External search/location requests still animate, duplicate Android camera commands removed, automatic native marker centering disabled. iPhone uses the original clustered map component/configuration.
+- Android replay opt-in hides pins offscreen, sends a fresh native drop on return and starts during movement (next scheduled frame), rather than waiting for camera settling. Owner clarified startup delay, so native520ms fall/60ms stagger/100ms first-image readiness are unchanged. Shared hook default/iPhone branch preserved; approved PinLanding/cards/MapPin/framing hashes match.
+-642 mobile tests pass/1 existing skip; scoped production lint and225-module source check pass. Physical Pixel QA reload verified new module; search, cluster zoom, pan away/return and identical idle map crop recorded. Owner confirmed prompt start and stable map: “Yes, both feel right.” Evidence android-map-rediscovery.json/mp4 in local device-evidence. Single low-resource mirror/Metro retained; memory36%, iPhone simulator open.
+- Local only. No native build, store upload/submission/review change, public release, OTA, deploy or GitHub push; submitted iOS28/Android25 remain unchanged and lack this/local shared-card follow-ups. Future candidate refresh remains pending; no iOS build authorized in this Android pass. Other Claude/dashboard/preview work preserved.
+
+### 2026-11-13 — Codex (large report controls; Hide removed on both phones)
+
+- Sourcef37328aee983c15e165d8456bb22eef8b23fe980: detail-toolbar heart/share20→32-point glyphs,52-point targets, spaced into removed Hide slot. Back label stays clear. Removed Hide action from detail toolbar and report list menus; existing hidden items can still Restore, with saved preferences/filtering preserved and no DB writes.
+-9 existing focused tests, scoped lint and224-module source check pass. Native simulator visual/AX check confirms large favorite/share and no Hide; screenshot large-report-toolbar.png. Shared iPhone/Android implementation; no physical Android claim. Local only, both release candidates still need refresh before public release. No builds, uploads, review changes, OTA, deploy or push; manual public release and completed privacy retained. Other work preserved.
+
+### 2026-11-13 — Codex (faster iPhone pins; swipe-down cards on both phones)
+
+- Source06fcdef4e95e3eabdb431af6fb099d241f6d73ac, local only. iPhone floating drops280ms/stagger25; Android native520/60 timing unchanged. Both platforms' map previews enter from bottom240ms/exit180ms, swipe down from content top to close, retain normal scrolling/actions and honor reduced motion. Fixed close44×44 stays reachable on short phones. Prior225a0be re-entry fix retained.
+- Owner refined header after Refero research: continuous photo/card edge,36-point rail,3-point gray grabber,18-point X vertically centered, gray circle removed per final instruction.634 mobile tests pass/1 existing skip;22 focused checks, component lint and224-module source check pass. CUA verified X dismissal and final appearance; owner confirmed swipe closes cleanly. No physical Android claim. Evidence report-card-final.png/map-preview-motion-local.json; memory35%, no new native worker/simulator.
+- Both submitted iOS28 and Android25 now need refreshed builds to include shared card changes before public release; supersedes earlier iOS-only refresh note. Existing reviews/manual release and completed Apple privacy unchanged. No build/upload/OTA/deploy/GitHub push. Other Claude/dashboard/preview changes preserved.
+
+### 2026-11-13 — Codex (iPhone re-entry drop fixed locally; new iOS build pending)
+
+- Owner explicitly requested iPhone-only map change. Source225a0bec528424fa241b81624961b77a9ea96db5: iPhone floating-landings hide resting pins as they leave view and clear visibility so returning pins drop into an empty spot, even during one continuous swipe. Stale handover timer cannot cut short the new drop. Android inPlace=true path/marker files unchanged; Android drop-identity regression passes.
+-6 hook regressions/12 focused tests pass, hook lint and224-module source check pass. Remote simulator drag did not move map; owner manually swiped and confirmed the empty-spot full drop. Quick-return timer guard verified by test. No automated native gesture/physical Android result claimed. Metro retained; no new native worker/simulator, free memory38%.
+- Local only: submitted iOS28 lacks this follow-up and needs a refreshed iOS build before public release. Android25 and both review submissions unchanged; Apple privacy19 remains complete/manual public release. No build/upload/OTA/deploy/GitHub push. Updated current candidates/readiness/evidence; preserved other Claude/dashboard/preview work.
+
+### 2026-11-13 — Codex (platform-specific map work guidance)
+
+- Owner asked how to work on Android maps without changing iPhone. Read-only source check: MapScreen/styles/MapPin/mapFraming remain shared; AndroidStillMarker and PinLanding already separate native marker/landing behavior. Recommended keeping shared report/business logic, isolating Android/iOS rendering/config only where needed, scoping small changes with Platform.OS and checking both platforms after shared edits. No cause or fix for the unspecified reported regression claimed. No code/build/store/OTA changes; uploaded review binaries remain frozen.
+
+### 2026-11-13 — Codex (simulator versus submitted app clarified)
+
+- Read-only comparison: no committed or uncommitted apps/mobile differences between frozen7e4275b store source and current mobile workspace. Existing Metro8081 serves that workspace, development client/one worker, analytics explicitly false; submitted originals use production analytics true. Same implemented mobile UI/styles, different development/production configuration and native shell. No claim of identical pixels, account state or simulator-native binaries. No code/store/phone/deployment changes.
+
+### 2026-11-13 — Codex (Stripe support updates checked)
+
+- Original case `sco_VJarfjNbi0QKE3`: Stacy acknowledged our answers November6;
+  latest November13 follow-up says internal review continues, no final guidance.
+  No new information requested in that reply. Case remains open.
+- Pricing case `sco_VZJHsoGY2oq3z3`: Ellah’s November5 reply says Express/Custom
+  volume discount analysis generally requires net$150k/month for3 calendar
+  months; discounts not guaranteed. Case closed November5. No reply sent,
+  settings changed, financial action or deployment made.
+
+### 2026-11-13 — Codex (Apple2.1 privacy complete; public release manual)
+
+- Owner explicitly requested completing Apple privacy details now. Published six remaining types (Phone Number, Physical Address, Other Data Types; Crash/Performance/Other Diagnostic Data) with prepared purposes/linkage/no tracking, plus Analytics for Coarse Location. Existing13 declarations preserved. Reload verified19 types, zero Set Up items and published timestamp. This supersedes earlier pending-label handoffs; Apple privacy no longer remains for launch.
+-3:18PM ET readback:2.1.0(28) still Waiting for Review, Manually release selected, automatic options0. No app public release, review resubmission, provider changes, code/build/deploy/push/OTA. Evidence in device-evidence/apple-privacy-210-completion.json and matching screenshot/AX snapshots. Current candidates/readiness/store handoff/AGENTS updated. Remaining: store approvals/actual review feedback and owner’s explicit manual public-release instruction. Other dashboard/Claude changes preserved.
+
+### 2026-11-13 — Codex (release checklist status readback)
+
+- Read-only store check for owner's remaining-release question: Apple2.1.0(28) still Waiting for Review; Google25/Data safety explicitly in review, managed publishing ON. Luke's internal access remains configured. Remaining launch work: approvals/actual review feedback, prepared Apple2.1 privacy-label additions, then explicit owner instruction for manual public release. No store settings, code, build, upload, deploy or submission changes in this check.
+
+### 2026-11-13 — Codex (Luke TestFlight access; Google checks finished)
+
+- Owner asked to ensure Luke can test28 and both stores are submitted. Added existing Account Holder james barber (jameslukeb@yahoo.com) to existing Burrow Bros internal group;1 tester added confirmed, now2 testers. Group Builds shows2.1.0(28) Testing. Existing prior install2.0.0(18);28 installation not claimed. No account/role/security credential changes.
+-3:08PM ET readback: Apple28 remains Waiting for Review; Google quick checks finished and overview explicitly says Your changes are now in review for Production25/Data safety. No duplicate submissions or public release. Manual Apple release/Google managed publishing preserved. Evidence/readiness/current candidates updated; no code/build/deployment/push/OTA changes. Remaining Apple2.1 label additions stay for authorized manual public release.
+
+### 2026-11-13 — Codex (pin fixed; both2.1 apps submitted, public release manual)
+
+- Owner authorized upload and review submission with manual public release. Fixed selected-pin framing30%→22% (eaa461a); Metro restart restored the existing ladybug artwork. Two focused tests and repeated simulator selection passed. Frozen release7e4275b contains only that helper change over acceptedc34f569; refreshed signed iOS28 / Android25 built successfully, signatures/config verified. Original hashes/evidence are in current candidates/readiness records;27/24 superseded.
+- Apple28 upload finished, attached and submitted2:52PM ET:2abda04e-5782-41bf-99ed-d2005198cc12 visibly Waiting for Review. Manual release remains selected. Google25 and Data safety submitted2:55PM ET, visibly Changes in review with quick checks still running; managed publishing ON. No public mobile release, OTA, backend deploy or GitHub push. Native file picker succeeded after the browser chooser's generic upload failure.
+- Corrected Apple's current2.0.1 privacy baseline to13 complete linked/no-tracking categories. Apple publishes label edits immediately; six additional2.1 categories plus Coarse Location Analytics remain prepared for manual public release, not a saved label draft. Full new collection disclosed in private review notes/published policy. Google saved and submitted Address/Phone/Other info for embedded Stripe onboarding, preserving SDK analytics declarations. See store privacy handoff.
+- Dedicated reviewer login preserved; no credentials printed/extracted. Dashboard chat informed both apps remain unreleased. Existing dashboard/Claude/preview changes preserved. Memory42% available; cloud builds avoided new local native workers. Metro8081 retained with768MB heap/one worker/analytics disabled for current simulator assets. Before public release: approvals/actual feedback, final Apple2.1 labels, then explicit owner release instruction.
 
 ### 2026-11-13 — Codex (owner analytics dashboard deployed)
 
@@ -1310,32 +3891,421 @@ They cannot talk to each other directly. This file is how they share context.
   private aggregate-only storage.
 
 
-### 2026-11-13 — Codex (owner analytics website release candidate)
+### 2026-11-13 — Codex (review-account exclusions and date-boundary correction)
 
-- Owner approved live dashboard/GitHub; isolated `codex/website-analytics-20261113`
-  starts at live `5c32ab8` and imports only dashboard sources. No new native files,
-  app build, mobile update or store publication. Root history is not pushed.
-- Added hosted Google read-only OAuth refresh, admin/MFA aggregate business RPC,
-  and shared Clarity quota/cache. Credentials are sensitive production Vercel envs;
-  no service-role/SQL credential added. Existing local adapters stay development-only.
-- 86 focused tests, web typecheck and scoped lint passed. Rollback-only SQL admin/
-  quota checks passed. Production migration and staged deployment/promotion are next;
-  final deployment/commit evidence will follow. Migration filename:
-  `20261113191709_owner_analytics_hosted_connections.sql`.
+- Source `6a071c5494656d940d6305f00b64b34a0acfcea6`, local only. Business aggregates
+  exclude server-marked review accounts as report authors, cleaners, funders and
+  contributors, plus fixtures on their reports. Verified the new Apple review
+  account's flag and zero business rows. No identity sent to analytics.
+- Read-only CTE fixtures exposed implicit DATE AT TIME ZONE selecting timestamp
+  without time zone. Explicit casts now produce true NY-midnight timestamptz
+  bounds, including prior periods. Correct7-day funding is$37 versus$47: the old
+  cutoff included two Nov5 payments totaling$10 outside Nov6–12. Counts6 reports /
+  4 completed cleanups and28-day funding$77 remain. No payment record changed.
+- New manual regression `node scripts/check-owner-analytics-business.mjs --linked`
+  (or --local) uses CTE-only fake rows: both periods pass reviewer/parent exclusion,
+  user-metadata spoof resistance, real refunds, late-night/boundary funding and
+  daily reconciliation. Actual aggregate query passes;9 focused adapter tests,
+  script syntax and diff checks pass. No DB migration/writes, deploy or push.
+- App release flags and production/test telemetry filters unchanged; app/combined
+  visits remain unknown pending release. Other native/preview/Claude work preserved.
 
+### 2026-11-13 — Codex (dedicated reviewer login saved; Pixel remote push passed)
 
-### 2026-11-12 — Codex (approved website recording analytics release candidate)
+- Owner explicitly approved creating/saving a dedicated review login. Created standard member app-review-210@litterbugs.app, UUID3f455759-11f0-4387-bf0f-244e7852038e, server app_metadata.review_account=true, email confirmed and zero admin memberships. Production Auth password sign-in and own-profile read passed; verification sessions globally signed out. Apple2.1 draft has Sign-in required enabled, credentials saved and updated access instructions; reload confirmed masked fields/disabled Save. Local plaintext secret removed; no password in repo/logs or dashboard message. Personal Apple identity untouched. Native full-flow login with this account is not claimed.
+- Owner then made Pixel available again after earlier skip. Disposable com.litterbugs.pqa reused95 unchanged native/dex/resource/service entries from2.1(24) acceptance APK, with only package/config/signing/push-only JS changes. Expo token request explicitly mapped app ID com.litterbugs.app to existing production FCM credentials. A labeled remote test arrived in background; Expo ticket01a1d64b-b70f-735d-804f-8fd26550f519 and FCM receipt ok. Tap reopened test copy; actual app helper returned App > Map/showNearby for nearby_reports_daily. This is transport/tap-helper proof, not production queue/full navigator/iOS production APNs acceptance.
+- Test copy uninstalled; original installed apps/data retained. Temporary APKs/bundle/source/token/phone XML/private UI dumps removed. No app DB push registration or real business events. Evidence in artifacts/mobile-2.1.0/device-evidence; readiness/store/candidate notes updated. Dashboard chat received reviewer UUID/marker for exclusions only, no password. Memory remained51–59% available; final52%, disk5.0GiB. No new simulator/native build or lingering test worker.
+- Apple remains Prepare for Submission, manual release, no build upload/attachment and no Add for Review action. Privacy-label publication remains for actual release; no provider setting, migration, deploy, GitHub push or OTA. Existing unrelated dashboard/Claude/preview edits preserved.
 
-- Owner authorized website analytics deployment/GitHub push and excluded Claude's
-  native work. Clean release branch codex/website-analytics-release-20261112 is
-  based on prior production e5411e2 plus its documentation-only closure cdf50db.
-  Imported only6 tested website source/test files and the event guide from a24f6a8.
-  Native files, lockfiles/dependencies, extra local previews and fee pages unchanged.
-- Adds safe Clarity map/cleanup markers, provider-isolated bounded delivery,
-  chronological early-event buffering and immediate critical PostHog signals.
-  Workflow version v9. Website dashboard remains in PostHog2346165, not /admin.
-- Verification and staged production build/promotion pending. Prior production
-  dpl_7ybf24ASXLanJNFKCqq6FtyWMyCn is the rollback target. No DB migrations.
+### 2026-11-13 — Codex (automatic owner dashboard connections, local only)
+
+- Source `6cb5cfc0c2a7ecaba34a0c31e643ceec7707a2ee`. GA/GSC, PostHog web/app and
+  Clarity now use live private reads locally; all five adapters plus business
+  totals passed actual7/28-day reads. Existing layout retained. Visible page
+  refreshes every5minutes; successful GA/GSC/PostHog reads cache15minutes,
+  business5minutes, Clarity6hours with persistent local request/failure budget.
+- New project695338 query:read key and project z60itnrbpn export token stored only
+  in ignored0600 local settings. Google uses the existing read-only OAuth SDK in
+  a bounded child process; credentials stay in its store and access tokens stay
+  in the child. Temporary service-account route was blocked by org policy,
+  then its grants/binding/account were cleaned up; no security policy weakened
+  or key created. Reporting/IAM APIs enabled; no capture/privacy settings changed.
+- Corrected Clarity denominator semantics: sessionsCount is the examined total,
+  not affected sessions. Dashboard uses API signal percentages. Missing/error
+  results stay unknown; failed provider reads do not poison the15-minute cache.
+-77 focused tests, types, scoped lint, script/diff checks pass. Real browser
+ 7/28 views and app awaiting release checked, private signed-out gate verified.
+  Evidence under ignored output/owner-analytics and apps/web/.analytics-local.
+- No dashboard deployment, GitHub push, mobile edits or database writes. Latest
+  app still unreleased; QA/emulator exclusions and unknown app/combined visits
+  retained. Production publication still needs hosted Google/business credentials
+  and persistent hosted Clarity ingestion. Local server is running on3000.
+
+### 2026-11-13 — Codex (Apple2.1.0 draft saved; phone testing skipped)
+
+- Luke accepted Apple's Developer agreement; refreshed App Store Connect cleared the block. Created2.1.0 in Prepare for Submission for existing app6757313862. Saved short release notes, updated2.1/build27 review instructions, litterbugs.app/support and marketing URL. Saved litterbugs.app/privacy for the next version; URL dialog explicitly releases it with that version. Reload verified saved fields and manual release. No build attached/uploaded and Add for Review not clicked.
+- Existing listing assets present: seven inherited iPhone thumbnails plus three iPad screenshots. No screenshot upload or artwork change. Proof: artifacts/mobile-2.1.0/apple-2.1.0-draft-20261113.jpg and apple-privacy-url-20261113.jpg. Privacy data-type wizard still ends in immediate Publish even with version draft; canceled inspection, no label published/draft saved. Prepared16-type inventory remains local for release. Guest review notes inherited with sign-in-required unchecked and no demo credentials; full reviewer access must be verified before eventual submission.
+- Owner skipped further phone testing. Remote-push harness export completed with one worker/768MB heap but never installed, sent no push or registered a token; temporary source and unused APK/bundle copies removed. Phones/original artifacts untouched. Existing older simulator showed host keychain error and was not used as2.1 evidence. Memory readings53/57/41% free; disk6.1/5.9GiB before final cleanup. No new simulator/native build or lingering test worker. Dashboard excluded from this app pass; unrelated edits preserved. No deployment, GitHub push, OTA or store upload/submission.
+
+### 2026-11-13 — Codex (Luke emailed; local release copy prepared)
+
+- At Grant's explicit request, sent the approved “Apple Developer agreement update” email from gegibson@icloud.com to jameslukeb.evj@gmail.com. Apple Mail Sent confirmed the subject/recipient today at1:40pm ET; no claim of delivered/read/accepted. Apple account-holder agreement remains pending.
+- Prepared `release-assets/mobile-2.1.0-release-notes.md`: short public notes, exact candidate references, review checklist and clear separation of completed native checks versus additional live server-push/identity checks. Sent the authorized dashboard chat an update; its live read connections can proceed independently, with app/combined visits unknown until release.
+- Mail controls briefly failed with disk nearly full; removed only regenerable inactive `apps/web/.next/cache/turbopack`, preserving active dev cache/source/release artifacts. Free space recovered to933MiB. No code/settings/deployment/push/store upload or submission changes; unrelated work preserved.
+
+### 2026-11-13 — Codex (Apple admin access verified; agreement blocks version draft)
+
+- Owner authorized applying Apple privacy answers and completed sign-in. Grant Gibson admin access works for Litterbugs6757313862 under James Luke Barber; current iOS2.0.1/build24 is Ready for Distribution. This updates store-access scope only; Apple revocation/FB exclusions remain unchanged.
+- Add iOS App is blocked by Apple's updated Developer Program License Agreement, which must be accepted by Account Holder James Luke Barber. No agreement accepted, version created, build uploaded or review submitted. Evidence: `artifacts/mobile-2.1.0/apple-agreement-blocker-20261113.jpg`.
+- Current privacy label has four unlinked functional types and an old GitHub policy URL. Prepared/reconciled16-type2.1 inventory against actual native manifests and account-linked flows; recorded in store handoff. Current UI ends in Publish, not Save Draft. Temporary category selections discarded; reload verified original label/URL. No saved draft or published answer claimed. After account-holder agreement: create2.1 draft, update policy URL to litterbugs.app/privacy, enter reviewed answers and coordinate public analytics declarations with actual release per Apple's current-version rule.
+- Updated AGENTS/readiness/candidate/store notes only. Existing production candidates and checks unchanged; no deployment, GitHub push, mobile OTA or store submission. Unrelated Claude/dashboard/preview changes preserved.
+
+### 2026-11-13 — Codex (app/dashboard connection status checked)
+
+- Read final release-readiness evidence: PostHog event/replay/privacy and saved
+  opt-out verification complete; production build27/24 symbol uploads match.
+  Latest app remains unreleased, QA excluded; no production crash occurrence
+  claimed. Clarity remains website-only.
+- Checked local dashboard configuration by key presence only: dedicated Google,
+  PostHog-read and Clarity-export credentials are not configured; local reviewed
+  snapshots remain in use. Business read adapter is development-only. Dashboard
+  is not yet automatically live-connected or deployed; release flag remains off.
+- Status review only; no settings, credentials, code, deployment or push changes.
+
+### 2026-11-13 — Codex (release preparation verified; stores withheld)
+
+- Frozen production source `c34f569`: iOS2.1.0(27), EAS `14f76fb5-40d9-4f3d-8c95-13489935ec7f`; Android2.1.0(24), EAS `e6a72070-4f04-4626-afec-29e9956874be`. Both finished, original signatures/config/hashes verified and matching PostHog JS/native symbol uploads confirmed. Production analytics defaults ON with no automatic permission popup. Readiness/hashes/evidence: `docs/reviews/2026-11-13-mobile-release-readiness.md`; local artifacts `artifacts/mobile-2.1.0`.
+- Physical iPhone6s/iOS15.8.8 and Pixel5/Android14 passed guest/maps/reports/link checks and saved analytics exclusion. iPhone original production native/JS bytes in a separate test-config identity delivered correctly attributed test events; actual replay stops for Auth/exposed Map, resumes for safe/covered screens, and visually masks report photos/text. Zero QA events after opt-out/relaunch. Separate native-module fixtures on both phones completed/refunded sandbox card payments, rendered Connect onboarding and handled a local notification tap/destination. No identity/bank submission or live server-push acceptance claim. Initial short-lived Connect fixtures expired during packaging; a temporary Android repack omitted Kotlin service resources, corrected without changing production code/dependencies.
+- Website media/legal only source `5c32ab8`, deployment `dpl_6HFe4Af232YP6LiQjUPDw3pWKkhg`, is live. Dashboard/other preview work excluded. Content relay `ace4313`, Cloud Run00006-cuz, remains photo-content-20261113 tag only; canonical funding traffic stays on00004-rxr. Google photo content checking plus existing malware/sanitization works; released-client legacy avatars retain the prior provider path. Effective privacy/Terms November13, including optional account-linked rounded nearby area.
+- Deployed functions: create-cleaner-onboarding-link v33 and send-cleanup-notifications v25. Applied/recorded `20261112150000_notification_preferences_and_nearby_alerts.sql`, `20261112160000_reporter_payout_waiting_notification.sql`. Owner then confirmed old direct-upload builds were unused development versions and authorized closure: source `13dc98f`, migration `20261113170000_enforce_sanitized_media_outputs.sql` applied/recorded. All four direct final-bucket insert/update policies removed; final buckets JPEG-only. Live authenticated raw uploads/replacement denied while both new/released-client processor paths passed; fixtures removed. Exact rollback tested locally in a rolled-back transaction.
+- Verification:619 mobile tests +1 existing skip, lint,224-module check;1084 isolated website tests, build/types/scoped lint;40 media tests,10 relay tests,66 Deno tests; local notification SQL checks pass. Scoped final evidence/docs commits `6cfaedb`, `50ee633`, `87bccda` plus this handoff. Other-chat dashboard received schema/build/test-exclusion and activation details; app/combined visits remain unknown until actual release.
+- Cleanup: disposable test accounts/files removed, sandbox payments refunded, temporary native-check apps uninstalled. Original phone apps/data preserved; staff device analytics remains OFF. Native drivers/mirror/launcher stopped; local DB/Colima stopped with backup/data preserved and Docker context default. Metro8081 remains for existing QA. No GitHub push, OTA publish, or store upload/submission. Prepared Apple privacy entries still require the owning account before a future submission; do not request Luke's unavailable access or change Grant's Apple settings. Owner-excluded Apple grant revocation and separate-user Facebook tests remain excluded, not passed.
+
+### 2026-11-13 — Codex (mobile release preparation in progress)
+
+- Owner authorized finishing release preparation, analytics ON by default, no store submission. Mobile candidate c34f569 (same app changes as8ec516e plus obsolete Stripe0.50.3 patch removal) is frozen in an isolated release branch. iOS2.1.0(27), EAS14f76fb5-40d9-4f3d-8c95-13489935ec7f, finished; original IPA signature/version/runtime and Hermes debug ID checked. dSYM UUID73D0F0A8-184B-3AB5-B21C-BAA90D27ED33 matches the uploaded PostHog symbol set bound to com.litterbugs.app/2.1.0+27. Android24/AAB and acceptance APK still building/queued. No push, OTA or store submission.
+- Inline, unchecked photo-processing/Terms approval now gates report/cleanup and new profile-photo uploads; simulator selection/blocked Save/discard verified without profile changes. Analytics remains separate/default-on;619 mobile tests, lint and224-module check pass. Stripe0.72 already contains the old NSInteger fix; four remaining native patches apply cleanly. Expo doctor still flags the intentional Stripe version difference from SDK54's recommendation; native payment checks pending.
+- Photo publication guard: existing malware check plus bounded content review. Cloud Run ace4313 revision00006-cuz is only on the photo-content-20261113 tag, with canonical funding-review traffic100% on00004-rxr. Direct tag401/400/200 and isolated web Google+malware+promotion succeeded with non-user fixture images; disposable accounts/photos removed. Existing relay secret reused server-side in Vercel, never logged. Legacy avatars use Cloudmersive NSFW; approved new mobile avatars and report/cleanup use paid Google to avoid20 extra scanner credits per photo. Website candidate remains unaliased, based on exact live4d4e2e8; dashboard excluded.
+- Deployed committed mobile return-target support: create-cleaner-onboarding-link v33 (rollback source v32 downloaded in /tmp/litterbugs-edge-release-audit-20261113). send-cleanup-notifications v25 (old v24 downloaded). Applied and recorded20261112150000_notification_preferences_and_nearby_alerts.sql and20261112160000_reporter_payout_waiting_notification.sql.66 Deno tests and local SQL preference/nearby/dedup/reporter-readiness checks pass; test counts now scope their own fixtures. No manual push send or real payment. Nearby alerts start OFF.
+- Prepared privacy/store-note addition: nearby alert area is rounded2-decimal location LINKED to the account for app functionality, separate from anonymous PostHog/GeoIP. Apple account-holder forms still prepared only; do not request Luke's unavailable access or alter Grant's Apple settings. Live media direct-write compatibility policies remain an explicit unresolved release gate; do not claim universal filtering or silently retire old clients.
+- Pixel5 and iPhone6s/iOS15.8.8 connected. Owner approved native test tools and iPhone UI Automation. Original installed QA apps/data preserved; separate iPhone QA variant uses existing signing/profile, unchanged native/JS with test config. Fresh phone UI/replay/payment verification is ongoing. Temporary local notification DB/Colima started for SQL checks; stop it after verification.
+
+### 2026-11-13 — Codex (read-only mobile map screenshot review)
+
+- Reviewed `/tmp/litterbugs-release-pixel-map.png` and current map source for the
+  mobile release chat. Colorful lower-left lines are likely Google's ski-run/lift
+  geometry near Appalachian Ski Mtn.; map style hides labels but retains geometry.
+  No matching app-drawn multi-color polylines found. Sent source/reference evidence;
+  fresh-binary geographic zoom/pan confirmation stays with the mobile chat.
+- No mobile edits, provider changes, database writes, deployment or push.
+
+### 2026-11-13 — Codex (simplified owner metrics dashboard, local only)
+
+- Source commit `ef258db32ce00cf757afbd7f222d3d8fdcdc3030`. Added six overview metrics:
+  total visits with web/app split, completed cleanups, cleanup funding principal,
+  new reports, distinct registered contributors and current eligible backlog.
+  Daily chart, attention items and reported impact retain field coverage.
+- Simplified Overview/Website/App presentation; removed provider/source/freshness,
+  citation and technical explanatory UI. White/purple/mint style, no added imagery.
+- Local-only business adapter runs a fixed aggregate SELECT through the existing
+  verified linked CLI after admin/MFA auth; bounded timeout/cache, no credentials
+  copied or raw identities returned. Read-only live records checked for7/28-day
+  totals, final-submission deduplication and NY calendar/DST comparisons. No DB
+  migrations, writes or provider changes. Production business connection remains
+  pending; original website tool snapshots/read-credential limitations remain.
+- App sessions query verified read-only; never sum launches with website sessions.
+  Unreleased app and combined visits remain unknown, website count stays visible.
+  Future release flag documented but unset; native production coverage unchanged.
+-66 focused tests, TypeScript, scoped ESLint and diff checks pass. Desktop/320/390px,
+  period/tab retention, signed-out no-data gate and analytics exclusion verified.
+  No deployment or GitHub push. Claude/native/preview edits preserved; latest app
+  release prep and separate media/legal work remain with the mobile chat.
+
+### 2026-11-13 — Codex (owner KPI research and proposed definitions)
+
+- Researched Amplitude value metrics, marketplace fulfillment/liquidity, Stripe
+  transaction-volume distinctions, PostHog session definitions and Clarity signals.
+  Added proposed owner metrics to existing dashboard plan: total visits, new reports,
+  completed cleanups, confirmed cleanup funding, active contributor accounts and
+  aged report backlog; impact/retention/conversion/health remain supporting views.
+- Total visits may combine same-rule web/app sessions, not launches/pageviews or
+  unique people. Business totals need private backend/payment records, not browser
+  event counts. Funding excludes service fees; refunds, balance and revenue differ.
+  Impact is reported data with field coverage and one final submission per cleanup.
+- Recommendations only: no dashboard implementation, live business query, provider
+  setting, credential, DB migration, deployment or GitHub push. Existing app/dashboard
+  source and unrelated Claude edits preserved; documentation diff check passes.
+
+### 2026-11-13 — Codex (release-readiness and analytics-choice clarification)
+
+- Read-only readiness review: analytics setup is complete; latest2.1.0 still needs a frozen mobile candidate,
+  fresh native production artifacts and final-device acceptance. Current local UI/payment-total edits remain
+  outside analytics commit e690eb5. Older AI-photo/data-sharing and offensive-content findings lack a current
+  closure record; flag for review without restoring owner-removed UI or treating excluded Apple revocation /
+  separate-user Facebook tests as blockers. Apple store labels/submission remain account-holder release work.
+- Clarified analytics choice defaults on in production (saved exclusion persists); screenshot is off because
+  the test simulator was excluded. Off stops future PostHog events/diagnostics/replay on that device, not core
+  application records, existing analytics or separately controlled website analytics. No product/provider change.
+
+### 2026-11-13 — Codex (final mobile handoff synced to dashboard notes)
+
+- Verified mobile handoff/evidence for local e690eb5: event/timing schemas unchanged,
+  staff opt-out complete, local symbol files verified without production binding.
+  Updated owner dashboard plan; no dashboard code or data-definition changes.
+- App remains unreleased and dashboard awaits production data/read connections.
+  Native crash coverage stays unclassified. Separate privacy-only4d4e2e8 is live;
+  dashboard452c394 and app changes were excluded. No deploy/push from this chat.
+
+### 2026-11-13 — Codex (mobile analytics verified; privacy published)
+
+- Finished local app analytics: replay starts paused; install/open attribution; nested person-property scrubbing;
+  stale-link failure guard; device-wide Profile/Settings → Analytics choices (also signed out). Saved choice is
+  read before SDK startup. Simulator switch verified off after reopening; no account/push/database writes.
+-617 mobile tests pass (1 existing skip), lint and223-module source check pass. Both Hermes exports/debug IDs
+  verified. Real SDK/mock-native tests cover privacy, offline redelivery, notifications, opt-out and excluded relaunch.
+- At Grant's later explicit request, enabled PostHog695338 recording and exception autocapture; read back.
+  Existing IP discard stays on, but does not disable GeoIP: retain coarse location disclosure. Website explicitly
+  disables its PostHog replay/exception capture; Clarity unchanged. Production EAS now has project-restricted
+  error_tracking:write key and project ID secrets; production upload flag on, acceptance off. Actual CLI upload
+  and PostHog symbol-set readback verified both local maps. No secret values stored in repo/logs.
+- Privacy-only production source4d4e2e8 (based on prior live30adc6c), deploymentdpl_2A2dd4XGKrLZ2kEyK1wSSn3eWd2d,
+  is live on litterbugs.app; effectiveNov13. Live alias/HTTP200 checked. Rollbackdpl_7sr5ycQSEebuddcoSr7pg22oiwo5.
+  Google Play's existing five analytics categories/purposes already cover the additions; verified, unchanged.
+  Apple answers prepared only: Luke's access unavailable; Grant's Apple settings/account untouched.
+- Coordinated with Finish bug animation preview: dashboard452c394 stays local and was excluded from deployment.
+  No GitHub push, mobile OTA/store build or submission. Phone notification taps, NDK crash and physical-device
+  performance still unverified; prior native replay/crash evidence is Claude'sNov12 isolated builds. Fresh native
+  prebuild required (workspace generated iOS Pods are stale). Details: docs/reviews/2026-11-13-mobile-analytics-verification.md.
+
+### 2026-11-13 — Codex (private owner analytics dashboard, local only)
+
+- Source commit 452c394da27df420c5a3a1f60312cce4d4a83d9d. New /admin/analytics combines GA, GSC,
+  PostHog and Clarity in Litterbugs styling, with Overview / Website / App views,
+  7/28 complete-day controls and per-source dates/freshness. Existing /admin
+  moderation inbox retained; server membership+MFA checked before data retrieval.
+- Real local aggregate snapshots cover all4 website tools; ignored directory
+  apps/web/.analytics-local is development-only and never read in production.
+  GA CLI requests returned502; signed-in GA UI supplied audited session totals
+  and channels only (no fabricated daily trend/unique users; property-wide scope).
+  GSC totals use dimensions=[] and reconcile with daily clicks. Clarity's recent
+  3-day window stays separate from7/28 periods. No cross-provider visitor sum.
+- Server-only live adapters prepared, but dedicated read credentials are NOT set
+  up or credential-tested. Automatic refresh and persistent Clarity quota/history
+  ingestion remain setup work before publication. Source guide and references:
+  docs/plans/2026-11-13-owner-analytics-dashboard.md.
+- App queries follow docs/mobile-analytics.md and the parallel mobile thread's
+  production/test/emulator rules. New app remains awaiting production data;
+  timings exclude background spans and show sample counts. Native crash production
+  coverage explicitly unclassified pending verified release/build attribution.
+  EAS symbol-upload write key must never be reused for dashboard reads.
+- Admin routes do not mount visitor analytics; existing browser exclusion keys
+  also keep subsequent staff use out. Already running Clarity is reset with a
+  fresh private document on SPA entry. Normal visitor defaults unchanged.
+- 51 focused tests, TypeScript, scoped ESLint, script syntax and diff checks pass.
+  Authorized desktop and320/390px layouts verified; date/view selection retained;
+  separate signed-out context exposes only sign-in, noindex and zero telemetry.
+  No dashboard runtime errors; existing unused CSS/ladybug preload warnings remain.
+- No deployment, GitHub push, DB migration, native edit or provider-setting change
+  from this chat. Preserve concurrent mobile/preview/privacy edits. Mobile thread
+  separately owns app diagnostics settings, staff opt-out, EAS/store disclosures
+  and privacy-only deployment; its app is still unreleased.
+
+### 2026-11-13 — Claude (mobile analytics release prep, local only)
+
+- OTA updates: `scripts/mobile-update.mjs` uploads Hermes source maps to PostHog after a successful
+  `eas update` when `POSTHOG_UPLOAD_SYMBOLS=true` and `POSTHOG_CLI_*` are set; refuses to publish if the flag
+  is set without credentials; unchanged otherwise.
+- Drafted (not deployed) "App analytics and diagnostics" in `apps/web/app/privacy/page.tsx` (effective date
+  not changed) and a PostHog addendum to the App Store/Play privacy notes. Needs Grant's review before
+  the website deploy and store forms.
+- Notification-tap opens still unverified on device: enabling notifications in the signed-in QA app would
+  register a production push token, so not done. Unit-tested; shares the link-open tracking verified natively.
+
+### 2026-11-13 — Codex (LBAnalyticsTest crash alert identified)
+
+- Owner screenshot shows macOS crash dialog for LBAnalyticsTest. Read local
+  DiagnosticReports: five reports belong to separate simulator bundle
+  com.gegibson.litterbugs.analyticstest, all Nov12 evening; none from today.
+  Earliest reports show test-build startup faults; later native signals align
+  with Claude's documented deliberate crash-reporting verification. Do not
+  characterize every historical report as an intentional crash.
+- No LBAnalyticsTest process running; simctl confirms its app container is
+  absent from the booted simulator. Existing Litterbugs app remains running.
+  Owner can dismiss this old test-app alert with Ignore. No application code,
+  simulator settings, website deployment or analytics settings changed.
+- Clarified dashboard is hosted in PostHog695338/dashboard2346165, not website
+  /admin. Website tracking deployed Nov12; an /admin analytics view was never
+  implemented. No new dashboard work or publication authorized in this turn.
+
+### 2026-11-12 — Claude (mobile analytics verified in native release test builds)
+
+- Built isolated iOS (simulator) and Android (emulator) release test apps with the new PostHog plugin, sending only
+  to a local mock collector (separate bundle IDs; app copy deleted afterwards, no store/EAS builds). Both compile
+  and run. Verified: delivery with `app_environment: test` and update keys; replay masks all text and images;
+  replay stops on sign-in/payment/account screens; JS fatal errors and rejections arrive scrubbed; native crashes
+  (iOS SIGSEGV/SIGABRT with debug images, Android Java crash) arrive on next launch; shared-link opens report
+  `shown`/`unavailable`. Symbol upload wiring generated on both platforms but not run (needs PostHog CLI key).
+- Fixes from that testing: replay now also stops while the map itself is in front (tiles show street names
+  around the person; masking the map blanked every frame) and resumes when report details/form cover it;
+  `launch_to_map` only times launches that open on the map. Docs: `docs/mobile-analytics.md`.
+- Freed disk: pruned uv's unused package cache and npm's download cache (both re-downloadable).
+- Local builds from this folder hit expo-updates/Expo script bugs with the space in "Burrow Base" (EAS unaffected).
+- Not verified: notification-tap opens on a device, symbol upload, Android NDK crash, real-phone performance.
+
+### 2026-11-12 — Codex (website PostHog/Clarity analytics deployed)
+
+- Owner approved deploy/push with Claude's app changes excluded. Website source
+  30adc6cc201791298fe6116b11383912d909f98f is on GitHub branch
+  codex/website-analytics-release-20261112. Its diff from live e5411e2 contains
+  only6 web source/test files plus event guide/handoff. Native files, lockfiles,
+  dependencies, extra local previews and fee pages unchanged; no native commits
+  were pushed. Root development history remains local to preserve that boundary.
+- Promoted exact verified production build dpl_7sr5ycQSEebuddcoSr7pg22oiwo5
+  (https://litterbugs-7wfkv8lz0-grant-9890s-projects.vercel.app) to litterbugs.app.
+  Alias deployment/source SHA verified. Rollback: dpl_7ybf24ASXLanJNFKCqq6FtyWMyCn.
+  Dashboard is https://us.posthog.com/project/695338/dashboard/2346165, not /admin.
+-100 tests pass in isolated release checkout; TypeScript/scoped lint pass.
+  Local jsdom checks use NODE_OPTIONS=--no-experimental-webstorage and existing
+  workspace dependency links. Remote production build passes; unchanged social
+  image filesystem-tracing warnings remain. No DB migration or provider-setting
+  changes. Production protection retained; staged QA used authenticated vercel curl.
+- Staged home/map/report200; cleanup-start/loading/report-sheet dev previews404.
+ 22 deployed chunks contain v9, lb_map_failed/lb_cleanup_cancelled/version tags.
+  Live home and390px report render without overflow/errors; mobile map/markers
+  render and report-data GET/OPTIONS200 after reload. One initial connection-
+  closed report request recovered on reload; no persistent failure reproduced.
+  Deployment runtime error scan returned0 records. Every browser visit excluded
+  before scripts; zero analytics requests. No real claim/auth/preference/money
+  submissions or synthetic visitor events. Real Clarity ingestion/new filter
+  availability awaits genuine activity; mocked delivery/ordering tests passed.
+- Local3000 remains available. Concurrent Claude native edits and unrelated
+  local previews/handoff additions preserved. No store build or app deployment.
+
+### 2026-11-12 — Codex (website PostHog/Clarity friction events, local only)
+
+- Owner requested local website analytics for map failures and cleanup exits.
+  Added safe Clarity projection in lib/clarity-journey.ts: map started/ready/
+  failed/recovered/empty/results-failed; cleanup start/safety/claim/evidence/
+  submission/other-step/failure/explicit-exit/resume markers. Fixed enum tags
+  include failure reason, stage, foreground/background, load-duration bucket.
+  Version v9 is tagged in Clarity and PostHog. No raw IDs/text/locations/photos,
+  filenames, URLs or provider error payloads; anonymous identity policy unchanged.
+- Existing PostHog event names retained. Critical map failures/recovery and
+  cleanup failures/decisions now request immediate beacon delivery. SDK-readiness
+  buffering preserves original order across steps, failures and decisions via
+  a local WeakMap sequence that never becomes a provider property.
+- Clarity delivery is independent of PostHog/Google readiness, each provider
+  sends once per accepted delivery. Tag bootstrap waits for load; provider queue
+  capped150, bootstrap capped250 if recorder dependency blocked. All tracking
+  remains best effort. Saved exclusion/DNT/GPC/local/preview behavior preserved.
+  No inferred permanent abandonment from pagehide, hidden tabs or OAuth handoff.
+-100 focused tests pass; web TypeScript/scoped ESLint/diff checks pass. Covers
+  late/blocked/failed providers, mixed-event ordering, privacy, Strict Mode,
+  queue bounds, cancellation/claim separation and no duplicate sends. Browser
+  localhost3000: renders, no horizontal overflow/runtime errors; zero external
+  analytics requests and no Clarity/Google initialization. Existing CSS preload
+  warning only. Delivery verified with mocked providers, not real ingestion.
+- Event/filter guide: docs/plans/2026-11-12-website-recording-events.md.
+  New live Clarity filter choices require deployment plus first received events;
+  no Clarity/PostHog project settings, saved segments or dashboards changed here.
+  Local3000 stays available. No deploy/push/DB migration. Preserve Claude's
+  concurrent native analytics, package-lock and unrelated preview changes.
+
+### 2026-11-12 — Claude (unreleased mobile analytics finished and verified locally)
+
+- Audit fixes: `payment_submitted` was sent before Stripe's sheet opened (cancelled sheets counted); now
+  `payment_ready` → `payment_submitted` only when submitted. Added missing payment start/form/confirmation, report
+  upload and cleanup photo-step failures, sign-in `verification_sent`/`closed`, claim `payout_setup`, `cleanup_approved`.
+- New: `map_discovery` (search sessions, results after filter/search changes, empty recovery, filter changes),
+  `app_timing` (launch_to_map, report_details, photo_upload, submission with attempts/recovery), `app_open_target`
+  (shared links/notifications, `shown` only when the destination appears). Definitions: `docs/mobile-analytics.md`.
+- Privacy: `before_send` scrub; SDK was attaching the launch link (report IDs / auth tokens) to Application Opened.
+  Push token registration, replay console/network capture off. Replay stops on auth, payment, payout and account
+  screens; notes/names masked. Environment gate: production|test only, never simulators (unless test).
+- Crashes: replaced legacy replay package with `@posthog/react-native-plugin` 2.13.0 (native + NDK crashes).
+  Symbol/source-map upload wired behind `POSTHOG_UPLOAD_SYMBOLS=true` + EAS secrets `POSTHOG_CLI_API_KEY`,
+  `POSTHOG_CLI_PROJECT_ID` (not set yet). Release attribution adds `app_environment` and `$expo_*` update keys.
+- Verified: 606 tests, lint, source check, release iOS export with debug IDs, no secrets in bundle. Real SDK
+  delivery checked in the simulator against a local mock collector (temporary dev hook, removed): events, offline
+  queue and redelivery, no leaks; nothing sent once removed. **Not verified:** native build with the new plugin,
+  replay masking, native crash capture, symbol upload, Android, deep-link/notification opens on device.
+- No deploy, store build, push, migrations or PostHog setting changes. Native builds need a fresh prebuild/pod
+  install for the new plugin. Concurrent ProfileScreen/WelcomeScreen/ui/paymentTotals/launch.json edits untouched.
+
+### 2026-11-12 — Codex (website PostHog dashboard created)
+
+- Owner authorized website dashboard only; native analytics remain Claude's work.
+  Created and pinned private project695338 dashboard2346165:
+  https://us.posthog.com/project/695338/dashboard/2346165
+  Name: Litterbugs website performance. Default last7days, America/New_York.
+-16 native insights plus2 notes: traffic/map-reach/report-open/failure cards,
+  devices/referrers/pages, homepage-map-report funnel, daily map reach by device,
+  map results/recovery, report/fund/claim/evidence funnels, auth outcomes and
+  failure reasons. Ordered visitor funnels use30min; map reach uses distinct
+  sessions and includes direct arrivals, distinct from homepage-only conversion.
+- Dashboard and every insight restrict production host, exclude is_test=true,
+  virtual bots, test_environment/test_run_id, .invalid QA referrers, and apply
+  filterTestAccounts. Existing cohort673394 has0 members: older unmarked testing
+  may remain. Found historical QA referrer absent normal test flags; excluded.
+  Starter dashboard and prior phone insight untouched; no capture setting changes.
+- All16 saved charts executed successfully; evidence funnel honestly has no data.
+  Map-loading taxonomy still absent: no misleading0ms chart. Visible note explains
+  timing coverage and first observed map/participation eventsNov9. Browser counts
+  are not platform totals/financial ledger; repeat result polling isn't visits.
+- Catalog initially empty. Saved3 source-insight metric proposals (NOT approved):
+  litterbugs_website_tracked_visits (ze7I0H10), litterbugs_website_map_reach
+  (CjpWYru8), litterbugs_website_workflow_failures (9jDVgAeH). No canonical claims.
+- Browser verified saved7day filters,156visits/28.2% map reach at audit time,
+  successful14day override recalculation, no horizontal document overflow.
+  Widened metric cards and switched funnels horizontal for readable step labels.
+  No visitor-site tests, app/web source changes, deploy, push or DB migration.
+  Dashboard remains private; no alerts, subscriptions or invitations created.
+
+### 2026-11-12 — Codex (unreleased app analytics and dashboard recommendation)
+
+- Owner clarified latest app is not deployed. Reviewed local mobile code only;
+  no claims of live native telemetry or release readiness. Existing analytics
+  covers screens, first-run tour, sign-in, participation and payout stages;
+  production profile enables analytics while acceptance profile disables it.
+- Local config requests replay and JS error capture, not full native crashes.
+  Recommend real-build delivery/masking checks, native crash symbols/source maps,
+  full interaction timings, missing discovery/deep-link/notification outcomes,
+  build/update attribution and separately labeled QA validation before release.
+  Replay uses legacy plugin still listed as supported peer by installed SDK;
+  current docs recommend renamed plugin. No confirmed incompatibility asserted.
+- Recommend PostHog for behavior/funnels/performance, existing MFA/admin-gated
+  /admin for authoritative cleanup/review/financial operations and a small
+  summary linking to analytics. Avoid duplicating entire analytics platform.
+  Clarity supports native React Native but isn't installed; prefer verifying
+  existing PostHog replay before adding a second native recorder.
+- Advice only: no app/web/analytics settings changes, deploy, push or DB changes.
+  Preserve concurrent mobile, preview and handoff work.
+
+### 2026-11-12 — Codex (PostHog/Clarity capability and configuration review)
+
+- Read-only review requested. Confirmed PostHog695338: one starter dashboard
+  (2274370), zero alerts/surveys/experiments/flags. Automatic exceptions/vitals,
+  PostHog replay/heatmaps/surveys off; site disables flags/surveys, uses cookieless
+  mode and person_profiles never. Starter retention isn't authoritative member
+  retention under this identity setup. No settings or capture changes made.
+- Signed-in Clarityz60itnrbpn inspected through existing main-Chrome MCP connection
+  in a separate temporary tab: five Clarity-defined events (Find a location,
+  Login, Outbound click, Sign up, Submit form), zero funnels. Site code only
+  configures Clarity/consent, not custom event/tag delivery. Closed only audit tab;
+  original recordings/user tabs intact. No site visits or test traffic generated.
+- Highest-value next work: site-specific PostHog funnels/health dashboard using
+  existing bounded journey events; safe named button/outcome/timing signals;
+  mirror important outcomes into Clarity events/release tags and save segments;
+  inspect mobile homepage scroll/attention and slow-interaction recordings.
+  Threshold alerts after baseline; sparse-traffic minimum-volume guards needed.
+- Reviewed current PostHog docs via connected docs-search and Microsoft Learn:
+  funnels/paths, flags/experiments, surveys, errors/performance, identity limits,
+  Clarity heatmaps/Smart Events/funnels/Copilot/performance/export. API export is
+  aggregate dashboard data (1–3-day window,10 requests/day), not replay download.
+  Additional options: selected error diagnostics, later stable-assignment tests,
+  optional feedback, aggregate database outcomes/retention and AI metadata costs.
+- Recommendations only: no dashboard/alert/survey/flag launch, deploy, push,
+  identity expansion or private-data collection. Website remains releasee5411e2.
 
 ### 2026-11-12 — Codex (cleanup start and button improvements deployed)
 
@@ -1365,17 +4335,67 @@ They cannot talk to each other directly. This file is how they share context.
 - Local3000 remains running, including safe cleanup-start preview. Concurrent
   mobile edits and other preview/handoff additions remain intact.
 
-### 2026-11-12 — Codex (approved cleanup-start/button release prepared)
+### 2026-11-12 — Codex (website cleanup start matches native, local only)
 
-- Owner approved cleanup-start58778ad and button00318cb/6a90480 deployment.
-  Clean release applies only their25 web source/test files to previous release
-  notes2bdce38/source65a80e9. Includes shade feedback (no underline), intent
-  prefetch, reliable carousel/photo controls, and native-style first-use and
-  returning-cleaner safety UI with the existing versioned acceptance/payout gates.
--82 focused tests, TypeScript, scoped lint and diff check pass. Native, dependencies,
-  database and concurrent notification changes excluded; local preview pages remain
-  local. Remote production build and staged verification precede promotion.
-- Previous live/rollback: dpl_2HqQdm5DFN686ELFm1Rom2YfheNs. No migrations.
+- Owner supplied native cleanup-start screenshot and requested website parity.
+  Real CleanupAction now opens a white butterfly sheet with three colored steps,
+  exact funded amount (or3 points for volunteer), lilac Start my cleanup button,
+  and a fixed footer. Scoped CSS leaves later evidence/review screens unchanged.
+- Matches current native CleanupWaiverModal: first-time full agreement opens from
+  Read the cleanup agreement; one initially unchecked box affirms both agreement
+  and site safety, locked until opened. Returning users only confirm site safety.
+  Full current guidelines/body/release and separate release heading retained.
+  Existing accept_cleanup_waiver/claim_cleanup RPCs, active version checks and
+  payout gates unchanged. Version-pair key resets local document-open state.
+-27 focused tests pass (21 cleanup workflow,4 UI,2 document integrity), including
+  no automatic consent/claim, saved agreement/site confirmation, busy labels,
+  payout failures, and new-version reacceptance after a rejected claim. TypeScript,
+  scoped lint and diff check pass. No production writes, DB migration or deployment.
+- Browser actual shared panel:390/320px phone and1440px desktop, first-time and
+  returning states, accordion enablement, scroll-to-release, stable footer,
+  no horizontal overflow or browser errors. Refero Contra acceptance dialog was
+  secondary structure reference; screenshot/native source own visual direction.
+- Safe owner preview: http://localhost:3000/dev-review-preview/cleanup-start.
+  Close modal to switch accepted-agreement/funded flags and reopen. Start in this
+  preview performs no write; production NODE_ENV returns404. Real website workflow
+  uses the updated panel. Local3000 remains running; no deploy/push. Preserve
+  concurrent mobile work and other local-only previews/handoff additions.
+
+### 2026-11-12 — Codex (subtle button shade replaces pending underline, local only)
+
+- Owner disliked the underline. Replaced pending-line/pulsing styles with a5.5%
+  current-color tint over the existing rounded button/link, transitioning120ms.
+  No new palette, text, layout, route/prefetch or loading timing changes. No loop;
+  reduced motion removes the transition. Refero Tally surface restraint and bundled
+  motion guidance informed the tiny tint; existing Litterbugs colors are primary.
+- Browser local390px confirms tint, inherited rounding, unchanged size/labels,
+  no underline/animation and reduced-motion transition0s. Six existing link tests
+  and scoped diff check pass. Committed locally; no deploy/push. Previous live
+  remains65a80e9; homepage responsiveness00318cb also awaits approval to deploy.
+
+### 2026-11-12 — Codex (homepage button responsiveness follow-up, local only)
+
+- Owner requested broader homepage button checks. Added ResponsiveLink: original
+  labels/layout stay intact, pending navigation gets the existing subtle pulse,
+  full destination prefetch starts on mouse/focus/touch intent. Report cards keep
+  viewport prefetch disabled; hidden menu links no longer force full prefetch.
+  Applied to homepage actions/map/pins/cards/header/footer; signed-in Profile now
+  uses a real prefetchable account link; notification bell uses the same feedback.
+- Fixed rapid carousel clicks losing steps during smooth scroll: accumulate the
+  intended target, clamp at ends, reset after manual scroll/scrollend/resize.
+  Card photos warm both neighbors on mouse/touch/focus and prioritize the selected
+  image on click. Existing grouped photo reveal and reduced motion remain intact.
+-46 focused tests pass, TypeScript/scoped lint/diff check pass. Browser local3000:
+  desktop1440 and phone390 render without overflow/overlay/console errors; menus,
+  search focus, login dialog, photo switch work. Two rapid carousel clicks settle
+  at653px (two326.47px steps). Choose a spot pending cue appears at first18ms sample
+  with unchanged label. This is one local response sample, not production speed.
+- Production guest baseline samples: Report trash155ms / report card214ms to
+  route shell, with no button cue; destination data readiness measured separately.
+  All production visits excluded from analytics. Store/social hrefs preserved;
+  no actual sign-in, preference writes, money submissions or DB changes tested.
+- No deploy or push; previous live65a80e9 remains. Local3000 left running for review.
+  Preserve concurrent mobile/notification/preview edits and handoff additions.
 
 ### 2026-11-12 — Codex (approved button/save/map fixes deployed)
 
@@ -1408,22 +4428,180 @@ They cannot talk to each other directly. This file is how they share context.
   preview work; not part of this website release. New telemetry awaits real
   visitor data for subsequent analytics review.
 
-### 2026-11-12 — Codex (approved navigation/save/map release prepared)
+### 2026-11-12 — Codex (save/map delays and unchanged button labels fixed locally)
 
-- Owner approved deployment of all tested local fixes. Clean release starts at
-  previous production notes d46a236 (source7638185), applies only web/shared
-  source from2f6c8e0,c8ce7b0,6b26f03: map startup telemetry, responsive navigation
-  with original button labels, streamed optional report data, nonblocking web
-  preference sync, reliable map controls and bounded browser location wait.
-- Exactly25 source/test files changed; no dependency/native/migration changes.
-  Concurrent notification work, dev previews and homepage redesign excluded.
-- Focused web130 tests and shared preference10 tests pass. Web/shared TypeScript
-  and scoped ESLint pass. Boundary checker reports four pre-existing Stripe
-  exclusions in unchanged files/dependencies already in production; no new
-  boundary violation. Tests needing storage passed with Node webstorage disabled
-  after the temporary checkout selected the newer local runtime.
-- Remote production build and staged browser verification precede promotion.
-  Previous live/rollback: dpl_97HKBRMdUPK8wmDAP2CNvLdvNVPy. No DB changes.
+- Owner requested local save/map fixes and no visible technical progress labels.
+  Cleanup CTA now retains See this cleanup with a subtle reduced-motion-aware
+  underline pulse; removed visible Opening page text from route shell too.
+  Actual browser samples keep label unchanged and show no Opening wording.
+- Found preference engine's single queue/cross-tab data lock held throughout
+  network sync (web deadline8s), blocking local Favorite/Hide writes behind it.
+  Added opt-in nonBlockingSync used by web only: network work gets a separate
+  cross-tab lock, local writes remain durable/fast, responses rebase newer
+  pending operations. Concurrent sync callers share a flush. Native/default
+  mode unchanged. No backend RPC/schema/RLS changes. Hide/Unhide re-enables
+  after device save so undo needn't wait for cloud; latest-action notices win.
+- Map style clicks now advance from a ref to avoid lost batched rapid clicks;
+  disabled before map initialization, preserve choice when map initializes.
+  Map location request has a12s wall-clock deadline (even if browser never
+  calls back), drops late results and prevents duplicate requests. Fresh
+  publication location checks in requireReportLocation are unchanged.
+- 40 targeted tests pass:26 web save/geolocation/map/link/closest tests,
+  10 preference-engine tests (including slow sync, offline retry, cross-tab
+  ordering, lost response, retirement and native defaults),4 profile-save
+  regression tests. Web/shared TypeScript, scoped ESLint and diff check pass.
+- Actual local browser: satellite toggle works; one hung fake-location request
+  shows busy icon, then control re-enables; no browser errors. Cleanup CTA
+  label stays constant through pending navigation. No real location prompt,
+  live profile/preference writes or destructive actions used in testing.
+  Local server remains running at3000 for review. No deploy/push/DB changes.
+  Preserve concurrent native/notification/preview work and earlier pending
+  map telemetry2f6c8e0 / navigationc8ce7b0 local-only changes.
+
+### 2026-11-12 — Codex (slow cleanup navigation reproduced and improved locally)
+
+- Owner reported repeated See this cleanup taps and broader slow buttons.
+  Excluded isolated production test reproduced a 1202ms click-to-report delay:
+  old homepage/button persisted without any status; report RSC request1112ms,
+  despite partial prefetch. One sample, not visitor average. Button is a normal
+  Next Link; force-dynamic report lacked a loading boundary. Main render also
+  awaited optional related links; reporter lookup was serial after completion.
+- Local fix: cleanup CTA uses useLinkStatus for immediate Opening… feedback;
+  shared root and explicit report loading boundaries use existing delayed/glowing
+  firefly and white branded layout. Existing map/sign-in/account fallbacks keep
+  priority. Optional related links stream in their own Suspense boundary, and
+  reporter lookup runs alongside cleanup evidence. No stale data cache or RLS
+  changes. This addresses navigation links, not every save/dialog/map action.
+- Actual local browser: pending feedback present at first51ms sample; full report
+  and 6 recommendations render, photos preserved, no console errors. Another
+  report-list link shows shared fallback at218ms. Dev compilation/network differ
+  from production: no claim of reduced production load time yet. Local /report
+  HTTP200 verifies actual read path after changes. Port3000 dev server started
+  (was stopped) and left running for owner review; no production build.
+- 41 focused tests pass, including blocked recommendations not blocking report,
+  eventual related links, parallel reporter read, pending reset and photo errors.
+  Web TypeScript, scoped ESLint and diff check pass. Preserve all concurrent work.
+- PostHog14-day raw rage-click scan (staff cohort673394, test/bot flags excluded)
+  finds seven records, all /map, none identifies this CTA. Clarity7-day rage
+  filter has no matching recordings; owner-observed repeated clicks plus direct
+  reproduction are the evidence for this fix. Restored Clarity3-day URL view.
+- All production test browser visits excluded before scripts and verified;
+  separate local review tab retained. No real participation/money submission,
+  database change, deploy or push. Map telemetry2f6c8e0 remains locally pending.
+
+### 2026-11-12 — Codex (signed-in Clarity connection restored; recordings reviewed)
+
+- Owner screenshot confirmed main Chrome listening at 127.0.0.1:9222. Both
+  --autoConnect (missing DevToolsActivePort) and --browserUrl (/json/version
+  HTTP 404) fail on this permission-based listener. Official installed MCP
+  1.13.0 connected successfully with --wsEndpoint=ws://127.0.0.1:9222/devtools/browser.
+  Persistent standard MCP client in node_repl read owner's signed-in Clarity
+  tab and played/seeks recordings. No extra login or cookies copied. Global
+  MCP config untouched; default tools still use isolated browser.
+- Last-three-day production URL view lists 29 recordings; dead-click subset
+  lists 2. Inspected Nov 10 desktop 16:48 session: Report menu visibly opens
+  at 20:09 despite dead-click label. Two funding flags at 21:22/23 point into
+  blank dialog space. No confirmed broken control. Edit/Delete controls appear
+  in this session; cannot treat it as known non-staff traffic. A 39-second
+  navigation gap includes a user-left-site interval; not map load duration.
+- Inspected Nov 12 14:52 Instagram shared-report timeline and replay: two taps,
+  report content/photos loaded; menu appears clipped in replay. Current same
+  report in excluded mobile Chrome at 390px does not reproduce: page width390,
+  drawer x0..320, Open map x16..303; no console errors. Real Instagram/iOS
+  device verification remains needed before calling this a website defect.
+- Nov 12 04:00 ChromeMobile session has Google Play outbound at 01:10, page
+  hidden at 01:11; consistent with store handoff, not proof of install or bug.
+  No newly confirmed user-facing defect this pass. No policy/fee/homepage edits.
+- Production verification used separate test browser, both analytics exclusions
+  set before page scripts and verified true. Test tab returned to about:blank;
+  normal owner tabs untouched. Local server currently refused port3000, so
+  did not restart/build it. No deploy, push or DB changes. Map telemetry 2f6c8e0
+  still awaits deployment approval. Future Chrome attach must use WebSocket
+  path above, not the missing discovery file or /json/version HTTP endpoint.
+
+### 2026-11-12 — Codex (Chrome attachment rechecked after owner enabled debugging)
+
+- Retried official --autoConnect after owner reported enabling remote debugging.
+  Main Chrome is running, but it still reports missing DevToolsActivePort in
+  its default user-data directory; bounded filesystem check confirms absent.
+  No connection prompt/recordings reached. Existing isolated MCP browser is
+  still a separate profile and cannot verify owner's Clarity authentication.
+- Requested current chrome://inspect/#remote-debugging screenshot to diagnose
+  the actual setting state without another blind sign-in/restart instruction.
+  No settings modifications, cookies copied, browser closures, website changes,
+  push or deploy. Local map tracking remains pending owner deployment approval.
+
+### 2026-11-12 — Codex (signed-in Clarity session located by owner)
+
+- Owner screenshot confirms Clarity is signed in in normal Chrome. Earlier
+  sign-in guidance targeted the isolated MCP profile and was misleading.
+  Current connector config contains --isolated; fresh profile remains signed out.
+- Tested installed official chrome-devtools-mcp 1.13.0 --autoConnect through
+  its standard MCP interface, without changing config or Chrome settings.
+  It cannot attach: main Chrome DevToolsActivePort absent; remote debugging
+  must be enabled via chrome://inspect/#remote-debugging and owner-approved.
+- No fresh recordings reviewed. No cookie/credential copying, global settings
+  changes, browser closures, website changes or deployment. Normal signed-in
+  Chrome session preserved. Local map tracking 2f6c8e0 remains undeployed.
+
+### 2026-11-12 — Codex (Clarity browser timeout investigated)
+
+- Earlier failure occurred on Emulation.setFocusEmulationEnabled, before page
+  inspection; no evidence that Clarity itself was timing out. Fresh Chrome
+  DevTools connection navigated to project z60itnrbpn in 2.4s and read its UI.
+- Fresh browser shows session-expired/sign-in screen. Google sign-in reached
+  successfully but requires account entry; no saved authenticated account.
+  Owner sign-in needed in that browser before recording access can be verified.
+  No cookies copied, credential access, browser/app restarts or closures.
+- Memory pressure remains level 2; observed as context, not established cause.
+  No website change, push or deployment. Local map tracking 2f6c8e0 still awaits
+  deployment approval; no new Clarity recording conclusions.
+
+### 2026-11-12 — Codex (map startup measurement added locally)
+
+- Added map_loading journey signals: started, first tiles_ready, failed and
+  recovered after timeout. Five fixed failure reasons cover missing config,
+  initialization, Google authorization, 12-second startup timeout and marker
+  construction. Startup timing begins at the map effect, not navigation;
+  elapsed_ms rounded to 100ms/capped at 120s, backgrounded marks hidden tabs.
+- Existing bounded queue/provider sanitizers carry these signals; privacy
+  exclusions remain enforced. No raw errors, locations, keys or report IDs.
+  Repeated tiles/pans and discarded Strict Mode effects do not duplicate loads;
+  late marker failures still recorded. Bundle marker bumped to v8.
+- 71 focused tests pass: actual MapExperience handlers, timeout/recovery,
+  configuration/auth/initialization/marker failure, Strict Mode, unmount cleanup,
+  safe provider transport and exclusion. Web TypeScript and scoped ESLint pass;
+  local /map HTTP 200. No local production build or new browser test traffic.
+- Continued read-only PostHog record inspection over 14 days (same production,
+  staff-cohort/test/bot exclusions): Nov 12 report-location cancellation has no
+  matched failure signal; not sufficient evidence of a new UX bug. No payout
+  setup rows in the bounded inspection. Store clicks do not prove installs.
+- Clarity existing-tab focus still times out. Fresh replay review remains
+  unavailable; no new replay claim. Changes committed locally only; no push,
+  deployment, database changes or app closures. Live ingestion awaits approval
+  and deployment; localhost remains excluded. Preserve concurrent native work.
+
+### 2026-11-12 — Codex (PostHog follow-up; map startup measurement gap)
+
+- Read-only PostHog project 695338 review: production-host events exclude
+  staff cohort 673394, explicit is_test and bot flag. Last 3 days contain
+  no participation_failure/rageclick rows; last 7 days show one Nov 9
+  location_denied failure from v3, predating the location workflow fix.
+  No map/search/closest failure rows in the last 7 days. Small activity
+  sample and unlabelled testing remain limitations; not proof of no errors.
+- Thirty-second results_loaded events are visible-tab background refreshes,
+  not deliberate searches or separate visitor actions. Hidden/offline refresh
+  guards already exist. New app_choice/shared_report_sign_in events have not
+  appeared in current taxonomy/results; cannot infer broken delivery or usage.
+- Confirmed code measurement gap: map result telemetry returns before tiles
+  ready or on mapError. SDK startup rejection, 12-second timeout, key/auth and
+  marker construction failures only set UI errors; no map startup outcome or
+  timing event. Recommend bounded, sanitized startup outcomes/timing, without
+  location/report IDs, URLs or raw exceptions. No implementation authorized yet.
+- Fresh Clarity recordings unavailable: existing browser tab CDP focus timed
+  out twice; native browser access also timed out. Did not claim new replay
+  findings. No test visits, builds, app closures, deployment or database changes.
+  Preserved concurrent native/notification/onboarding work and prior handoff edits.
 
 ### 2026-11-12 — Codex (cleanup hours and social links deployed)
 
@@ -1448,19 +4626,105 @@ They cannot talk to each other directly. This file is how they share context.
   Analytics set off in test browser; temporary viewport restored and live test
   tab closed. Local review previews preserved. Concurrent work stays untouched.
 
-### 2026-11-12 — Codex (approved cleanup-hours/social release prepared)
+### 2026-11-12 — Codex (website cleanup hours added locally)
 
-- Owner approved cleanup hours plus Instagram/TikTok/Facebook links. Clean
-  release based on prior live f284c46/89f6da0, with exactly 22 production/test
-  files from approved local 9b81fc6. All files byte-match approved source.
-- Excludes development previews, native work, notification/backend migrations,
-  dependencies, homepage layout and policy pages. Those paths match prior live.
-  Existing duration/weight endpoint already confirmed; no DB migration needed.
-- Exact release tests: 80 web + 3 shared payload tests pass. No local production
-  build; remote production build and staged checks precede promotion.
-- Source pushed on codex/cleanup-hours-social-release-20261112; deployment and
-  final verification recorded in a follow-up entry. Concurrent local work stays
-  in the main workspace and is not copied to this web deployment.
+- Optional How long did it take? (hrs) field added below bags/weight, matching
+  native form layout. Decimal hours convert to whole minutes (1.5 -> 90),
+  validate before review/send, appear in review and existing completed stats.
+- Hours retained in device/account drafts, restored drafts and conflict
+  summaries; optional shared payload field keeps older drafts readable.
+  Submission with time uses existing submit_cleanup_with_details and preserves
+  weight/bag values; no fallback that silently drops entered time. Blank time
+  retains existing submit_cleanup_with_weight path and missing-time behavior.
+- 63 focused web/contract tests pass, including controller-to-service conversion,
+  draft edits/restoration, account-draft round trip, legacy drafts, invalid
+  input, duration/weight RPC and existing submission recovery/cleanup display.
+  Web/contract TypeScript, scoped lint and diff check pass.
+- Read-only linked DB catalog checks confirm authenticated execute permission,
+  duration and weight support. No schema/data changes; Supabase connector lacked
+  permission, so used documented CLI read-only queries. No cleanup submitted.
+- CUA: 390px form and 1280px review have no overflow, invalid 25h rejected,
+  1.5h retained through Edit and shown in review, browser errors empty. Original
+  app/form styles are reference lock. Preview uses real component, disables
+  submit and is production-404 guarded: /dev-review-preview/cleanup-hours.
+  Temporary viewport reset; local preview left open. No production build,
+  push or deployment. Concurrent native/other previews/handoff preserved.
+
+### 2026-11-12 — Codex (cleanup-hours parity check)
+
+- Source audit: native CleanupSubmissionScreen already has optional decimal
+  hours input (How long did it take? (hrs), example 1.5). Website evidence
+  panel and submission action only collect bags/items and weight; no hours
+  entry, draft field or duration passed by that form yet.
+- CompletedCleanup already displays recorded duration_minutes as hours.
+  Answered owner's question; no workflow changes, push, deployment or DB
+  actions. Concurrent work preserved.
+
+### 2026-11-12 — Codex (confirmed Facebook page added locally)
+
+- Owner supplied Facebook screenshot: Litterbugs Community Cleanup,
+  profile.php?id=61573402678573. Added that exact URL to SocialLinks with
+  Font Awesome Facebook brand icon, alongside confirmed Instagram/TikTok.
+- Footer, map footer and mobile drawer share the icon-only component.
+  Scoped lint/diff check pass; CUA confirms all three URLs, 44px targets,
+  no subheading and no overflow on the narrow local preview.
+- No push/deployment or account changes. Local preview remains open.
+  Concurrent native and handoff changes preserved with isolated index.
+
+### 2026-11-12 — Codex (icon-only social links; Facebook search)
+
+- Removed visible Follow along label from shared SocialLinks and its CSS.
+  Instagram/TikTok use existing Font Awesome Brands via react-icons/fa6,
+  not custom SVG drawings. Accessible destination labels remain.
+- Scoped lint and diff check pass. Local CUA footer confirms both logos,
+  no visible subheading and no overflow. Preview stays open; no deploy/push.
+- Further Facebook search: Firecrawl found App State reposts mentioning the
+  exact full name; browser-verified mentions link back to Instagram, not a
+  Facebook page. Instagram public links/Account details show no Page link.
+  Other search hits were unrelated, and no official Facebook destination
+  could be verified. Facebook remains unlinked; no new credentials requested,
+  no account/settings changes or messages. Research tab closed.
+- Concurrent native/handoff work preserved via isolated Git index.
+
+### 2026-11-12 — Codex (confirmed TikTok added locally)
+
+- Owner confirmed @litterbugs.commun is theirs. Added TikTok beside Instagram
+  through shared SocialLinks, covering footer, map footer and phone drawer.
+- Scoped ESLint and diff check pass; CUA confirms correct destinations,
+  44px targets and no overflow at 319px. Local preview remains open.
+- No push or deployment. Facebook remains unverified and unlinked.
+  Concurrent native/handoff changes preserved.
+
+### 2026-11-12 — Codex (Instagram links added locally)
+
+- Added owner-confirmed instagram.com/litterbugs_app to shared SocialLinks:
+  regular footer identity, phone drawer, and compact map footer (More below
+  1440px; inline above). Existing lavender/charcoal tokens, 44px phone targets,
+  accessible destination names and new tabs; no external embeds or SDKs.
+- Refero reference lock from preceding entry retained. Fixed narrow-footer
+  logo/copyright/social grid placement. Map footer remains 48px at 1280px.
+- 20 existing header/navigation tests, scoped ESLint, TypeScript and diff check
+  pass. CUA verifies desktop/phone layout, no overflow at 319/390/1280px,
+  drawer and map More access, and actual Instagram click opens correct profile.
+  Initial mid-edit HMR/hydration errors stopped after clean reload; no new
+  browser errors in final checks. Temporary viewport/CDP overrides restored;
+  local home preview remains open; research tabs closed. No production build.
+- Owner asked us to find other profiles. Instagram bio links only own website.
+  TikTok search found @litterbugs.commun with matching full name but no avatar,
+  bio or videos; ownership unverified, owner question pending, not linked.
+  Facebook search failed to yield a verified official page; not linked.
+- Local only: no push, deployment, native/backend or DB changes. Preserved
+  concurrent mobile files and other handoff edits via isolated Git index.
+
+### 2026-11-12 — Codex (social-link placement research)
+
+- Refero: Duolingo and Bumble full styles plus Kickstarter footer screen
+  7573bf28. Plan: quiet social icon row by footer identity and in the mobile
+  drawer, using existing lavender tokens and 44px touch targets; keep map
+  footer height stable. Existing site is the visual reference lock.
+- No official Instagram/TikTok/Facebook profile links found in source or
+  public search. Asked owner for URLs/usernames before wiring destinations.
+  No product changes, deployment or push. Concurrent work preserved.
 
 ### 2026-11-12 — Codex (filter, card and loading improvements deployed)
 
@@ -1486,19 +4750,128 @@ They cannot talk to each other directly. This file is how they share context.
   production test tab closed. Local previews and concurrent work preserved.
   Memory pressure moderate (2); tests used one worker and build ran remotely.
 
-### 2026-11-12 — Codex (approved filter/loading web release staged)
+### 2026-11-12 — Codex (coordinated photo reveal and clearer glow, local)
 
-- Release source layers the 20 reviewed production web/test files from bda0f8a
-  onto current live 2bebc0f: synchronized/removable filters with one selected
-  control, no After cleanup card badge, delayed glowing lightning-bug loader,
-  no loading ants, and coordinated visible-photo reveal with lazy offscreen
-  photos. Existing homepage content/layout preserved; only photo loading and
-  removal of the loading ant changed there.
-- Excluded all dev-review previews and concurrent notification/native/backend
-  changes. No policy-page changes, database migrations or mobile/store release.
-- Local source previously passed 76 focused tests, lint, TypeScript, CSS and
-  phone/desktop browser checks. Exact release validation and live deployment
-  identity will be recorded in the completion entry.
+- Visible report photos now download/decode behind fixed-size frames and reveal
+  together in one animation frame, with a 180ms fade. Added shared batching to
+  map results, public report grids/carousels, existing homepage collage and
+  before/after proof pairs. Content/links stay usable; offscreen/hidden slides
+  never hold the group or get promoted to eager loading by the coordinator.
+- Observer work is scheduled by intersection/layout/source changes, not per-
+  pixel scrolling in supported browsers. Reuses existing img requests (no extra
+  full-size preloads). Handles cache, errors, retry/source changes and cleanup.
+  A 5s outlier deadline releases ready photos; late photos can still recover.
+  No-JS public pages get a noscript visibility fallback. Reduced motion skips
+  the fade. Report loader stays continuous from fetching to visible decoding.
+- Strengthened the firefly halo: .22–.65 opacity and .92–1.12 scale over slow
+  alternating 1.8s phases. Body stays still; reduced-motion glow remains static.
+- Local /dev-review-preview/photos uses three intentionally staggered local
+  image responses (180/1400/2600ms); page/image route are production-404 guarded.
+  References: MDN HTMLImageElement.decode and Intersection Observer docs, local
+  Next Image docs; existing brand/motion rules remain the visual reference.
+- 76 focused tests pass; lint, TypeScript, CSS compilation and diff check pass.
+  Tests cover atomic decode/reveal, cache, failure, stale source, scroll groups,
+  5s deadline/recovery and resource cleanup. CUA saw image 1 fully downloaded
+  while all 3 remained at opacity 0, followed by all at opacity 1. Real report,
+  homepage collage/proof and phone preview checks pass with no browser errors.
+  Stronger glow confirmed running at 1.8s; temporary network/viewport settings
+  restored, loaders stopped and previews kept open.
+- No push, deployment, DB changes or local production build. Memory pressure
+  moderate (2); tests use one worker. Other agents' notification/native files
+  and handoff changes preserved with an isolated index. Approved filter/card
+  deployment remains paused while the owner reviews these loading updates.
+
+### 2026-11-12 — Codex (GivePulse individual participation clarified)
+
+- Official volunteer guide confirms free individual accounts, opportunity
+  search, impact logging and creating a group to publish opportunities.
+  Many events accept registration without group membership. Organizer posting
+  uses group/event setup; no claim that registered nonprofit status is always
+  required. Earlier comparison emphasized institutions too heavily.
+- Recommended preserving Litterbugs individual report/claim/cleanup flow and
+  making potential group tools optional. Advisory only; no product changes,
+  outreach, deployment, push or database changes.
+
+### 2026-11-12 — Codex (calmer lightning-bug loader, local; deployment paused)
+
+- Owner interrupted the approved filter/card release before deployment to review
+  loading changes. Nothing pushed or deployed this turn; last live remains
+  2bebc0f / dpl_GxyQnRbtykjhEeDhTUMWN3FCGBYh.
+- Replaced ReportBrowser's bee with the existing lightning-bug SVG: 350ms reveal
+  delay (including initial mount/retries), 180ms entrance/exit fade, stationary
+  body with subtle 2.4s halo breathing. Loader stays mounted for exit; ready
+  results are never delayed or blocked. Reduced motion uses a static glow.
+- Removed rendered AntWalk loaders from homepage feed, account section and
+  completed-photo placeholders. Kept stable quiet skeletons and existing
+  non-loading bug artwork/motion; no hero or before/after-hover changes.
+- Research: Carbon loading guidelines (prefer stable skeletons, avoid competing
+  indicators), NN/G progress-indicator guidance, Refero skill motion reference.
+  Existing Litterbugs white/purple/yellow art is the reference lock; timing
+  values are our implementation choices, not quoted source requirements.
+- Added guarded development-only /dev-review-preview/loading comparison with
+  150ms, 1.8s and manually held loads using the real component. Production
+  requests call notFound(). No report data changes are made by this preview.
+- 51 focused tests pass, including fast/slow/retry/unmount timing and existing
+  report/photo/motion regressions. Scoped ESLint, TypeScript, CSS compilation
+  and diff check pass. CUA verifies delayed reveal, immediate results during
+  fade, 150ms bypass, 390px layout, reduced-motion static glow, real map wiring
+  and no browser errors. Media/viewport overrides reset; preview left open.
+- No local production build. Memory pressure moderate (2); Node dev server
+  remains capped at 1536MB. Concurrent staged native/migration and handoff
+  changes preserved using a temporary Git index.
+
+### 2026-11-12 — Codex (GivePulse comparison and growth lessons)
+
+- Compared current GivePulse official workflows/pricing with Litterbugs source:
+  institutional groups/affiliations, opportunity registration, impact logging,
+  organization verification and transcripts versus report-led cleanup evidence
+  and optional funding/rewards. Existing Litterbugs duration is recorded time,
+  not a school-approved service-hours credential.
+- Recommended organizer-led local pilots, group attribution, useful impact
+  summaries and repeat participation before broad API/enterprise work. These
+  are proposed growth hypotheses, not verified GivePulse acquisition results.
+- Advisory only; no product edits, outreach, deployment, push or database
+  changes. Preserve concurrent staged and working changes.
+
+### 2026-11-12 — Codex (single selected filter control and quieter cleanup cards, local)
+
+- Refero research: visitors.now/shadcn style references, LinkedIn jobs filters
+  (0ed16707) and [untitled] toggles (7c614cd9). Existing Litterbugs white/purple
+  tokens remain the visual lock; adopted selected controls in place, rather
+  than repeating their labels in another row.
+- Desktop selected presets now include an X; active chips below omit filters
+  already represented above. Favorites/Hidden toggle independently of status
+  and advanced choices; status presets preserve unrelated saved/advanced
+  filters. Phone layouts retain the complete removable chip row.
+- Removed “After cleanup” photo badge from both ReportBrowser and public
+  ReportCards. After-photo ordering and cleaned status remain unchanged.
+- 57 focused tests, scoped ESLint, TypeScript and CSS compilation pass. CUA
+  checks: one visible Favorites control at 1280px and 390px, toggle removal,
+  mixed priority/Favorites, and 9 completed cards with after photos and no
+  badge. Browser errors empty; viewport reset, local preview kept open.
+- No deployment, push, production or database changes. Used an isolated Git
+  index to commit only this task; concurrent staged native/migration work and
+  other handoff edits preserved.
+
+### 2026-11-12 — Codex (website filter state and recovery fixed locally)
+
+- Favorites (1) was a saved-count shortcut, not an active-filter indicator;
+  Hidden in the screenshot could have no shortcut when zero saved IDs existed.
+  Fixed reproducible stale-draft reopening through the toolbar after Show
+  results. One applied filter object now drives map/list callbacks and controls.
+- Fresh/shared links no longer silently restore unrelated session filters;
+  explicit URL filters (including URLs without browse=1) and back/forward still
+  restore choices. Matching session memory retains expanded results/scroll.
+- Added removable chips for every active filter plus Clear all, including on
+  phones; removed ambiguous saved counts/Custom filters placeholder. Empty
+  Favorites/Hidden stay explicit rather than silently switching to Available.
+- 54 focused tests pass: status/workflow, funding, priority, distance, text,
+  saved scopes, URL restoration, cancelled drafts, individual removal and
+  map/list consistency. Scoped ESLint, TypeScript and CSS compilation pass.
+  CUA checks at 1280px, 390px and 320px: dialog sync, X removal, Clear all,
+  returning cards/pins; no browser errors. Local preview kept open, viewport
+  reset. No deployment, push, production testing or database changes.
+- Concurrent mobile/notification changes and other handoff edits preserved.
 
 ### 2026-11-12 — Codex (mint cleanup stats deployed)
 
@@ -1518,16 +4891,87 @@ They cannot talk to each other directly. This file is how they share context.
 - Current local work and concurrent Claude commits preserved. No cache files
   deleted; no local production build or mobile/store release.
 
-### 2026-11-12 — Codex (approved cleanup stats web release)
+### 2026-11-12 — Codex (integration acquisition shortlist)
 
-- Release source adds only the three reviewed CompletedCleanup files to the
-  current live source d80611d: mint panel, compact cleaner styling, three icon
-  stats, and recorded hours from existing duration_minutes with missing-time
-  placeholder. No homepage, native, policy-page or database changes.
-- Source changes verified locally: 48 cleanup/report tests, scoped ESLint,
-  TypeScript and CSS compilation; 390px/320px browser checks passed.
-- Owner approved GitHub push and production deployment. Staging and live
-  verification results will be recorded in the follow-up entry.
+- Researched official Nextdoor, Wix/WordPress, GivePulse, Eventbrite, Meetup,
+  Idealist and Benevity documentation. Prioritized user-initiated Nextdoor
+  sharing, willing local website widget placements, and campus partnerships.
+- Nextdoor Share Plugin needs no API approval; Publish API does. Meetup API
+  requires Pro plus approval. GivePulse access/partner arrangements need
+  confirmation; App State platform usage was not established. Idealist blocks
+  for-profit categories from volunteer postings; Benevity has nonprofit gates.
+  Importing another platform's feed does not establish outbound distribution.
+- Advisory only: no integrations, outreach, live tests, deployment, push or
+  database changes. Preserve pending work by other agents.
+
+### 2026-11-12 — Codex (API and MCP growth examples)
+
+- Researched official Booking.com partner API, Calendly embeds, Jotform/Zapier
+  case study (2023), and Notion MCP documentation. Explained partner reach,
+  product exposure, retention and AI-workflow access as distinct mechanisms.
+- Historical Jotform retention figures are vendor-reported cohort comparisons,
+  not causal forecasts for Litterbugs. Notion docs show MCP functionality,
+  without a measured acquisition result. No implementation, outreach,
+  production testing, deployment, push or database changes.
+
+### 2026-11-12 — Codex (mint cleanup stats and recorded duration, local)
+
+- Matched the owner's phone reference: pale mint #E2F8F3 surface with #B9E9DD
+  border/dividers, purple outline icons, and aligned bag/item, pound, time stats.
+  Website now reads existing cleanup_submissions.duration_minutes and displays
+  hours like native (one decimal); older cleanups show “time not recorded”.
+- 48 cleanup/report tests pass, including recorded/missing/duration-only cases;
+  scoped ESLint, TypeScript and CSS-module compilation pass. Real local report
+  c9de971b checked at 390px and 320px with no overflow or browser errors. Preview
+  kept open and temporary viewport reset. No deployment, push or DB changes.
+- Read-only cache check found ~3.8 GB Codex updater cache and ~961 MB browser
+  cache under Library/Caches. Nothing deleted; chats/settings/project preserved.
+  Memory pressure normal (1). Other agents' native/launch/handoff work preserved.
+
+### 2026-11-12 — Codex (cleanup summary restyled locally)
+
+- Restyled CompletedCleanup's About the cleanup panel: soft lavender surface,
+  lavender border/subtle lower edge, charcoal heading, purple avatar initial,
+  clearer spacing and two-column bag/weight totals. CSS is scoped to this
+  component; cleaner profile behavior and cleanup data remain unchanged.
+- Existing Litterbugs styles are the reference lock; Refero Aave informed soft
+  lavender grouping and Airbnb informed cleaner identity/spacing. Recorded
+  owner's mint-green-only preference for new/restyled UI in AGENTS.md.
+- Local report c9de971b-9b18-4e63-8b2d-00bba1de799c checked at 390px, 320px
+  and 1280px: no horizontal overflow or browser errors; cleaner opens profile.
+  Three existing cleanup tests and CSS-module compilation pass. Local preview
+  remains open; viewport reset. No production testing, deployment or push.
+- Restarted the stopped port-3000 dev server with a 1536 MB Node heap cap;
+  no production build. Memory pressure is now normal (1). Other agents' native,
+  launch, generated and handoff changes preserved.
+
+### 2026-11-11 — Codex (API and MCP acquisition strategy)
+
+- Advisory follow-up: prioritize partner-hosted cleanup feeds/cards, newsletter
+  links and sponsor result pages; connected AI tools are a later distribution
+  experiment. Proposed a small Boone pilot with attributed report visits,
+  first contributions/cleanup claims and confirmed completions as outcomes.
+- These are unvalidated channel hypotheses, not growth forecasts or existing
+  partner commitments. No outreach, implementation, live testing, deployment,
+  push or database changes. Preserve prior pending work.
+
+### 2026-11-11 — Codex (restoring hidden reports guidance)
+
+- Source review confirmed website Hidden filter and report-card Unhide report
+  action; native Search and filters has Hidden reports → Hidden and a report
+  visibility toggle. Explained restoration paths. No product changes, live
+  testing, deployment, push or database changes.
+
+### 2026-11-11 — Codex (API and MCP feasibility advice)
+
+- Read-only source and current Google/MCP documentation review: existing public
+  report loaders can support a small documented read-only API and MCP tools.
+  Rough estimate: 1–2 focused days for the API, another 1–2 for a basic MCP
+  integration, subject to scoped implementation review. These are estimates.
+- Recommended useful public pages and local cleanup evidence first for search;
+  API/MCP value is connected assistants and partner distribution, with no
+  automatic ranking or AI-citation benefit. No implementation authorized,
+  product changes, production testing, deployment, push or database changes.
 
 ### 2026-11-11 — Codex (approved map performance and analytics release live)
 
@@ -1561,6 +5005,231 @@ They cannot talk to each other directly. This file is how they share context.
   put usable map/search into opening composition and move collage/app badges
   lower. No homepage implementation yet; approval required before deployment.
   Memory remains warning level 2; Android stayed closed, iOS left running.
+
+### 2026-11-11 — Codex (guest browsing clarified)
+
+- Read-only source check confirms guests already browse/search/filter the map,
+  open report details/photos and public profiles, share/get directions, and
+  favorite/hide reports locally. Guest preferences do not sync remotely.
+- Report form continuation requires auth after location selection; funding
+  and cleanup claims prompt auth. Cleanup evidence/reviews, owner management,
+  payouts/account features and member report/block actions require sign-in.
+  Previous map-first recommendation was about prominence, not removing an
+  existing browse restriction. No product changes, deployment or GitHub push.
+
+### 2026-11-11 — Codex (explained homepage-to-map reach)
+
+- Read-only follow-up: most inspected phone homepage sessions have no later
+  public-page view; a few visit About/Communities/Support. These paths do not
+  prove why visitors stop or whether an app-store departure succeeded.
+  Raw path inspection contains 19 sessions and does not reproduce the typed
+  query's project test-account filters; keep 3/18 from the earlier typed funnel
+  as the reported rate, not a new denominator from these records.
+- Source confirms homepage hero prioritizes app-store badges; map preview is
+  later in the page. /sign-in renders the live map behind its form while its
+  private route is omitted from pageview tracking. The reported 16.7% measures
+  /map navigation, not every map impression or successful map interaction.
+- Suggested making the map the initial usable experience if near-universal
+  map exposure is the objective, then measuring map readiness and meaningful
+  interactions separately. No design/code, deployment, push or tracker changes.
+
+### 2026-11-11 — Codex (mobile friction review, app choices and map reach)
+
+- Fresh PostHog participation record review found no new tracked failures.
+  Clarity production-only last-three-days dead-click filter has four sessions;
+  newest (Nov 11 9:11 AM, mobile Safari) tapped the Cleanup and reward policy
+  heading at 2s, not an interactive control. No policy edits. Nov 9 Instagram
+  shared-report insights show login tap then page hidden; this alone cannot
+  establish a failed sign-in. Reused one existing Clarity tab; playback ended.
+- Added local `app_choice` stages: open_requested, store_fallback,
+  download_page_requested (desktop), website_continued. Allowlisted destination
+  report/map and store category only. Existing app/report destinations and
+  fallback timing preserved. Fallback is recorded only when it actually runs;
+  hidden-page/cancelled timers do not count. No install/app-open-success claim.
+  Uses the bounded per-provider queue and immediate PostHog beacon; normal
+  analytics exclusion applies. Version `web-participation-2026-11-11-v7`.
+- Since Nov 6 midnight ET through Nov 11 query time: mobile homepage-entry
+  visits -> /map = 3/18 (16.67%, ordered same-session funnel, one-day window).
+  Earlier ~4% baseline was 1/28 homepage phone visits. All phone visits with
+  any map view = 15/49 (30.61%), including 9 direct map-entry visits. These are
+  tracked sessions, not confirmed individuals; small samples and untagged
+  historical owner testing limit interpretation. No causal rollout claim.
+- Read-only typed PostHog queries in project 695338: filterTestAccounts=true,
+  production hosts, marked test traffic, QA referrers and detected bots excluded.
+  No governed map metric matched. Existing saved watcher 1kdPlWal is a broader
+  ordered phone-visit -> map funnel (18.18% for partial week Nov 8), not the
+  homepage-entry measure; a single pageview direct map entry can be omitted
+  by that two-event definition. Do not compare these denominators directly.
+- 64 focused tests, scoped ESLint, TypeScript and diff checks passed. Mocked
+  analytics only, no production test events or new browsers/builds. Memory
+  pressure remains warning level 2; no further applications closed.
+  Committed locally with this entry; no deployment, GitHub push or live
+  analytics/dashboard changes. Existing pending releases still await approval.
+
+### 2026-11-11 — Codex (analytics provider-readiness delivery fixed locally)
+
+- Reproduced early map/report/cleanup flow events reaching PostHog but being
+  lost to GA when Google's script loads later. Confirmed outcomes had the
+  same gap; an unavailable PostHog SDK also blocked otherwise-ready GA flows.
+- Added bounded in-memory delivery tracking per provider (150 flow events,
+  30 confirmed outcomes). Preserve safe original pages across navigation,
+  deduplicate outcomes per provider, and clear pending deliveries on opt-out
+  or privacy signals. Shared-report sign-in handoffs stay PostHog-only;
+  IDs remain local deduplication keys and are not sent in event payloads.
+  Measurement bundle version: `web-participation-2026-11-11-v6`.
+- 52 focused analytics tests, scoped ESLint, TypeScript and diff checks pass.
+  Regression tests use mocked providers; no production test events. No build,
+  new browser, deployment or GitHub push. Local changes are in this commit;
+  earlier reviewed local improvements still await owner release approval.
+- Memory was normal at start, warning level 2 after checks (43% memory-pressure
+  free percentage). Android remains closed; iOS and owner apps left running.
+  Continue lightweight work and avoid builds/extra browser sessions.
+
+### 2026-11-11 — Codex (Android emulator closed at owner's request)
+
+- Owner approved closing Android only. Gracefully stopped emulator-5554 via
+  adb; verified its process exited and adb lists no devices. iOS Simulator
+  and its Litterbugs processes remain running.
+- Memory-pressure free percentage is now 45%; VM pressure still reports
+  warning level 2. Continue light work; no further apps were closed.
+
+### 2026-11-11 — Codex (continued friction review; memory-limited)
+
+- Read-only PostHog refresh: no new tracked participation failures in the last
+  48 hours; a Nov 11 browser sequence reached clean/safety_review then
+  claim_confirmed. It is not proven to be an external visitor. Rage-click
+  examples remain Nov 4–9, not new regressions. Old rapid auth open/close
+  bursts are insufficient evidence to redesign sign-in and may include QA.
+- Reused one existing Chrome test tab for Clarity, production-only last three
+  days. Nov 10 5:50 PM mobile replay: Continue on the website at 5s -> map,
+  Reports at 17s -> report list. No broken handoff observed in that sample.
+  Useful next measurement: explicit app-open versus website-continue choices;
+  current store-badge events cannot separate these paths or prove installs.
+- Owner requested low memory use. 16 GB Mac reported warning-level VM pressure
+  (2); swap rose from ~7.4 to ~7.9 GB. Extra profiling server is stopped,
+  no builds/headless browsers launched; one replay reviewed and playback ended.
+  Android emulator is the largest resident process (~1.2 GB). Asked owner
+  which emulators may be closed because closing them interrupts mobile tests;
+  no answer/closure yet. Do not assume that approval from elapsed time.
+- No product edits, deployment, GitHub push, moderation, payment or analytics
+  configuration changes. Prefer releasing reviewed pending local improvements
+  after approval and gathering new evidence over inventing additional bugs.
+
+### 2026-11-11 — Codex (SEO progress checked with fresh Google data)
+
+- Fresh URL Inspection: patio report, Cleanup Safety, Help and Photo Review
+  now PASS / Submitted and indexed with matching canonicals; crawled Nov 10
+  UTC. These four were still pending in the Nov 9 review. No live rendering
+  tests, indexing submissions, website changes or deployment.
+- Final Search Console web totals Nov 3–9: 26 impressions / 5 clicks vs
+  18 / 3 for Oct 27–Nov 2 (GSC Pacific dates). Sparse retained query rows:
+  `litterbugs` (3 impressions) and `cleanups in my community` (1, no clicks).
+  Query rows omit anonymized terms; use date/property totals for volume.
+  Nov 10 fresh/incomplete data excluded. Growth is small and not attributable
+  solely to recent changes; the ~20 daily visitors are from all sources.
+- Winkler cemetery is still indexed but last crawled Nov 6, before cleanup.
+  Next: grow useful Boone/cleanup evidence and check search outcomes over
+  subsequent weeks. Preserve existing weekly monitoring; no new automation.
+  Evidence: `/tmp/litterbugs-seo-progress-2026-11-11.json` and raw GSC JSON.
+
+### 2026-11-11 — Codex (daily website visitor readout)
+
+- PostHog project 695338 daily unique pageview visitors, America/New_York:
+  Nov 4–10 = 20, 45, 17, 21, 7, 20, 12; average 20.3/day. Nov 11 partial = 3.
+  Production URL filter, internal/test-account filtering, detected bots and
+  explicit QA tags excluded. Untagged historical testing can remain.
+- One-off query, no governed catalog definition; daily cookieless browser
+  estimates are not confirmed individuals or a deduplicated weekly total.
+  Oct 28–29 zeroes precede the current setup and were not used in the average.
+  Read-only analysis; no app changes or deployment.
+
+### 2026-11-11 — Codex (mobile map startup profiled and improved locally)
+
+- Live phone profiling found Stripe.js loading before any checkout and four
+  eagerly loaded photos in the hidden report list. Used Stripe's documented
+  `/pure` loader; it now loads only when an intent supplies a publishable key.
+  Hidden list thumbnails are lazy, becoming eager/high priority when opened.
+- Compared baseline `6aa0f7c` with these two changes in isolated Turbopack
+  production builds. Three fresh iPhone-sized Chrome contexts per version,
+  1.6 Mbps down/150 ms latency/4x CPU: median map ready 8437 -> 7276 ms,
+  pins 6965 -> 6289 ms, final LCP 9452 -> 7872 ms; transfer 1,623,239 ->
+  957,619 bytes. These are simulated local-build timings, not visitor averages.
+  Google tiles remain the final LCP content. Early invalid test-port runs were
+  discarded; verified runs routed the existing authorized localhost:3000
+  origin internally to the isolated build, preserving browser throttling.
+- Both production builds, 34 focused tests, scoped lint and TypeScript passed.
+  Real local phone/desktop checks: zero initial Stripe/report-photo requests;
+  opening Reports loads photos and opens a report. Confirmed a phone detail
+  photo loads too. No browser errors/overlays or visitor analytics requests.
+  No live payment was submitted. Existing payment tests verify deferred Stripe
+  still initializes with the payment key after explicit Continue.
+- No deploy or GitHub push. Main local server remains on port 3000. Profiling
+  artifacts: `/tmp/litterbugs-map-speed-summary.json`, raw verified before/after
+  JSON and `/tmp/litterbugs-map-startup-profile.mjs`. Next investigate the
+  remaining app-JS/Google Maps startup chain before adding broader changes.
+
+### 2026-11-10 — Codex (map search funnel ready locally)
+
+- Added actual search-start and suggestions-shown stages, plus selected-search
+  report outcomes (loaded/empty/failed) and first matching report open. Normal
+  map panning/zooming, filters, intermediate fitBounds frames and stale responses
+  do not become search outcomes. Homepage-to-map handoff is memory-only and
+  expires after 30 seconds; IDs, queries and coordinates are not transmitted.
+- Bundle measurement version is now `web-participation-2026-11-10-v5`.
+  Search report-open measurement expires after five minutes or another result
+  response, navigation/clear or map gesture. No backfill or deployment.
+- 105 focused tests, scoped lint and TypeScript passed (final map suite: 50).
+  Isolated phone-sized
+  Chrome on localhost selected a Google suggestion and rendered the map/pins;
+  no page errors, framework overlay or visitor analytics requests.
+- Further Clarity review: production-only, last seven days had five recordings
+  matching poor LCP (at least 4s), all mobile; three entered on map and two on
+  homepage. Latest Nov 10 5:44 PM recording showed typing then selecting a city
+  at 7s. This is a small flagged sample, not a site-wide speed or failure rate.
+  Next investigate mobile first-render timing before choosing a performance fix.
+  Filter: https://clarity.microsoft.com/projects/view/z60itnrbpn/impressions?URL=2%3B0%3Bhttps%3A%2F%2Flitterbugs.app%2F&WebVitalsLCP=poor&date=Last%207%20days
+
+### 2026-11-10 — Codex (public profile analytics and traffic quality)
+
+- Local GA and PostHog public member views now use `/members/profile`,
+  without member IDs or profile click autocapture. Tested both payloads and
+  navigation between profiles. No deployment or live settings changes.
+- Clarity quick-back filter showed 23 recordings in seven days; a visited
+  URL prefix of `https://litterbugs.app/` left 22. The excluded Cloudflare
+  preview replay is consistent with the bounded Nov 8 analytics QA.
+- PostHog recorded 9 empty-map and 153 loaded-map events over seven days
+  after excluding marked QA and detected bots. These are map responses,
+  not people or deliberate searches. No location-search or closest-report
+  stages appeared in this window. Next: track suggestions shown and
+  outcomes for deliberate attempts; keep preview QA out of visitor views.
+
+### 2026-11-10 — Codex (PostHog and Clarity friction follow-up)
+
+- Rolling seven-day PostHog production-host review excluded tagged QA and
+  detected bots where available. Four rage clicks were on the map, all
+  before Nov 10, with no element chain. Nov 10 through the query had five
+  recorded pageviews and 32 map events, with no participation stages.
+  The shared-report sign-in event had not appeared in the taxonomy.
+- Clarity showed 91 recordings, 14 flagged for dead clicks and none for
+  rage clicks under its own filters. Five flagged recordings entered and
+  exited on Get the app. Two Instagram replays showed App Store badge
+  taps. Phone-sized Chrome followed the current badge to the expected
+  Apple URL. The external store handoff inside Instagram remains unverified.
+- The public member route is outside the GA/PostHog page allowlist.
+  Consider an ID-free member route and fixed action labels for map controls.
+  Read-only analysis, with no product or analytics configuration changes.
+
+### 2026-11-10 — Codex (public member profile update live)
+
+- Pushed release source `3f3d78d` to `origin/codex/web-profile-rank-release`
+  and promoted Vercel deployment `dpl_6xn6UFxSv9YBM1oTZJaBBeTPZdpC`.
+  Previous live deployment is `dpl_E5T6XVHDoNi2y49FrbdXxmQJFESr`.
+- Released the white public profile, avatar, unboxed rank, eight-rank points
+  guide, steadier report tabs and the More actions menu for Report and Block.
+- Remote build, 901 web tests and lint passed. Staged HTTP and live Chrome
+  checks verified the profile, both report tabs and both safety dialogs.
+  Analytics were off in the test browser. The bounded production error
+  query returned no entries.
 
 ### 2026-11-10 — Codex (public profile safety actions menu)
 
@@ -1684,6 +5353,38 @@ They cannot talk to each other directly. This file is how they share context.
   sign-in return, and the download page back to the same report. Browser
   analytics were excluded. No entries in the bounded production error scan.
 - Live sign-in event ingestion remains to be observed in visitor traffic.
+
+### 2026-11-09 — Codex (participation friction assessment)
+
+- Reviewed recent PostHog participation stages and prior Clarity evidence.
+  One production report location denial and cancellation were recorded; one
+  prior phone visitor closed the report sign-in prompt. Neither establishes a
+  widespread cause. Payment and cleanup drop-off remain unlocated; unlabelled
+  testing and missing outcome coverage limit conclusions. Location-check and
+  shared-report sign-in improvements remain local, pending review. No deploy.
+
+### 2026-11-09 — Codex (website visitor behavior)
+
+- PostHog past-seven-day page breakdown: homepage 65 visitors, map 31,
+  app download 24, privacy and report details 21 each. Seven store badge
+  clicks were recorded. Production participation events excluding labeled
+  QA recorded report, clean and fund taps and one report-location failure.
+  Counts are small and can include unlabelled testing. Read-only review;
+  no application changes or deployment.
+
+### 2026-11-09 — Codex (website sources and growth)
+
+- PostHog showed 20 visitors over 24 hours: 10 direct, 7 Facebook,
+  1 Instagram, and 2 attributed to the site itself. The past seven days
+  had 146 visitors versus 33 in the preceding seven days; test-account
+  filtering enabled. Country data was unavailable. Read-only review;
+  no application changes or deployment.
+
+### 2026-11-09 — Codex (24-hour website traffic)
+
+- PostHog rolling 24-hour website overview showed 20 visitors, 21 sessions,
+  and 34 pageviews with test-account filtering enabled. Read-only analytics
+  review; no application changes or deployment.
 
 ### 2026-11-09 — Codex (shared report desktop app fallback ready locally)
 

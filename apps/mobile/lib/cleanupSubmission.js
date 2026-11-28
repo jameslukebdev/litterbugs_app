@@ -11,6 +11,7 @@ import {
   CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
   mapInConcurrentBatches,
 } from './concurrentBatch';
+import { photoUploadTimer } from './analytics';
 import { uploadSecureMedia } from './secureMediaUpload';
 import { preparePhotoForSafetyScan } from './photoSafetyPreparation';
 
@@ -72,7 +73,7 @@ export async function chooseCleanupPhotos(source, selectionLimit) {
 export async function loadCleanupSubmissionContext(cleanupId, userId) {
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at, is_paid, reward_amount_cents')
+    .select('id, report_id, cleaner_id, status, claimed_at, claim_expires_at, correction_due_at, issue_paused_at, is_paid, reward_amount_cents')
     .eq('id', cleanupId)
     .maybeSingle();
 
@@ -83,7 +84,7 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
   if (!['claimed', 'changes_requested'].includes(attempt.status)) {
     throw new Error('cleanup_submission_invalid_state');
   }
-  if (attempt.status === 'claimed' && (!attempt.claim_expires_at || Date.parse(attempt.claim_expires_at) <= Date.now())) {
+  if (attempt.status === 'claimed' && !attempt.issue_paused_at && (!attempt.claim_expires_at || Date.parse(attempt.claim_expires_at) <= Date.now())) {
     throw new Error('cleanup_claim_expired');
   }
   if (
@@ -95,7 +96,7 @@ export async function loadCleanupSubmissionContext(cleanupId, userId) {
 
   const { data: report, error: reportError } = await supabase
     .from('reports')
-    .select('id, title, severity, cleanup_state')
+    .select('id, user_id, title, severity, cleanup_state, cleanup_issue_hold')
     .eq('id', attempt.report_id)
     .maybeSingle();
 
@@ -133,6 +134,7 @@ export async function uploadCleanupSubmission({
   description,
   bagsOrItemsRemoved,
   weightPounds,
+  durationMinutes = null,
   isPaid = false,
   onProgress = () => {},
 }) {
@@ -158,22 +160,27 @@ export async function uploadCleanupSubmission({
   const uploadedPaths = [];
   let completedPhotos = 0;
 
+  const timing = photoUploadTimer('clean', photos.length);
+  let photosDone = false;
+
   try {
     onProgress({ stage: 'preparing', current: 1, total: photos.length });
     await mapInConcurrentBatches(
       photos,
       async (asset, index) => {
-        const preparedPhoto = await preparePhotoForSafetyScan(asset.uri, { width: asset.width, height: asset.height });
-        const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
-          ...asset,
-          uri: preparedPhoto.uri,
-          fileSize: preparedPhoto.byteSize,
+        const { mimeType, base64 } = await timing.prepare(async () => {
+          const preparedPhoto = await preparePhotoForSafetyScan(asset.uri, { width: asset.width, height: asset.height });
+          const { mimeType: originalMimeType } = await cleanupPhotoMetadata({
+            ...asset,
+            uri: preparedPhoto.uri,
+            fileSize: preparedPhoto.byteSize,
+          });
+          return {
+            mimeType: preparedPhoto.mimeType ?? originalMimeType,
+            base64: await FileSystem.readAsStringAsync(preparedPhoto.uri, { encoding: 'base64' }),
+          };
         });
-        const mimeType = preparedPhoto.mimeType ?? originalMimeType;
-        const base64 = await FileSystem.readAsStringAsync(preparedPhoto.uri, {
-          encoding: 'base64',
-        });
-        return uploadSecureMedia({
+        return timing.upload(() => uploadSecureMedia({
           userId,
           kind: 'cleanup',
           bytes: base64ToUint8Array(base64),
@@ -181,7 +188,7 @@ export async function uploadCleanupSubmission({
           subjectId: cleanupId,
           submissionId,
           position: index + 1,
-        });
+        }));
       },
       {
         concurrency: CLEANUP_PHOTO_UPLOAD_CONCURRENCY,
@@ -197,19 +204,27 @@ export async function uploadCleanupSubmission({
       },
     );
 
+    timing.finish('ready');
+    photosDone = true;
     onProgress({ stage: 'saving', current: photos.length, total: photos.length });
     saveDispatched = true;
-    const { data, error: submissionError } = await supabase.rpc(
-      'submit_cleanup_with_weight',
-      {
-        target_cleanup_id: cleanupId,
-        target_submission_id: submissionId,
-        cleanup_description: description,
-        cleanup_photo_paths: uploadedPaths,
-        cleanup_bags_or_items_removed: bagsOrItemsRemoved,
-        cleanup_weight_pounds: weightPounds,
-      }
+    const saveArguments = {
+      target_cleanup_id: cleanupId,
+      target_submission_id: submissionId,
+      cleanup_description: description,
+      cleanup_photo_paths: uploadedPaths,
+      cleanup_bags_or_items_removed: bagsOrItemsRemoved,
+      cleanup_weight_pounds: weightPounds,
+    };
+    let { data, error: submissionError } = await supabase.rpc(
+      'submit_cleanup_with_details',
+      { ...saveArguments, cleanup_duration_minutes: durationMinutes }
     );
+    // Until the database has submit_cleanup_with_details (PGRST202 = function not
+    // found), save without the time spent rather than fail the cleanup.
+    if (submissionError?.code === 'PGRST202') {
+      ({ data, error: submissionError } = await supabase.rpc('submit_cleanup_with_weight', saveArguments));
+    }
 
     if (submissionError) throw submissionError;
     let aiReview = null;
@@ -223,6 +238,10 @@ export async function uploadCleanupSubmission({
     }
     return { submission: data, aiReview };
   } catch (error) {
+    if (!photosDone) {
+      timing.finish('failed');
+      try { Object.defineProperty(error, 'photoStep', { value: timing.failedStep, configurable: true }); } catch { /* frozen error */ }
+    }
     if (saveDispatched) {
       const saved = await findSavedSubmission().catch(() => null);
       if (saved) return recoveredResult(saved);

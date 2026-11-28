@@ -50,7 +50,7 @@ describe('secure mobile media upload', () => {
     );
     expect(fetchImpl).toHaveBeenCalledWith(MEDIA_PROCESSING_URL, expect.objectContaining({
       method: 'POST',
-      headers: expect.objectContaining({ Authorization: 'Bearer signed-user-token' }),
+      headers: expect.objectContaining({ Authorization: 'Bearer signed-user-token', 'X-Litterbugs-Photo-Review': 'approved-v1' }),
     }));
     const request = JSON.parse(fetchImpl.mock.calls[0][1].body);
     expect(request).toEqual({
@@ -76,6 +76,14 @@ describe('secure mobile media upload', () => {
     expect(remove).toHaveBeenCalledWith([
       '11111111-1111-4111-8111-111111111111/avatar/33333333-3333-4333-8333-333333333333.jpg',
     ]);
+  });
+
+  it('quarantines issue attachments and sends them through the authenticated safety review', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ path: 'user/attempt/private.jpg', contentType: 'image/jpeg' }), { status: 200 }));
+    await uploadSecureMedia({ userId: 'user', kind: 'issue', subjectId: 'attempt', bytes: new Uint8Array([1]), mimeType: 'image/jpeg', fetchImpl });
+    expect(upload.mock.calls[0][0]).toContain('user/issue/');
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({ kind: 'issue', subjectId: 'attempt' });
+    expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe('Bearer signed-user-token');
   });
 
   it('never uploads unsupported client-declared content types', async () => {

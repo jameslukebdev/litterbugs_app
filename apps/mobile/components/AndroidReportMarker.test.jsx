@@ -47,15 +47,19 @@ it('redraws changed artwork but not unchanged markers after camera updates', asy
   await render('dot', false, 36.1);
   await render('dot', true, 36.2);
   await act(() => vi.advanceTimersByTimeAsync(1000));
-  expect(native.redraw).toHaveBeenCalledTimes(1);
+  // Camera moves add nothing; the two extra snapshots are the delayed redraws
+  // (250 ms and 1 s) that pick up the bug images once they have decoded.
+  expect(native.redraw).toHaveBeenCalledTimes(3);
+  await act(() => vi.advanceTimersByTimeAsync(5000));
+  expect(native.redraw).toHaveBeenCalledTimes(3);
 
   await render('selected-$6', true);
   await act(() => vi.advanceTimersByTimeAsync(40));
-  expect(native.redraw).toHaveBeenCalledTimes(2);
+  expect(native.redraw).toHaveBeenCalledTimes(4);
 
   await render('dot', false);
   await act(() => root.unmount());
   root = null;
   await act(() => vi.advanceTimersByTimeAsync(1000));
-  expect(native.redraw).toHaveBeenCalledTimes(2);
+  expect(native.redraw).toHaveBeenCalledTimes(4);
 });

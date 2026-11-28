@@ -6,7 +6,7 @@ export function canOfferCleanup(report, user, now = new Date()) {
 }
 
 export function isCleanupAvailable(report, now = new Date()) {
-  if (!report || report.cleanup_state !== 'available') return false;
+  if (!report || report.cleanup_issue_hold || report.cleanup_state !== 'available') return false;
   if (report.expired_at || report.cancelled_at) return false;
   if (!report.expires_at) return true;
 

@@ -29,7 +29,23 @@ export function cleanupImpactFacts(submission) {
     });
   }
 
+  const minutes = Number(submission?.duration_minutes);
+  if (submission?.duration_minutes != null && Number.isFinite(minutes) && minutes > 0) {
+    const hours = formatCleanupHours(minutes);
+    facts.push({
+      icon: 'time-outline',
+      value: hours,
+      caption: `${hours === '1' ? 'hr' : 'hrs'} spent`,
+      label: `${hours} ${hours === '1' ? 'hour' : 'hours'} spent`,
+    });
+  }
+
   return facts;
+}
+
+// Minutes as hours to one decimal: 90 -> "1.5", 60 -> "1", 5 -> "0.1".
+export function formatCleanupHours(minutes) {
+  return String(Math.max(0.1, Math.round((Number(minutes) / 60) * 10) / 10));
 }
 
 export function formatCleanupDate(value) {

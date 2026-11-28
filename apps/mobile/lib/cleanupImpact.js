@@ -1,4 +1,6 @@
+import { claimedReportPhotoPaths } from './claimedReportContent';
 import { supabase } from './supabase';
+import { reportAfterPhotoUrl } from './reportPhotoUrls';
 
 const SIGNED_PHOTO_DURATION_SECONDS = 60 * 60;
 
@@ -25,7 +27,7 @@ export async function loadCompletedCleanupImpact(reportId) {
 
   const { data: attempt, error: attemptError } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, status, completed_at, approval_method, is_self_cleanup, final_submission_id')
+    .select('id, report_id, cleaner_id, status, report_content_revision, completed_at, approval_method, is_self_cleanup, final_submission_id')
     .eq('report_id', reportId)
     .eq('status', 'completed')
     .not('final_submission_id', 'is', null)
@@ -39,7 +41,7 @@ export async function loadCompletedCleanupImpact(reportId) {
   const [submissionResult, cleanerResult, photosResult] = await Promise.all([
     supabase
       .from('cleanup_submissions')
-      .select('id, cleanup_attempt_id, description, bags_or_items_removed, weight_pounds, created_at')
+      .select('id, cleanup_attempt_id, description, bags_or_items_removed, weight_pounds, duration_minutes, created_at')
       .eq('id', attempt.final_submission_id)
       .eq('cleanup_attempt_id', attempt.id)
       .maybeSingle(),
@@ -62,16 +64,27 @@ export async function loadCompletedCleanupImpact(reportId) {
   if (photosResult.error) throw photosResult.error;
   if (!submissionResult.data) throw new Error('cleanup_impact_submission_unavailable');
 
-  const afterPhotoUrls = await Promise.all(
-    (photosResult.data ?? []).map(({ storage_path: path }) => (
-      createCleanupPhotoUrl(path)
-    ))
+  const signedAfterPhotos = await Promise.all(
+    (photosResult.data ?? []).map(async ({ storage_path: path }, index) => ({
+      url: await createCleanupPhotoUrl(path),
+      // The website's resized copy loads far faster; the signed original is the fallback.
+      quickUrl: reportAfterPhotoUrl(reportId, { width: 1080, index }),
+    }))
   );
+  const afterPhotos = signedAfterPhotos.filter(({ url }) => url);
 
+  const beforePhotoPaths = await claimedReportPhotoPaths(attempt, null);
+  const beforePhotoUrls = beforePhotoPaths ? await Promise.all(beforePhotoPaths.map(async path => {
+    const { data, error } = await supabase.storage.from('report_photos').createSignedUrl(path, SIGNED_PHOTO_DURATION_SECONDS);
+    if (error) throw error;
+    return data.signedUrl;
+  })) : null;
   return {
+    beforePhotoPaths, beforePhotoUrls,
     attempt,
     submission: submissionResult.data,
     cleaner: cleanerResult.data ?? null,
-    afterPhotoUrls: afterPhotoUrls.filter(Boolean),
+    afterPhotoUrls: afterPhotos.map(({ url }) => url),
+    afterPhotoQuickUrls: afterPhotos.map(({ quickUrl }) => quickUrl),
   };
 }

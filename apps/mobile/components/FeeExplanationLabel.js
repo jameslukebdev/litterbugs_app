@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { colors } from '../lib/theme';
 
 export default function FeeExplanationLabel({ label = 'Service fee', textStyle }) {
   const explain = () => Alert.alert(
@@ -17,12 +18,12 @@ export default function FeeExplanationLabel({ label = 'Service fee', textStyle }
       style={styles.label}
     >
       <Text style={[styles.text, textStyle]}>{label}</Text>
-      <Ionicons name="help-circle-outline" size={18} color="#687178" accessible={false} />
+      <Ionicons name="help-circle-outline" size={18} color={colors.muted} accessible={false} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   label: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, flexShrink: 1, marginRight: 8 },
-  text: { color: '#687178', fontSize: 14, flexShrink: 1 },
+  text: { color: colors.muted, fontSize: 14, flexShrink: 1 },
 });

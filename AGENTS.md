@@ -21,6 +21,29 @@ login available. These are unavailable resources, not pending owner actions.
 See `docs/user-testing-known-issues.md` for the current testing limitations and
 `docs/reviews/2026-09-11-deletion-moderation-financial-audit.md` for evidence.
 
+## App Store Connect access clarification — November 13, 2026
+
+Grant confirmed admin access and successfully signed into the existing Litterbugs
+App Store Connect listing under James Luke Barber. Authorized release preparation
+initially included store privacy/metadata work without upload/submission. The
+owner subsequently authorized uploading and submitting the refreshed2.1.0 builds
+for Apple/Google review, with public release kept manual. This includes the pin
+fix: iOS28 / Android25 from frozen source7e4275b; earlier27/24 are superseded.
+Do not publicly release either store version without a later explicit instruction.
+Luke accepted the updated Apple Developer Program License Agreement on
+November13; the block is cleared. Apple2.1.0(28) is uploaded, attached and
+Waiting for Review (submission2abda04e-5782-41bf-99ed-d2005198cc12). Manual
+release is selected. Release notes, review login and privacy-policy URL are saved.
+At the owner’s explicit follow-up request, all19 privacy categories for2.1.0
+were completed and published on November13, including diagnostics, embedded
+Stripe verification details and Coarse Location Analytics. Reload verified no
+unfinished setup; manual app release remains selected. Privacy details are
+published, not a saved draft. See the current store privacy handoff.
+
+This scoped access update does not reopen the excluded Apple authorization
+revocation or separate-user Facebook tests, permit changes to Grant's personal
+Apple developer settings, or authorize account deletion/revocation testing.
+
 ## Website analytics and internal testing
 
 - Keep normal visitor analytics enabled by default without an automatic
@@ -30,6 +53,34 @@ See `docs/user-testing-known-issues.md` for the current testing limitations and
   existing Analytics choices to turn off analytics for that test browser.
 - When verifying analytics itself requires a tracked test visit, record that
   it is test traffic and restore the test browser's exclusion afterward.
+
+## Visual style preferences — November 12, 2026
+
+- When creating or restyling UI, use the existing mint-green family whenever
+  green is needed: mint fills (`#b9e9dd`) and borders (`#8ed7c5`) with readable
+  dark text. Avoid the legacy forest-green styling.
+- Apply this to the work in scope; preserve unrelated screens and bug artwork.
+
+## Current Android map pass — November 13, 2026
+
+Grant confirmed the iPhone map/UI is finished and asked to work on the connected
+Pixel without changing it. Preserve the approved iPhone behavior (mobile source
+`f37328a` includes the final shared controls/cards and prior iPhone-only fixes).
+Scope new map corrections to Android-only components/configuration. If a shared
+file needs editing, guard the change to Android and verify the iPhone path is
+unchanged. Do not rebuild or resubmit iOS during this Android pass. Keep the
+existing manual public-release holds. Leave the iPhone simulator open at the
+owner's later request; use a low-resource mirror of the physical Pixel.
+
+## Screen-size audit and release hold — November 13, 2026
+
+After the Android-only pass, Grant requested refreshed builds for both platforms,
+then explicitly put that work on hold for a multi-size UI audit. Responsive fixes
+on both iPhone and Android are now authorized within that audit. Preserve the
+approved normal-screen styling and platform-specific camera/drop/card timings.
+No earlier review was canceled and no replacement build/upload was started.
+Keep rebuilds and replacement submissions held for review of the audit results;
+public release must remain manual on both stores.
 
 ## Working alongside Claude
 

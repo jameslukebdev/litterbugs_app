@@ -73,7 +73,7 @@ export function payoutWorkflowCopy(kind) {
     case PAYOUT_WORKFLOW_KIND.CLEANUP_CLAIM:
       return {
         title: 'Connect Stripe before claiming',
-        text: 'This cleanup has a monetary reward. Finish individual payout setup before Litterbugs reserves it for you. Volunteer cleanups do not require Stripe.',
+        text: 'This cleanup comes with a payout. Finish individual payout setup before Litterbugs reserves it for you. Volunteer cleanups do not require Stripe.',
       };
     default:
       return null;

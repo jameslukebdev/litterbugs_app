@@ -46,7 +46,7 @@ export async function claimCleanup(reportId) {
 export async function loadActiveCleanupAttempt(reportId) {
   const { data, error } = await supabase
     .from('cleanup_attempts')
-    .select('id, report_id, cleaner_id, reporter_id, status, claimed_at, claim_expires_at, correction_due_at')
+    .select('id, report_id, cleaner_id, reporter_id, status, claimed_at, claim_expires_at, correction_due_at, issue_paused_at')
     .eq('report_id', reportId)
     .in('status', ['claimed', 'completion_submitted', 'changes_requested'])
     .order('claimed_at', { ascending: false })
@@ -69,11 +69,24 @@ export async function releaseCleanup(cleanupId) {
 export async function loadUnreadCleanupNotifications() {
   const { data, error } = await supabase
     .from('cleanup_notifications')
-    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, event_type, created_at')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at, tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)')
     .is('read_at', null)
     .order('created_at', { ascending: true })
     .limit(20);
 
+  if (error) throw error;
+  return data ?? [];
+}
+
+// The Updates inbox: every update for this member, newest first, read or not.
+export async function loadCleanupNotifications({ userId, unreadOnly = false } = {}) {
+  if (!userId) return [];
+  let query = supabase
+    .from('cleanup_notifications')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at, read_at, report:reports!cleanup_notifications_report_id_fkey(id,title), tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)')
+    .eq('user_id', userId);
+  if (unreadOnly) query = query.is('read_at', null);
+  const { data, error } = await query.order('created_at', { ascending: false }).order('id').limit(50);
   if (error) throw error;
   return data ?? [];
 }

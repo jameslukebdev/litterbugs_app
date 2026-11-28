@@ -14,8 +14,13 @@ describe('funded-cleanup payment configuration', () => {
   });
 
   it('keeps Apple Pay disabled in every interim EAS build profile', () => {
-    for (const profile of Object.values(easConfig.build)) {
-      expect(profile.env?.ENABLE_APPLE_PAY).toBe('false');
+    // Follow EAS "extends" so inherited settings count, as they do in real builds.
+    const resolvedEnv = (name) => {
+      const profile = easConfig.build[name];
+      return { ...(profile.extends ? resolvedEnv(profile.extends) : {}), ...(profile.env ?? {}) };
+    };
+    for (const name of Object.keys(easConfig.build)) {
+      expect(resolvedEnv(name).ENABLE_APPLE_PAY).toBe('false');
     }
   });
 

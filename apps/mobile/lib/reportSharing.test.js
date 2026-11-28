@@ -73,12 +73,12 @@ describe('report sharing', () => {
     expect(canOpenURL).toHaveBeenCalledWith('instagram-stories://share');
   });
 
-  it('shares only available active reports and completed impact records', () => {
+  it('shares active, in-progress and completed reports, as the website does', () => {
     expect(isReportShareable(availableReport, now)).toBe(true);
     expect(isReportShareable({ ...availableReport, cleanup_state: 'completed' }, now)).toBe(true);
-    expect(isReportShareable({ ...availableReport, cleanup_state: 'claimed' }, now)).toBe(false);
-    expect(isReportShareable({ ...availableReport, cleanup_state: 'completion_submitted' }, now)).toBe(false);
-    expect(isReportShareable({ ...availableReport, cleanup_state: 'changes_requested' }, now)).toBe(false);
+    expect(isReportShareable({ ...availableReport, cleanup_state: 'claimed' }, now)).toBe(true);
+    expect(isReportShareable({ ...availableReport, cleanup_state: 'completion_submitted' }, now)).toBe(true);
+    expect(isReportShareable({ ...availableReport, cleanup_state: 'changes_requested' }, now)).toBe(true);
     expect(isReportShareable({ ...availableReport, expired_at: now.toISOString() }, now)).toBe(false);
     expect(isReportShareable({ ...availableReport, cleanup_state: 'completed', is_sample: true }, now)).toBe(false);
   });
@@ -387,18 +387,14 @@ describe('report sharing', () => {
     expect(JSON.stringify(shareSingle.mock.calls[0][0])).not.toContain('-82.55404');
   });
 
-  it('does not open the system sheet for pending or in-progress reports', async () => {
+  it('does not open the system sheet for closed reports', async () => {
     const share = vi.fn();
-
-    for (const cleanup_state of ['claimed', 'completion_submitted', 'changes_requested']) {
-      const result = await shareReportWithSystemSheet({
-        report: { ...availableReport, cleanup_state },
-        platform: 'android',
-        share,
-      });
-      expect(result.status).toBe('unavailable');
-    }
-
+    const result = await shareReportWithSystemSheet({
+      report: { ...availableReport, cancelled_at: now.toISOString() },
+      platform: 'android',
+      share,
+    });
+    expect(result.status).toBe('unavailable');
     expect(share).not.toHaveBeenCalled();
   });
 });

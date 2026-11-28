@@ -33,6 +33,6 @@ describe('floating bottom navigation layout', () => {
     expect(Number.isFinite(BOTTOM_NAV_METRICS.maximumWidth)).toBe(true);
     expect(floatingTabBarSource).toContain('styles.barDock');
     expect(floatingTabBarSource).toContain('styles.tabContentSelected');
-    expect(floatingTabBarSource).toContain("boxShadow: '0 8px 24px rgba(31, 35, 40, 0.18)'");
+    expect(floatingTabBarSource).toContain("boxShadow: '0 8px 24px rgba(41, 41, 50, 0.18)'");
   });
 });

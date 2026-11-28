@@ -1,10 +1,11 @@
+import { colors } from './theme';
 export function payoutConnectionPresentation({ status, loading, error } = {}) {
   if (loading && !status) {
     return {
       label: 'Updating payout details…',
       icon: null,
-      color: '#687178',
-      backgroundColor: '#F4F6F7',
+      color: colors.muted,
+      backgroundColor: colors.mist,
     };
   }
 
@@ -20,17 +21,17 @@ export function payoutConnectionPresentation({ status, loading, error } = {}) {
 
   if (status?.payoutsEnabled === true) {
     return {
-      label: 'Ready to receive cleanup rewards',
+      label: 'Ready to receive payouts',
       icon: 'checkmark-circle',
-      color: '#2F7D32',
-      backgroundColor: '#EEF7EF',
+      color: colors.primary,
+      backgroundColor: colors.primarySoft,
     };
   }
 
   return {
     label: 'Set up payouts',
     icon: 'wallet-outline',
-    color: '#59636A',
-    backgroundColor: '#F4F6F7',
+    color: colors.body,
+    backgroundColor: colors.mist,
   };
 }

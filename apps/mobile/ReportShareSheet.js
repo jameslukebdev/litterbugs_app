@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SlideUp from './components/SlideUp';
+import { colors, fonts } from './lib/theme';
 
 const logo = require('./assets/LB_Logo_PNG.png');
 
@@ -30,7 +32,7 @@ function ShareOption({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ busy, disabled: busy }}
     >
-      <View style={[styles.optionIcon, { backgroundColor: `${iconColor}14` }]}>
+      <View style={styles.optionIcon}>
         {busy ? (
           <ActivityIndicator color={iconColor} />
         ) : (
@@ -41,7 +43,7 @@ function ShareOption({
         <Text style={styles.optionTitle}>{title}</Text>
         <Text style={styles.optionDescription}>{description}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#788178" />
+      <Ionicons name="chevron-forward" size={20} color={colors.muted} />
     </TouchableOpacity>
   );
 }
@@ -74,7 +76,7 @@ export default function ReportShareSheet({
       accessibilityViewIsModal
       accessibilityLabel={completed ? 'Share cleanup' : 'Share report'}
     >
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
+      <SlideUp style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
             <View style={styles.headerCopy}>
@@ -89,7 +91,7 @@ export default function ReportShareSheet({
               accessibilityRole="button"
               accessibilityLabel="Close share options"
             >
-              <Ionicons name="close" size={23} color="#263129" />
+              <Ionicons name="close" size={23} color={colors.ink} />
             </TouchableOpacity>
           </View>
 
@@ -116,7 +118,7 @@ export default function ReportShareSheet({
               busy={busy}
               description="Send or copy a clickable report link"
               icon="link-outline"
-              iconColor="#2F7D32"
+              iconColor={colors.primary}
               onPress={onLinkShare}
               title="Share link"
             />
@@ -134,7 +136,7 @@ export default function ReportShareSheet({
               busy={busy}
               description="Send the report card and caption"
               icon="share-outline"
-              iconColor="#2F7D32"
+              iconColor={colors.primary}
               onPress={onSystemShare}
               title="Share photo"
             />
@@ -144,13 +146,13 @@ export default function ReportShareSheet({
             For an Instagram link: open your Story draft, return here to copy the URL with Share link, then paste it into a Link sticker in Instagram.
           </Text>
           <View style={styles.privacyRow}>
-            <Ionicons name="shield-checkmark-outline" size={16} color="#617066" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.muted} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
             <Text style={styles.privacyText}>
               Exact coordinates and private account details stay off the shared card.
             </Text>
           </View>
           </ScrollView>
-      </View>
+      </SlideUp>
     </View>
   );
 }
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(13, 22, 16, 0.42)',
+    backgroundColor: 'rgba(41, 41, 50, 0.42)',
     zIndex: 50,
   },
   sheet: {
@@ -167,8 +169,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#07150B',
+    backgroundColor: colors.white,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.22,
     shadowRadius: 28,
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 10,
     borderRadius: 3,
-    backgroundColor: '#D7DED8',
+    backgroundColor: colors.lineStrong,
   },
   header: {
     flexDirection: 'row',
@@ -193,9 +195,9 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1 },
   heading: {
-    color: '#182019',
+    color: colors.ink,
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
     lineHeight: 28,
     letterSpacing: -0.45,
   },
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 22,
-    backgroundColor: '#F3F5F4',
+    backgroundColor: colors.mist,
   },
   preview: {
     minHeight: 104,
@@ -215,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     overflow: 'hidden',
     borderRadius: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   previewMedia: {
     width: 88,
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: '#EAF0EB',
+    backgroundColor: colors.line,
   },
   previewPhoto: { width: 88, height: 88 },
   previewLogo: { width: 68, height: 54 },
@@ -236,15 +238,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   previewEyebrow: {
-    color: '#667268',
+    color: colors.muted,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '400',
   },
-  previewTitle: { color: '#263129', fontSize: 16, lineHeight: 21, fontWeight: '600' },
-  previewDetails: { color: '#5C675E', fontSize: 12 },
+  previewTitle: { color: colors.ink, fontSize: 16, lineHeight: 21, fontWeight: '600' },
+  previewDetails: { color: colors.body, fontSize: 12 },
   options: { gap: 10, paddingHorizontal: 20 },
-  linkHelp: { marginHorizontal: 20, marginTop: 14, color: '#5C675E', fontSize: 12, lineHeight: 17 },
+  linkHelp: { marginHorizontal: 20, marginTop: 14, color: colors.body, fontSize: 12, lineHeight: 17 },
   option: {
     minHeight: 70,
     flexDirection: 'row',
@@ -253,21 +255,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#D9DFDA',
+    borderColor: colors.line,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   optionBusy: { opacity: 0.74 },
   optionIcon: {
-    width: 44,
+    width: 32,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
   },
   optionCopy: { flex: 1, gap: 2 },
-  optionTitle: { color: '#243027', fontSize: 15, lineHeight: 21, fontWeight: '600' },
-  optionDescription: { color: '#68736A', fontSize: 12, lineHeight: 16 },
+  optionTitle: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' },
+  optionDescription: { color: colors.muted, fontSize: 12, lineHeight: 16 },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E2E7E3',
+    borderTopColor: colors.line,
   },
-  privacyText: { flex: 1, color: '#68736A', fontSize: 11, lineHeight: 15 },
+  privacyText: { flex: 1, color: colors.muted, fontSize: 11, lineHeight: 15 },
 });

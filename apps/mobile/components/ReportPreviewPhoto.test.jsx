@@ -67,3 +67,13 @@ describe('preview photo request states', () => {
     expect(host.querySelector('img').src).toBe('https://example.test/b.jpg');
   });
 });
+describe('smaller website copy', () => {
+  it('shows the resized copy first and falls back to the stored original if it fails', async () => {
+    const getUrl = vi.fn().mockResolvedValue('https://example.test/original.jpg');
+    host=document.createElement('div'); document.body.append(host); root=createRoot(host);
+    await act(() => root.render(<RemotePhoto path="a.jpg" quickUri="https://example.test/card.webp" getUrl={getUrl} />));
+    expect(host.querySelector('img').src).toBe('https://example.test/card.webp');
+    await act(() => host.querySelector('img').dispatchEvent(new Event('error')));
+    expect(host.querySelector('img').src).toBe('https://example.test/original.jpg');
+  });
+});

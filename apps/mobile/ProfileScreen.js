@@ -1,10 +1,9 @@
 import { reportDraftSummary as loadReportDraft } from './lib/savedReportDraft';
 import ActionRow from './components/NavigationRow';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import {
-  ActivityIndicator,
   Alert,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,65 +14,66 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import useFocusedResource from './lib/useFocusedResource';
 import PointsExplanation from './components/PointsExplanation';
-import { Image } from 'expo-image';
+import RankCard from './components/RankCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileAvatar from './ProfileAvatar';
-import ProfileReportList from './ProfileReportList';
-import { deleteCurrentAccount, signOut } from './lib/auth';
+import { CompletedCleanupRow, ContributionRow, CurrentCleanupRow, ReportActivityRow } from './components/ActivityRows';
+import { deleteCurrentAccount, sendPasswordRecovery, signOut } from './lib/auth';
 import { openSupport } from './lib/support';
 import * as WebBrowser from 'expo-web-browser';
 import { loadCurrentUserCleanupSummary } from './lib/cleanup';
-import { cleanupStatusPresentation } from './lib/cleanupEligibility';
 import { ReporterEarnings } from './components/ReporterEarnings';
-import { formatUsd, loadCleanupFeatureFlags, loadPayoutStatus } from './lib/funding';
-import {
-  cleanupApprovalLabel,
-  emptyCleanupSummary,
-} from './lib/cleanupProfile';
+import { paymentTotals, shouldPromptReporterPayout } from './lib/paymentTotals';
+import { formatUsd, loadCleanupFeatureFlags, loadMyContributionAmounts, loadMyContributions, loadPayoutStatus, loadReporterRewards } from './lib/funding';
+import { emptyCleanupSummary } from './lib/cleanupProfile';
 import { getBottomNavClearance } from './lib/navigationLayout';
 import { payoutConnectionPresentation } from './lib/payoutConnectionPresentation';
 import { useProfile } from './lib/profile';
-import { getRankAsset } from './lib/rankAssets';
-import { getRankForPoints } from './lib/ranking';
 import { loadRanking } from './lib/rankingService';
 import { isPermanentUser } from './lib/reportAccess';
 import useAccountReports from './lib/useAccountReports';
 import { groupAccountReports } from './lib/accountReports';
 import { useSession } from './lib/session';
+import { colors, fonts } from './lib/theme';
+import BrandBug from './components/BrandBug';
+import { useUnreadUpdates } from './lib/unreadUpdates';
+import LoadingBee from './components/LoadingBee';
+import { EmptyState, LoadFailure, PillTabs, PrimaryButton, PullRefresh, TextLink } from './components/ui';
 
 const TERMS_URL = 'https://litterbugs.app/terms';
 const PRIVACY_URL = 'https://litterbugs.app/privacy';
 const CLEANUP_POLICY_URL = 'https://litterbugs.app/cleanup-policy';
+const CLEANUP_SAFETY_URL = 'https://litterbugs.app/cleanup-safety';
 
 const openLitterbugsLink = async (url) => {
   try {
-    await WebBrowser.openBrowserAsync(url, { toolbarColor: '#FFFFFF', controlsColor: '#2F7D32', presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET });
+    await WebBrowser.openBrowserAsync(url, { toolbarColor: colors.white, controlsColor: colors.primary, presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET });
   } catch (error) {
     Alert.alert('Can’t open link', 'Unable to open this Litterbugs page on your device.');
   }
 };
 
-function StripeConnectionStatus({ status, loading, error, onRetry }) {
+// One row: the payout status, and a tap opens payout settings (or retries on error).
+function StripeConnectionStatus({ status, loading, error, onRetry, onOpen }) {
   const presentation = payoutConnectionPresentation({ status, loading, error });
-  if (loading && !status) return <View style={[styles.stripeConnectionRow, { backgroundColor: '#F4F6F7' }]} />;
+  if (loading && !status) return <View style={styles.stripeConnectionRow} />;
 
   return (
     <TouchableOpacity
       style={[
         styles.stripeConnectionRow,
-        { backgroundColor: presentation.backgroundColor },
       ]}
-      onPress={error ? onRetry : undefined}
-      disabled={!error}
+      onPress={error ? onRetry : onOpen}
+      disabled={!error && !onOpen}
       activeOpacity={0.72}
       accessible
-      accessibilityRole={error ? 'button' : undefined}
+      accessibilityRole={error || onOpen ? 'button' : undefined}
       accessibilityLabel={presentation.label}
-      accessibilityHint={error ? 'Retries checking your Stripe payout connection' : undefined}
+      accessibilityHint={error ? 'Retries checking your Stripe payout connection' : onOpen ? 'Opens payout settings' : undefined}
     >
       {loading && !status ? (
-        <Ionicons name="wallet-outline" size={23} color="#687178" />
+        <Ionicons name="wallet-outline" size={23} color={colors.muted} />
       ) : (
         <Ionicons name={presentation.icon} size={23} color={presentation.color} />
       )}
@@ -85,229 +85,43 @@ function StripeConnectionStatus({ status, loading, error, onRetry }) {
           {presentation.detail}
         </Text>
       ) : null}
+      {!error && onOpen ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
     </TouchableOpacity>
-  );
-}
-
-function ActiveCleanupRow({ attempt, onPress, divided }) {
-  const presentation = cleanupStatusPresentation(
-    { cleanup_state: attempt.status },
-    true
-  );
-  const deadline = attempt.status === 'claimed' && attempt.claim_expires_at
-    ? `Complete by ${new Date(attempt.claim_expires_at).toLocaleString()}`
-    : presentation?.description;
-  const paidStatus = attempt.dispute_status === 'open'
-    ? 'Reward paused for dispute review'
-      : attempt.financial_review_status === 'admin_review'
-      ? 'Reward paused for review'
-      : attempt.financial_review_status === 'better_photos'
-        ? 'Replacement photos requested'
-      : attempt.first_paid_admin_status === 'pending'
-        ? 'First reward is being reviewed'
-        : attempt.financial_review_status === 'passed'
-          ? 'Reward in 48-hour dispute window'
-          : attempt.financial_review_status === 'queued'
-            ? 'Photos are being reviewed'
-            : attempt.status === 'claimed'
-              ? 'Reward held for this cleanup'
-              : 'Reward pending';
-
-  return (
-    <TouchableOpacity
-      style={[styles.activeCleanupRow, divided && styles.activeCleanupDivider]}
-      onPress={onPress}
-      activeOpacity={0.72}
-      accessibilityRole="button"
-      accessibilityLabel={`Return to ${attempt.report?.title || 'active cleanup'}`}
-      accessibilityHint="Opens the claimed cleanup report on the map"
-    >
-      <View style={styles.activeCleanupIcon}>
-        <Ionicons name={presentation?.icon || 'time-outline'} size={24} color="#687178" />
-      </View>
-      <View style={styles.activeCleanupCopy}>
-        <Text style={styles.activeCleanupTitle} numberOfLines={2}>
-          {attempt.report?.title || 'Litter cleanup'}
-        </Text>
-        <Text style={styles.activeCleanupStatus}>{presentation?.title}</Text>
-        {attempt.is_paid ? (
-          <Text style={styles.activeCleanupReward}>
-            {formatUsd(attempt.reward_amount_cents)} · {paidStatus}
-          </Text>
-        ) : null}
-        <Text style={styles.activeCleanupDeadline}>{deadline}</Text>
-        <Text style={styles.activeCleanupLink}>Return to cleanup</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={22} color="#687178" />
-    </TouchableOpacity>
-  );
-}
-
-function CleanupStat({ value, label, divided }) {
-  return (
-    <View testID={`cleanup-stat-${label}`} style={[styles.cleanupStat, divided && styles.cleanupStatDivider]}>
-      <Text testID={`cleanup-value-${label}`} style={styles.cleanupStatValue}>{value}</Text>
-      <View style={styles.cleanupStatLabelContainer}>
-        <Text testID={`cleanup-label-${label}`} style={styles.cleanupStatLabel}>{label}</Text>
-      </View>
-    </View>
-  );
-}
-
-function CompletedCleanupRow({ attempt, onPress, divided }) {
-  const completedDate = attempt.completed_at
-    ? new Date(attempt.completed_at).toLocaleDateString()
-    : 'Date unavailable';
-  const payoutStatus = {
-    blocked: 'Awaiting release',
-    pending: 'Reward pending',
-    processing: 'Sending reward',
-    transferred: 'Reward sent',
-    failed: 'Reward needs attention',
-  }[attempt.payout_status] || 'Payout status unavailable';
-
-  return (
-    <TouchableOpacity
-      style={[styles.completedCleanupRow, divided && styles.completedCleanupDivider]}
-      onPress={onPress}
-      activeOpacity={0.72}
-      accessibilityRole="button"
-      accessibilityLabel={`Open completed cleanup ${attempt.report?.title || ''}`.trim()}
-    >
-      <View style={styles.completedCleanupIcon}>
-        <Ionicons name="checkmark" size={22} color="#FFFFFF" />
-      </View>
-      <View style={styles.completedCleanupCopy}>
-        <Text style={styles.completedCleanupTitle} numberOfLines={2}>
-          {attempt.report?.title || 'Completed litter cleanup'}
-        </Text>
-        <Text style={styles.completedCleanupMeta}>
-          {completedDate} · {cleanupApprovalLabel(attempt.approval_method)}
-        </Text>
-        {attempt.is_paid ? (
-          <Text style={styles.completedCleanupReward}>
-            {formatUsd(attempt.reward_amount_cents)} · {payoutStatus}
-          </Text>
-        ) : null}
-      </View>
-      <Ionicons name="chevron-forward" size={22} color="#6C8B70" />
-    </TouchableOpacity>
-  );
-}
-
-function RankingCard({ ranking, loading, error, onRetry }) {
-  if (!ranking) {
-    const showingLoader = loading || !error;
-
-    return (
-      <TouchableOpacity
-        style={styles.rankCard}
-        onPress={error ? onRetry : undefined}
-        disabled={!error}
-        activeOpacity={0.76}
-        accessibilityRole={error ? 'button' : undefined}
-        accessibilityLabel={error ? 'Retry loading rank' : 'Loading rank'}
-      >
-        <View style={styles.rankSummaryRow}>
-          <View style={styles.rankArtworkStage}><Ionicons name={showingLoader ? 'ribbon-outline' : 'cloud-offline-outline'} size={34} color="#2F7D32" /></View>
-          <View style={styles.rankSummaryCopy}>
-            <Text style={styles.rankEyebrow}>Community rank</Text>
-            <Text style={styles.rankName}>{showingLoader ? 'Loading…' : 'Unavailable'}</Text>
-          </View>
-          <Text style={styles.rankPoints}>—</Text>
-        </View>
-        <View style={styles.rankProgressSection}>
-          <View style={styles.rankProgressHeader}><Text style={styles.rankProgressTitle}>{error ? 'Tap to try again' : 'Your progress'}</Text><Text style={styles.rankProgressPercent}>—</Text></View>
-          <View style={styles.rankProgressTrack} />
-          <Text style={styles.rankRemaining}>{error ? 'Couldn’t load your rank' : 'Loading your rank…'}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  const rankDefinition = getRankForPoints(ranking.points);
-  const pointsLabel = `${ranking.points.toLocaleString()} ${ranking.points === 1 ? 'point' : 'points'}`;
-  const remainingLabel = `${ranking.pointsRemaining.toLocaleString()} ${ranking.pointsRemaining === 1 ? 'point' : 'points'}`;
-  const progressPercent = Math.round(ranking.progress * 100);
-
-  return (
-    <View style={styles.rankCard}>
-      <View style={styles.rankSummaryRow}>
-        <View style={styles.rankArtworkStage}>
-          <Image
-            source={getRankAsset(rankDefinition)}
-            contentFit="contain"
-            transition={120}
-            style={styles.rankArtwork}
-            accessibilityLabel={`${ranking.rank} rank artwork`}
-          />
-        </View>
-        <View style={styles.rankSummaryCopy}>
-          <Text style={styles.rankEyebrow}>Community rank</Text>
-          <Text style={styles.rankName}>{ranking.rank}</Text>
-        </View>
-        <Text style={styles.rankPoints}>{pointsLabel}</Text>
-      </View>
-
-      {ranking.nextRank ? (
-        <View style={styles.rankProgressSection}>
-          <View style={styles.rankProgressHeader}>
-            <Text style={styles.rankProgressTitle}>Next rank: {ranking.nextRank}</Text>
-            <Text style={styles.rankProgressPercent}>{progressPercent}%</Text>
-          </View>
-          <View
-            style={styles.rankProgressTrack}
-            accessible
-            accessibilityRole="progressbar"
-            accessibilityLabel={`Progress to ${ranking.nextRank}`}
-            accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
-          >
-            <View style={[styles.rankProgressFill, { width: `${progressPercent}%` }]} />
-          </View>
-          <Text style={styles.rankRemaining}>
-            {remainingLabel} until {ranking.nextRank}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.highestRankBadge}>
-          <Ionicons name="sparkles" size={20} color="#52615A" />
-          <Text style={styles.highestRankText}>Highest Rank Achieved</Text>
-        </View>
-      )}
-
-      {error ? (
-        <TouchableOpacity onPress={onRetry} activeOpacity={0.72} accessibilityRole="button">
-          <Text style={styles.rankRefreshWarning}>Couldn’t refresh rank · Tap to retry</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
   );
 }
 
 function SignedOutProfile({ navigation, bottomPadding }) {
   return (
     <ScrollView contentContainerStyle={[styles.signedOutContent, { paddingBottom: bottomPadding }]}>
-      <View style={styles.signedOutIcon}>
-        <Ionicons name="person-outline" size={48} color="#2F7D32" />
-      </View>
+      {/* No tinted icon circle; the ladybug labels reporting, as on the website. */}
+      <BrandBug kind="ladybug" size={44} />
       <Text style={styles.signedOutTitle}>Make your reports yours</Text>
       <Text style={styles.signedOutText}>
         Sign in to submit litter reports, build your public profile, and keep your activity connected across devices.
       </Text>
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate('Auth')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.primaryButtonText}>Sign in or create account</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Sign in or create account" onPress={() => navigation.navigate('Auth')} style={styles.primaryButton} />
       <View style={styles.signedOutSupport}>
-        <ActionRow label="Get help" icon="help-circle-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'help' })} />
-        <ActionRow label="Support Litterbugs" icon="heart-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'support' })} />
-        <ActionRow label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
-        <ActionRow label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
+        <ActionRow appearance="profile" divided={true} label="Analytics choices" icon="options-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'analytics' })} />
+        <ActionRow appearance="profile" divided={true} label="Get help" icon="help-circle-outline" onPress={() => navigation.navigate('SettingsInfo', { topic: 'help' })} />
+        <ActionRow appearance="profile" divided={true} label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
+        <ActionRow appearance="profile" divided={false} label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
       </View>
     </ScrollView>
+  );
+}
+
+// Shown when a reporter reward cannot be sent because payouts are not set up yet.
+function ReporterPayoutPrompt({ cents, onPress, style }) {
+  const amount = formatUsd(cents);
+  return (
+    <TouchableOpacity style={[styles.payoutPrompt, style]} onPress={onPress} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`A ${amount} reporter payout is waiting. Set up payouts to receive it.`}>
+      <BrandBug kind="dragonfly" size={34} playOnMount />
+      <View style={styles.payoutPromptCopy}>
+        <Text style={styles.payoutPromptTitle}>A {amount} reporter payout is waiting</Text>
+        <Text style={styles.payoutPromptLine}>Set up payouts to receive it.</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.fundInk} />
+    </TouchableOpacity>
   );
 }
 
@@ -323,20 +137,40 @@ export default function ProfileScreen({ navigation, route }) {
   const permanent = isPermanentUser(user);
   const { profile, refreshProfile, loading } = useProfile();
   const { reports, loading: reportsLoading, error: reportsError, hasLoaded: reportsHaveLoaded, refresh: refreshReports } = useAccountReports(permanent ? user.id : null);
-  const [reportView, setReportView] = useState('active');
   const insets = useSafeAreaInsets();
+  // Tapping the Profile tab again returns the page to the top.
+  const scrollRef = useRef(null);
+  useScrollToTop(scrollRef);
+  const unreadUpdates = useUnreadUpdates(permanent ? user.id : null);
   const [signingOut, setSigningOut] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const cleanups = useFocusedResource(useCallback(() => loadCurrentUserCleanupSummary(user.id), [user?.id]), { enabled: permanent && section !== 'settings', cacheKey: `cleanups:${user?.id}` });
   const rankingResource = useFocusedResource(useCallback(() => loadRanking(user.id), [user?.id]), { enabled: permanent && section === 'overview', cacheKey: `rank:${user?.id}` });
   const flags = useFocusedResource(useCallback(() => loadCleanupFeatureFlags(), [user?.id]), { enabled: permanent, cacheKey: `funding-flags:${user?.id}` });
   const fundingSchemaReady = flags.hasLoaded;
   const fundingEnabled = fundingSchemaReady && Boolean(flags.data?.payments_enabled && flags.data?.gemini_financial_review_enabled);
-  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && section === 'payments' && fundingEnabled, cacheKey: `payout:${user?.id}` });
+  // Reporter rewards load on Profile too, so someone who is owed money is told before they
+  // ever open Payments. The payout account is only checked there when a reward is waiting.
+  const reporterRewards = useFocusedResource(useCallback(() => loadReporterRewards(user.id), [user?.id]), { enabled: permanent && (section === 'overview' || section === 'payments'), cacheKey: `reporter-rewards:${user?.id}` });
+  const reporterWaiting = (reporterRewards.data ?? []).some(reward => reward.status === 'pending');
+  const payout = useFocusedResource(useCallback(() => loadPayoutStatus(), [user?.id]), { enabled: permanent && fundingEnabled && (section === 'payments' || (section === 'overview' && reporterWaiting)), cacheKey: `payout:${user?.id}` });
   const cleanupSummary = cleanups.data ?? emptyCleanupSummary();
   const { loading: cleanupsLoading, error: cleanupsError, refresh: refreshCleanups } = cleanups;
   const { data: ranking, loading: rankingLoading, error: rankingError, refresh: refreshRanking } = rankingResource;
   const { data: payoutStatus, loading: payoutStatusLoading, error: payoutStatusError, refresh: refreshPayoutStatus } = payout;
+  // Payments shows once its first loads have all answered (or failed), so the page
+  // appears in one piece.
+  const contributions = useFocusedResource(useCallback(() => loadMyContributions({ userId: user?.id }), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payments-preview:${user?.id}` });
+  const contributionItems = contributions.data?.items ?? [];
+  const contributionAmounts = useFocusedResource(useCallback(() => loadMyContributionAmounts(user?.id), [user?.id]), { enabled: permanent && section === 'payments', cacheKey: `payment-amounts:${user?.id}` });
+  const [paymentsView, setPaymentsView] = useState('donations');
+  const settled = resource => resource.hasLoaded || Boolean(resource.error);
+  const totals = paymentTotals({ contributions: contributionAmounts.data ?? [], reporterRewards: reporterRewards.data ?? [], cleanups: cleanupSummary.completed });
+  const promptReporterPayout = fundingEnabled && shouldPromptReporterPayout(totals, payoutStatus);
+  const openPayoutSetup = () => navigation.navigate('PayoutSetup', payoutStatus ? { initialStatus: payoutStatus } : undefined);
+  const paymentsReady = settled(contributions) && settled(flags) && settled(cleanups) && settled(contributionAmounts) && settled(reporterRewards)
+    && (!fundingEnabled || Boolean(payoutStatus) || Boolean(payoutStatusError));
   const savedDraft = useFocusedResource(useCallback(() => loadReportDraft(user.id), [user?.id]), { enabled: permanent && section === 'activity' });
   const accountBusy = signingOut || deletingAccount;
   const bottomPadding = section === 'overview' ? getBottomNavClearance(insets.bottom) + 18 : insets.bottom + 24;
@@ -344,6 +178,18 @@ export default function ProfileScreen({ navigation, route }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: permanent && section === 'overview' ? () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {/* The website's bell: opens Updates and shows how many are unread. */}
+        <TouchableOpacity
+          style={styles.headerEditButton}
+          hitSlop={6}
+          onPress={() => navigation.navigate('Updates')}
+          accessibilityRole="button"
+          accessibilityLabel={unreadUpdates > 0 ? `Updates, ${unreadUpdates} unread` : 'Updates'}
+        >
+          <Ionicons name="notifications-outline" size={23} color={colors.primary} />
+          {unreadUpdates > 0 ? <View style={styles.bellBadge}><Text style={styles.bellBadgeText}>{unreadUpdates > 9 ? '9+' : unreadUpdates}</Text></View> : null}
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.headerEditButton}
           hitSlop={6}
@@ -351,18 +197,43 @@ export default function ProfileScreen({ navigation, route }) {
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
         >
-          <Ionicons name="create-outline" size={22} color="#2F7D32" />
+          <Ionicons name="create-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
+        </View>
       ) : undefined,
       headerRightContainerStyle: styles.headerEditButtonContainer,
     });
-  }, [navigation, permanent, section]);
+  }, [navigation, permanent, section, unreadUpdates]);
 
-  const reportGroups = useMemo(() => groupAccountReports(reports), [reports]);
+  // Website My reports: one list, each row labelled with its state.
+  const closedReportIds = useMemo(() => new Set(groupAccountReports(reports).closed.map(({ id }) => id)), [reports]);
 
   if (!permanent) {
     return <SignedOutProfile navigation={navigation} bottomPadding={bottomPadding} />;
   }
+
+  // Website settings: "Reset password" emails a link, after one confirmation.
+  const handleResetPassword = () => {
+    if (accountBusy || sendingReset) return;
+    Alert.alert('Reset password?', `We’ll email a reset link to ${user.email}.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Send link',
+        onPress: async () => {
+          setSendingReset(true);
+          try {
+            const { error } = await sendPasswordRecovery(user.email);
+            if (error) throw error;
+            Alert.alert('Check your email', 'We sent a link to reset your password.');
+          } catch {
+            Alert.alert('Couldn’t send the link', 'Check your connection and try again.');
+          } finally {
+            setSendingReset(false);
+          }
+        },
+      },
+    ]);
+  };
 
   const handleSignOut = () => {
     if (accountBusy) return;
@@ -412,7 +283,7 @@ export default function ProfileScreen({ navigation, route }) {
               }
             } catch (error) {
               if (error?.code === 'PAYOUT_PENDING') {
-                Alert.alert('A reward is still being sent', 'Contact us for help completing your account deletion.', [
+                Alert.alert('A payout is still being sent', 'Contact us for help completing your account deletion.', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Get help', onPress: () => openSupport() },
                 ]);
@@ -440,32 +311,34 @@ export default function ProfileScreen({ navigation, route }) {
       refreshRanking(),
       flags.refresh(),
       ...(fundingEnabled ? [refreshPayoutStatus()] : []),
+      ...(section === 'payments' ? [contributions.refresh(), contributionAmounts.refresh()] : []),
+      ...(section === 'payments' || section === 'overview' ? [reporterRewards.refresh()] : []),
     ]);
     setPullRefreshing(false);
   };
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, (section === 'overview' || section === 'activity' || section === 'payments' || section === 'settings') && styles.overviewContainer]}
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={refresh} tintColor="#2F7D32" />}
+      refreshControl={<PullRefresh refreshing={pullRefreshing} onRefresh={refresh} />}
     >
       {section === 'overview' ? <>
       <View style={styles.identity}>
         <View style={[styles.identityTop, fontScale > 1.5 && { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
-          <View style={styles.identityAvatar}><ProfileAvatar profile={profile} size={72} /></View>
+          <View style={styles.identityAvatar}><ProfileAvatar profile={profile} size={64} /></View>
           <View style={[styles.identityCopy, fontScale > 1.5 && { marginLeft: 0 }]}>
             <Text style={styles.name}>{profile?.display_name || 'Profile unavailable'}</Text>
             {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
             {profile?.location ? (
               <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={15} color="#677178" />
+                <Ionicons name="location-outline" size={15} color={colors.muted} />
                 <Text style={styles.location}>{profile.location}</Text>
               </View>
             ) : null}
             <View style={styles.joinedRow}>
-              <Ionicons name="calendar-outline" size={14} color="#7A867D" />
               <Text style={styles.joined}>
               Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
               </Text>
@@ -473,10 +346,17 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
         </View>
         {profile?.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+        {/* Website profile header: the counts sit with the name, not in a separate box. */}
+        <Text style={styles.identityCounts} accessibilityLabel={`${reportsHaveLoaded ? reports.length : 'Loading'} reports, ${cleanups.hasLoaded ? cleanupSummary.counts.completed : 'loading'} cleanups completed`}>
+          <Text style={styles.identityCountValue}>{reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reports.length}</Text>
+          {` ${reportsHaveLoaded && reports.length === 1 ? 'report' : 'reports'}     `}
+          <Text style={styles.identityCountValue}>{cleanups.hasLoaded ? cleanupSummary.counts.completed : cleanupsError ? '—' : '…'}</Text>
+          {` ${cleanups.hasLoaded && cleanupSummary.counts.completed === 1 ? 'cleanup' : 'cleanups'}`}
+        </Text>
       </View>
 
       <View style={styles.rankPanel}>
-      <RankingCard
+      <RankCard
         ranking={ranking}
         loading={rankingLoading}
         error={rankingError}
@@ -484,7 +364,14 @@ export default function ProfileScreen({ navigation, route }) {
       />
 
       <PointsExplanation ranking={ranking} appearance="row" />
+      {/* Replays the map tour (components/FirstRunTour.jsx). Same look as "How points work" above it. */}
+      <TouchableOpacity style={styles.howRow} onPress={() => openAppTab('Map', { tourKey: Date.now() })} accessibilityRole="button" accessibilityLabel="How Litterbugs works">
+        <Text style={styles.howText}>How Litterbugs works</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      </TouchableOpacity>
       </View>
+
+      {promptReporterPayout ? <ReporterPayoutPrompt cents={totals.reporterWaitingCents} onPress={openPayoutSetup} style={styles.overviewPrompt} /> : null}
 
       {cleanupSummary.current.length > 0 ? <View style={[styles.card, styles.continueCleanupCard]}>
         <ActionRow label="Continue cleanup" icon="leaf-outline" onPress={() => openReport(cleanupSummary.current[0].report_id)} />
@@ -492,95 +379,85 @@ export default function ProfileScreen({ navigation, route }) {
       <View style={[styles.card, styles.overviewActions]}>
         <ActionRow appearance="profile" divided label="My activity" icon="leaf-outline" onPress={() => openScreen('MyActivity')} />
         <ActionRow appearance="profile" divided label="Payments" icon="wallet-outline" onPress={() => openScreen('Payments')} />
+        <ActionRow appearance="profile" divided label={unreadUpdates > 0 ? `Updates (${unreadUpdates} unread)` : 'Updates'} icon="notifications-outline" onPress={() => openScreen('Updates')} />
+        {/* What reaches the phone, kept apart from the Updates inbox itself. */}
+        <ActionRow appearance="profile" divided label="Notifications" icon="options-outline" onPress={() => openScreen('NotificationSettings')} />
         <ActionRow appearance="profile" label="Settings" icon="settings-outline" onPress={() => openScreen('Settings')} />
-      </View>
-      <View style={styles.overviewStats}>
-        <View accessible style={styles.overviewStat}>
-          <Text style={styles.overviewStatValue}>{reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reports.length}</Text>
-          <Text style={styles.overviewStatLabel}>{reportsError && !reportsHaveLoaded ? 'Reports unavailable' : 'Reports'}</Text>
-        </View>
-        <View accessible style={[styles.overviewStat, styles.overviewStatDivider]}>
-          <Text style={styles.overviewStatValue}>{cleanups.hasLoaded ? cleanupSummary.counts.completed : cleanupsError ? '—' : '…'}</Text>
-          <Text style={styles.overviewStatLabel}>{!cleanups.hasLoaded && cleanupsError ? 'Cleanups unavailable' : 'Cleanups completed'}</Text>
-        </View>
       </View>
       </> : null}
 
       {section === 'payments' ? (
         <>
-          <Text style={styles.activityHeading}>Cleanup rewards</Text>
-          <View style={[styles.card, styles.paymentCard]}>
-            <View style={styles.paymentIntro}>
-              <View style={styles.paymentIcon}>
-                <Ionicons name="wallet-outline" size={25} color="#245F2A" />
-              </View>
-              <View style={styles.paymentIntroCopy}>
-                <Text style={styles.paymentIntroTitle}>Your cleanup payments</Text>
-                <Text style={styles.paymentIntroText}>
-                  Set up reward deposits and track the cleanups you’ve funded.
-                </Text>
-              </View>
+          {/* One loader for the whole page, then everything at once: sections no longer
+              arrive one by one and push each other around. */}
+          {!paymentsReady ? <LoadingBee label="Loading payments" style={{ marginTop: 80 }} /> : <>
+          {/* The whole picture first: what you have given and what you have been paid. */}
+          <View style={[styles.card, styles.paymentCard, styles.totals]} accessible accessibilityLabel={`Donated ${formatUsd(totals.donatedCents)}. Earned ${formatUsd(totals.earnedCents)}${totals.onTheWayCents > 0 ? `, with ${formatUsd(totals.onTheWayCents)} on the way` : ''}.`}>
+            <View style={styles.total}>
+              <View style={styles.totalLabelRow}><BrandBug kind="bee" size={16} /><Text style={styles.totalLabel}>Donated</Text></View>
+              <Text style={styles.totalAmount}>{contributionAmounts.error && !contributionAmounts.hasLoaded ? '—' : formatUsd(totals.donatedCents)}</Text>
             </View>
-            {flags.loading && !flags.hasLoaded ? <><View style={[styles.stripeConnectionRow, { backgroundColor: '#F4F6F7' }]} /><ActionRow label="Set up cleanup payouts" icon="card-outline" onPress={() => navigation.navigate('PayoutSetup')} /></> : flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
+            <View style={styles.totalDivider} />
+            <View style={styles.total}>
+              <View style={styles.totalLabelRow}><BrandBug kind="butterfly" size={16} /><Text style={styles.totalLabel}>Earned</Text></View>
+              <Text style={styles.totalAmount}>{reporterRewards.error && !reporterRewards.hasLoaded ? '—' : formatUsd(totals.earnedCents)}</Text>
+              {totals.onTheWayCents > 0 ? <Text style={styles.totalNote}>+ {formatUsd(totals.onTheWayCents)} on the way</Text> : null}
+            </View>
+          </View>
+          {promptReporterPayout ? <ReporterPayoutPrompt cents={totals.reporterWaitingCents} onPress={openPayoutSetup} style={styles.paymentsPrompt} /> : null}
+          <View style={{ height: 12 }} />
+          <View style={[styles.card, styles.paymentCard]}>
+            {flags.error ? <ActionRow label="Retry payout availability" icon="refresh-outline" onPress={flags.refresh} /> : fundingEnabled ? <>
             {<StripeConnectionStatus
               status={payoutStatus}
               loading={payoutStatusLoading && !payoutStatus}
               error={payoutStatusError}
               onRetry={refreshPayoutStatus}
+              onOpen={openPayoutSetup}
             />}
-            <ActionRow
-              label={payoutStatus?.payoutsEnabled ? 'Review payout details' : 'Set up payouts'}
-              icon="card-outline"
-              onPress={() => navigation.navigate('PayoutSetup')}
-            />
-            </> : <Text style={{ padding: 17, color: '#687178' }}>Payout setup is currently unavailable. Your payment history is still accessible below.</Text>}
-            <ActionRow
-              label="Your contributions & payments"
-              icon="receipt-outline"
-              onPress={() => navigation.navigate('ContributionHistory')}
-            />
+            </> : <Text style={{ padding: 17, color: colors.muted }}>Payout setup is currently unavailable. Your payment history is still available above.</Text>}
           </View>
-          <Text style={styles.activityHeading}>Cleanup earnings</Text>
-          <View style={styles.card}>
-            {cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading earnings" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading earnings…</Text> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <View style={styles.completedCleanupEmpty}><View style={styles.activityEmptyIcon}><Ionicons name="wallet-outline" size={24} color="#49704D" /></View><Text style={styles.activeCleanupEmptyTitle}>No cleanup earnings yet</Text><Text style={styles.activeCleanupEmptyText}>Rewards from your completed paid cleanups will appear here.</Text></View>}
+          {/* Who holds the money, said once and plainly. */}
+          <View style={styles.paymentsTrust}>
+            <Ionicons name="lock-closed-outline" size={15} color={colors.muted} />
+            <Text style={styles.paymentsTrustText}>Payments and payouts run through Stripe. Litterbugs never sees your full card or bank number.</Text>
           </View>
-          <ReporterEarnings userId={user.id} onOpenReport={openReport} />
+          {/* Same three-tab pattern as My activity; the payout connection stays above
+              the tabs because it applies to both kinds of earnings. */}
+          <PillTabs style={styles.activityTabs} stacked={fontScale > 1.5} value={paymentsView} onChange={setPaymentsView} options={[['donations', 'Donations'], ['reporter', 'Reporter earnings'], ['cleanup', 'Cleanup earnings']]} />
+          {paymentsView === 'donations' ? <View style={[styles.card, styles.paymentCard]}>
+            {contributions.error && !contributions.hasLoaded ? <LoadFailure title="Couldn’t load donations" onRetry={contributions.refresh} />
+              : !contributions.hasLoaded ? <LoadingBee label="Loading donations" size={48} />
+              : contributionItems.length > 0 ? <>
+                {contributionItems.slice(0, 5).map((item, index) => (
+                  <ContributionRow key={item.id} item={item} divided={index > 0} onPress={() => navigation.navigate('PaymentDetail', { contributionId: item.id })} />
+                ))}
+                {contributionItems.length > 5 || contributions.data?.nextCursor ? <TextLink label="Show all donations" onPress={() => navigation.navigate('ContributionHistory')} style={styles.showAll} /> : null}
+              </>
+              : <EmptyState style={styles.quietEmpty} bug="bee" title="No donations yet" />}
+          </View> : null}
+          {paymentsView === 'reporter' ? <ReporterEarnings userId={user.id} onOpenReport={openReport} heading={false} /> : null}
+          {paymentsView === 'cleanup' ? <View style={[styles.card, styles.paymentCard]}>
+            {cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load earnings" onRetry={refreshCleanups} /> : cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading earnings" size={48} /> : cleanupSummary.completed.filter(attempt => attempt.is_paid).length ? cleanupSummary.completed.filter(attempt => attempt.is_paid).map((attempt, index) => <CompletedCleanupRow key={attempt.id} attempt={attempt} divided={index > 0} onPress={() => openReport(attempt.report_id)} />) : <EmptyState style={styles.quietEmpty} bug="caterpillar" title="No cleanup earnings yet" />}
+          </View> : null}
+          </>}
         </>
       ) : null}
 
       {section === 'activity' ? <>
-      {savedDraft.data ? <View style={styles.card}><ActionRow label="Continue draft" icon="create-outline" onPress={() => openAppTab('Map', { resumeDraft: Date.now() })} /><Text style={{ padding: 16, color: '#687178' }}>Saved {new Date(savedDraft.data.savedAt).toLocaleString()}</Text></View> : null}
+      {savedDraft.data ? <View style={styles.card}><ActionRow label="Continue draft" icon="create-outline" onPress={() => openAppTab('Map', { resumeDraft: Date.now() })} /><Text style={{ padding: 16, color: colors.muted }}>Saved {new Date(savedDraft.data.savedAt).toLocaleString()}</Text></View> : null}
       {savedDraft.error ? <ActionRow label="Retry loading your draft" icon="refresh-outline" onPress={savedDraft.refresh} /> : null}
-      <View style={[styles.activityTabs, fontScale > 1.5 && { flexDirection: 'column' }]}>
-        {[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']].map(([value, label]) => <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: activityView === value }} onPress={() => setActivityView(value)} style={[styles.activityTab, activityView === value && styles.activityTabSelected]}><Text style={[styles.activityTabText, activityView === value && { color: '#245F2A' }]}>{label}</Text></TouchableOpacity>)}
-      </View>
-      {activityView !== 'reports' ? <>
-      <Text style={styles.activityHeading}>Cleanups you performed</Text>
-      <View style={styles.cleanupStatsCard}>
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.completed : '—'} label="Completed" />
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.awaitingReview : '—'} label="Awaiting review" divided />
-        <CleanupStat value={cleanups.hasLoaded ? cleanupSummary.counts.active : '—'} label="Active" divided />
-      </View>
-      </> : null}
-
+      <PillTabs style={styles.activityTabs} stacked={fontScale > 1.5} value={activityView} onChange={setActivityView} options={[['current', 'Current cleanups'], ['history', 'Cleanup history'], ['reports', 'My reports']]} />
       {cleanupsError && cleanups.hasLoaded ? <ActionRow label="Couldn’t update cleanups. Try again" icon="refresh-outline" onPress={refreshCleanups} /> : null}
       {activityView === 'current' ? <>
-      <Text style={styles.subsectionTitle}>Current cleanups</Text>
-      <View style={[styles.card, styles.activeCleanupCard]}>
+      <View style={[styles.card, styles.activityList]}>
         {cleanupsLoading && cleanupSummary.current.length === 0 ? (
-          <View style={styles.activeCleanupEmpty}>
-            <ActivityIndicator color="#687178" />
-            <Text style={styles.activeCleanupEmptyText}>Checking your cleanups…</Text>
-          </View>
+          <LoadingBee label="Checking your cleanups" size={48} />
         ) : cleanupsError && !cleanups.hasLoaded ? (
-          <TouchableOpacity style={styles.activeCleanupEmpty} onPress={refreshCleanups}>
-            <Ionicons name="cloud-offline-outline" size={27} color="#687178" />
-            <Text style={styles.activeCleanupEmptyTitle}>Couldn’t load cleanups</Text>
-            <Text style={styles.activeCleanupEmptyText}>Tap to try again.</Text>
-          </TouchableOpacity>
+          <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} />
         ) : cleanupSummary.current.length > 0 ? (
           cleanupSummary.current.map((attempt, index) => (
-            <ActiveCleanupRow
+            <CurrentCleanupRow
               key={attempt.id}
               attempt={attempt}
               divided={index > 0}
@@ -588,20 +465,14 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <View style={styles.activeCleanupEmpty}>
-            <View style={styles.activityEmptyIcon}><Ionicons name="leaf-outline" size={25} color="#49704D" /></View>
-            <Text style={styles.activeCleanupEmptyTitle}>No active cleanups</Text>
-            <Text style={styles.activeCleanupEmptyText}>Claimed and awaiting-review cleanups will appear here.</Text>
-            <TouchableOpacity accessibilityRole="button" onPress={() => openAppTab('Reports')} style={styles.browseReportsButton}><Ionicons name="list-outline" size={18} color="#2F7D32" /><Text style={styles.browseReportsText}>Browse reports</Text><Ionicons name="arrow-forward" size={17} color="#2F7D32" /></TouchableOpacity>
-          </View>
+          <EmptyState style={styles.quietEmpty} bug="ladybug" title="No current cleanups" />
         )}
       </View>
 
       </> : null}
       {activityView === 'history' ? <>
-      <Text style={styles.subsectionTitle}>Completed cleanups</Text>
-      <View style={styles.card}>
-        {cleanupsLoading && !cleanups.hasLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading completed cleanups…</Text> : cleanupsError && !cleanups.hasLoaded ? <ActionRow label="Retry loading completed cleanups" icon="refresh-outline" onPress={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
+      <View style={[styles.card, styles.activityList]}>
+        {cleanupsLoading && !cleanups.hasLoaded ? <LoadingBee label="Loading completed cleanups" size={48} /> : cleanupsError && !cleanups.hasLoaded ? <LoadFailure title="Couldn’t load cleanups" onRetry={refreshCleanups} /> : cleanupSummary.completed.length > 0 ? (
           cleanupSummary.completed.map((attempt, index) => (
             <CompletedCleanupRow
               key={attempt.id}
@@ -611,65 +482,60 @@ export default function ProfileScreen({ navigation, route }) {
             />
           ))
         ) : (
-          <View style={styles.completedCleanupEmpty}>
-            <View style={styles.activityEmptyIcon}><Ionicons name="checkmark-circle-outline" size={25} color="#49704D" /></View>
-            <Text style={styles.activeCleanupEmptyTitle}>No completed cleanups yet</Text>
-            <Text style={styles.activeCleanupEmptyText}>Your completed cleanup history will appear here.</Text>
-          </View>
+          <EmptyState style={styles.quietEmpty} bug="flower" title="No completed cleanups yet" />
         )}
       </View>
 
       </> : null}
       {activityView === 'reports' ? <>
-      <Text style={styles.activityHeading}>My reports</Text>
       {reportsError && reportsHaveLoaded ? <ActionRow label="Couldn’t update reports. Try again" icon="refresh-outline" onPress={refreshReports} /> : null}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 20, marginBottom: 14 }}>
-        {[['active', 'Active'], ['completed', 'Completed'], ['closed', 'Closed']].map(([value, label]) => (
-          <TouchableOpacity key={value} accessibilityRole="tab" accessibilityState={{ selected: reportView === value }} onPress={() => setReportView(value)} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: reportView === value ? '#B8D4BB' : '#E3E9E4', backgroundColor: reportView === value ? '#EAF4EC' : '#FFFFFF' }}>
-            <Text style={{ color: '#245F2A', fontWeight: '600' }}>{label} ({reportsError && !reportsHaveLoaded ? '—' : !reportsHaveLoaded ? '…' : reportGroups[value].length})</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.card}>
-        {reportsLoading && !reportsHaveLoaded ? <Text style={{ padding: 20, color: '#687178' }}>Loading your reports…</Text> : reportsError && !reportsHaveLoaded ? <ActionRow label="Retry loading your reports" icon="refresh-outline" onPress={refreshReports} /> : <ProfileReportList
-          reports={reportGroups[reportView]}
-          emptyTitle={`No ${reportView} reports`}
-          emptyText="Reports you submit appear here, wherever you browse on the map."
-          onReportPress={(report) => openReport(report.id)}
-        />}
+      <View style={[styles.card, styles.activityList]}>
+        {reportsLoading && !reportsHaveLoaded ? <LoadingBee label="Loading your reports" size={48} /> : reportsError && !reportsHaveLoaded ? <LoadFailure title="Couldn’t load your reports" onRetry={refreshReports} /> : reports.length > 0 ? (
+          reports.map((report, index) => (
+            <ReportActivityRow
+              key={report.id}
+              report={report}
+              closed={closedReportIds.has(report.id)}
+              divided={index > 0}
+              onPress={() => openReport(report.id)}
+            />
+          ))
+        ) : (
+          <EmptyState style={styles.quietEmpty} bug="ladybug" title="No reports yet" />
+        )}
       </View>
 
-      {fundingSchemaReady ? <View style={[styles.card, { marginTop: 16 }]}><ActionRow label="Reports needing attention" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
+      {fundingSchemaReady ? <View style={[styles.settingsGroup, { marginTop: 16 }]}><ActionRow appearance="profile" label="Expired reports" icon="calendar-outline" onPress={() => openScreen('ExpiredReports')} /></View> : null}
       </> : null}
       </> : null}
 
       {section === 'settings' ? <>
-        <View style={styles.settingsIdentity}>
-          <View style={styles.settingsIdentityIcon}><Ionicons name="mail-outline" size={22} color="#49704D" /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.emailLabel}>Signed in as</Text>
-            <Text style={styles.emailText} selectable>{user.email || 'Email unavailable for this account'}</Text>
+        {/* Website settings: two plain groups in the same order, with no section headings. */}
+        <View style={[styles.settingsGroup, { marginTop: 20 }]}>
+          <View style={styles.settingsEmailRow}>
+            <Text style={styles.emailLabel}>Email</Text>
+            <Text style={styles.emailText} selectable numberOfLines={1}>{user.email || 'Not shared'}</Text>
           </View>
-        </View>
-        <Text style={styles.settingsHeading}>Your account</Text>
-        <View style={styles.settingsGroup}>
           <ActionRow appearance="profile" divided label="Edit profile" icon="person-outline" onPress={() => openScreen('EditProfile')} />
+          <ActionRow appearance="profile" divided label="Email preferences" icon="mail-outline" onPress={() => openScreen('EmailPreferences')} />
           <ActionRow appearance="profile" divided label="Sign-in methods" icon="key-outline" onPress={() => openScreen('SignInMethods')} />
           <ActionRow appearance="profile" label="Blocked accounts" icon="ban-outline" onPress={() => openScreen('BlockedAccounts')} />
         </View>
-        <Text style={styles.settingsHeading}>Help & community</Text>
-        <View style={styles.settingsGroup}>
+        <View style={[styles.settingsGroup, { marginTop: 16 }]}>
           <ActionRow appearance="profile" divided label="Get help" icon="help-circle-outline" onPress={() => openScreen('SettingsInfo', { topic: 'help' })} />
-          <ActionRow appearance="profile" label="Support Litterbugs" icon="heart-outline" onPress={() => openScreen('SettingsInfo', { topic: 'support' })} />
-        </View>
-        <Text style={styles.settingsHeading}>Privacy & policies</Text>
-        <View style={styles.settingsGroup}>
-          <ActionRow appearance="profile" divided label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
-          <ActionRow appearance="profile" divided label="Cleanup and reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
+          <ActionRow appearance="profile" divided label="Cleanup safety" icon="shield-outline" onPress={() => openLitterbugsLink(CLEANUP_SAFETY_URL)} />
+          <ActionRow appearance="profile" divided label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
           <ActionRow appearance="profile" divided label="Privacy policy" icon="shield-checkmark-outline" onPress={() => openLitterbugsLink(PRIVACY_URL)} />
-          <ActionRow appearance="profile" label="Terms of use" icon="document-text-outline" onPress={() => openLitterbugsLink(TERMS_URL)} />
+          <ActionRow appearance="profile" divided label="Analytics choices" icon="options-outline" onPress={() => openScreen('SettingsInfo', { topic: 'analytics' })} />
+          <ActionRow appearance="profile" divided label="Cleanup & reward policy" icon="leaf-outline" onPress={() => openLitterbugsLink(CLEANUP_POLICY_URL)} />
+          <ActionRow appearance="profile" label="About photo review" icon="images-outline" onPress={() => openScreen('SettingsInfo', { topic: 'photos' })} />
         </View>
-        <View style={[styles.settingsGroup, { marginTop: 24 }]}>
+        {user.email ? (
+          <View style={[styles.settingsGroup, { marginTop: 24 }]}>
+            <ActionRow appearance="profile" label="Reset password" icon="key-outline" onPress={handleResetPassword} busy={accountBusy || sendingReset} />
+          </View>
+        ) : null}
+        <View style={[styles.settingsGroup, { marginTop: 12 }]}>
           <ActionRow appearance="profile" label="Sign out" icon="log-out-outline" onPress={handleSignOut} busy={accountBusy} />
         </View>
         <View style={[styles.settingsGroup, { marginTop: 12 }]}>
@@ -682,142 +548,79 @@ export default function ProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  settingsIdentity: { margin: 20, marginBottom: 4, padding: 16, borderRadius: 14, backgroundColor: '#F4F8F4', borderWidth: 1, borderColor: '#E0EAE1', flexDirection: 'row', gap: 12, alignItems: 'center' },
-  settingsIdentityIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  settingsHeading: { marginHorizontal: 20, marginTop: 24, marginBottom: 10, fontSize: 14, lineHeight: 20, fontWeight: '600', color: '#627166' },
-  settingsGroup: { marginHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: '#E6EBE7', overflow: 'hidden' },
-  settingsFootnote: { marginHorizontal: 24, marginTop: 12, fontSize: 12, lineHeight: 18, color: '#737E76' },
-  container: { flex: 1, backgroundColor: '#F5F6F7' },
-  activityTabs: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, marginBottom: 8, borderRadius: 13, backgroundColor: '#F2F5F2', padding: 4, gap: 3 },
-  activityTab: { flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', padding: 6, borderRadius: 10 },
-  activityTabSelected: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCE7DD' },
-  activityTabText: { fontSize: 13, lineHeight: 18, textAlign: 'center', color: '#667269', fontWeight: '600' },
-  activityHeading: { marginHorizontal: 20, marginTop: 16, marginBottom: 12, color: '#303B34', fontSize: 18, lineHeight: 24, fontWeight: '600' },
-  activityEmptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EFF5EF', alignItems: 'center', justifyContent: 'center' },
-  browseReportsButton: { minHeight: 44, marginTop: 16, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, borderColor: '#D5E4D6', backgroundColor: '#F5F9F5' },
-  browseReportsText: { color: '#2F7D32', fontSize: 14, fontWeight: '600' },
-  overviewContainer: { backgroundColor: '#FFFFFF' },
-  overviewActions: { marginHorizontal: 20, marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: '#E6EBE7' },
+  settingsEmailRow: { minHeight: 56, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line, backgroundColor: colors.white },
+  settingsGroup: { marginHorizontal: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.white },
+  settingsFootnote: { marginHorizontal: 24, marginTop: 12, fontSize: 12, lineHeight: 18, color: colors.muted },
+  container: { flex: 1, backgroundColor: colors.mist },
+  activityTabs: { marginHorizontal: 20, marginTop: 16, marginBottom: 8 },
+  activityHeading: { marginHorizontal: 20, marginTop: 16, marginBottom: 12, color: colors.ink, fontSize: 20, lineHeight: 25, fontFamily: fonts.heading },
+  overviewContainer: { backgroundColor: colors.white },
+  overviewActions: { marginHorizontal: 20, marginTop: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.line },
   continueCleanupCard: {
     marginHorizontal: 20,
     marginTop: 16,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#DDEBDD',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#29402D',
+    borderColor: colors.primaryBorder,
+    backgroundColor: colors.white,
+    shadowColor: colors.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
-  overviewStats: { marginHorizontal: 20, marginTop: 16, flexDirection: 'row', paddingVertical: 14, borderRadius: 14, backgroundColor: '#F4F7F4', borderWidth: 1, borderColor: '#E7EDE7' },
-  overviewStat: { flex: 1, justifyContent: 'center', paddingHorizontal: 16 },
-  overviewStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#E3E9E4' },
-  overviewStatValue: { fontSize: 25, lineHeight: 31, fontWeight: '600', color: '#2B5132', fontVariant: ['tabular-nums'] },
-  overviewStatLabel: { marginTop: 2, fontSize: 12, lineHeight: 18, color: '#606F64', fontWeight: '500' },
-  identity: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#DDEBDD',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#29402D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  identityAvatar: { padding: 3, borderWidth: 1, borderColor: '#DCE7DD', borderRadius: 40, alignSelf: 'flex-start', backgroundColor: '#FFFFFF' },
+  // Website account page: the profile and the rank read as one page, not two boxed cards.
+  identity: { marginHorizontal: 20, marginTop: 20, marginBottom: 24, backgroundColor: colors.white },
+  identityAvatar: { alignSelf: 'flex-start' },
+  identityCounts: { marginTop: 14, color: colors.body, fontSize: 15 },
+  identityCountValue: { color: colors.ink, fontSize: 17, fontWeight: '900' },
   identityTop: { flexDirection: 'row', alignItems: 'center' },
   identityCopy: { flex: 1, minWidth: 0, marginLeft: 16 },
-  name: { color: '#202428', fontSize: 23, lineHeight: 29, fontWeight: '600' },
-  username: { marginTop: 2, color: '#687178', fontSize: 14 },
+  name: { color: colors.ink, fontSize: 22, lineHeight: 27, fontFamily: fonts.heading },
+  username: { marginTop: 2, color: colors.muted, fontSize: 14 },
   locationRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  location: { color: '#59636A', fontSize: 14 },
-  bio: { marginTop: 16, color: '#4F5960', fontSize: 14, lineHeight: 21 },
+  location: { color: colors.muted, fontSize: 14 },
+  bio: { marginTop: 16, color: colors.body, fontSize: 14, lineHeight: 21 },
   joinedRow: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 5 },
-  joined: { flexShrink: 1, color: '#6C786F', fontSize: 13, lineHeight: 19 },
+  joined: { flexShrink: 1, color: colors.muted, fontSize: 14, lineHeight: 19 },
   headerEditButtonContainer: { paddingRight: 16, justifyContent: 'flex-end' },
+  bellBadge: { position: 'absolute', top: 4, right: 2, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white, backgroundColor: colors.severityHigh },
+  bellBadgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
   headerEditButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  rankPanel: { marginHorizontal: 20, borderWidth: 1, borderColor: '#DDE9DE', borderRadius: 16, overflow: 'hidden', backgroundColor: '#F4F8F4' },
-  rankCard: { padding: 16 },
-  rankSummaryRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
-  rankSummaryCopy: { flex: 1, minWidth: 100 },
-  rankEyebrow: { color: '#68766B', fontSize: 12, lineHeight: 17, fontWeight: '500' },
-  rankArtworkStage: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  rankArtwork: { width: '100%', height: '100%' },
-  rankName: { marginTop: 2, color: '#26332B', fontSize: 20, lineHeight: 25, fontWeight: '600' },
-  rankPoints: { color: '#245F2A', fontSize: 16, lineHeight: 22, fontWeight: '600', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: '#E3EFE4' },
-  rankProgressSection: { width: '100%', marginTop: 18 },
-  rankProgressHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  rankProgressTitle: { flex: 1, color: '#52615A', fontSize: 13, fontWeight: '500' },
-  rankProgressPercent: { color: '#52615A', fontSize: 13, fontWeight: '600' },
-  rankProgressTrack: { height: 7, marginTop: 8, overflow: 'hidden', borderRadius: 5, backgroundColor: '#E0EAE1' },
-  rankProgressFill: { height: '100%', borderRadius: 7, backgroundColor: '#2F7D32' },
-  rankRemaining: { marginTop: 7, color: '#627066', fontSize: 13, lineHeight: 19, fontWeight: '400' },
-  highestRankBadge: { minHeight: 48, marginTop: 19, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#EDF1EE' },
-  highestRankText: { color: '#52615A', fontSize: 15, fontWeight: '900' },
-  rankLoadingStage: { width: 76, height: 76, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#EDF1EE' },
-  rankLoadingTitle: { marginTop: 15, color: '#413946', fontSize: 17, fontWeight: '800' },
-  rankRetryText: { marginTop: 5, color: '#52615A', fontSize: 14, fontWeight: '700' },
-  rankRefreshWarning: { marginTop: 15, color: '#52615A', fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  statCard: { marginHorizontal: 16, marginTop: 14, paddingVertical: 14, alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  statValue: { color: '#245F2A', fontSize: 28, fontWeight: '800' },
-  statLabel: { marginTop: 3, color: '#687178', fontSize: 14, fontWeight: '700' },
-  sectionTitle: { marginHorizontal: 20, marginTop: 27, marginBottom: 9, color: '#30363B', fontSize: 17, fontWeight: '800' },
-  subsectionTitle: { marginHorizontal: 20, marginTop: 16, marginBottom: 8, color: '#596168', fontSize: 14, fontWeight: '800' },
-  card: { marginHorizontal: 16, overflow: 'hidden', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  paymentCard: { borderWidth: 1, borderColor: '#CFE2D0' },
-  paymentIntro: { minHeight: 94, padding: 17, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F8F2' },
-  paymentIcon: { width: 48, height: 48, marginRight: 13, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: '#DDEEDD' },
-  paymentIntroCopy: { flex: 1 },
-  paymentIntroTitle: { color: '#244027', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  paymentIntroText: { marginTop: 5, color: '#5F6D61', fontSize: 13, lineHeight: 18 },
-  stripeConnectionRow: { minHeight: 54, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DDE5DE' },
-  stripeConnectionText: { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  rankPanel: { marginHorizontal: 20, backgroundColor: colors.white },
+  howRow: { alignSelf: 'stretch', minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.white },
+  howText: { flex: 1, color: colors.primaryDark, fontSize: 14, fontWeight: '800' },
+  card: { marginHorizontal: 20, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.white },
+  activityList: { marginTop: 16, borderWidth: 1, borderColor: colors.line },
+  showAll: { borderTopWidth: 1, borderTopColor: colors.edge },
+  paymentCard: { borderWidth: 1, borderColor: colors.line, borderRadius: 18 },
+  totals: { marginTop: 16, flexDirection: 'row', alignItems: 'stretch', paddingVertical: 14 },
+  total: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 10 },
+  totalLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  totalLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  totalAmount: { color: colors.ink, fontSize: 26, lineHeight: 31, fontFamily: fonts.heading },
+  totalNote: { color: colors.muted, fontSize: 12, lineHeight: 16 },
+  totalDivider: { width: 1, backgroundColor: colors.line },
+  paymentsPrompt: { marginTop: 12 },
+  overviewPrompt: { marginTop: 4, marginBottom: 12 },
+  // Money is waiting: the yellow of the fund, with the reporter's dragonfly.
+  payoutPrompt: { marginHorizontal: 20, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, borderRadius: 18, borderWidth: 1, borderBottomWidth: 4, borderColor: colors.yellowBorder, backgroundColor: colors.yellowPale },
+  payoutPromptCopy: { flex: 1, minWidth: 0, gap: 2 },
+  payoutPromptTitle: { color: colors.fundInk, fontSize: 16, lineHeight: 21, fontFamily: fonts.heading },
+  payoutPromptLine: { color: colors.body, fontSize: 14, lineHeight: 19 },
+  // Payout status: coloured icon and words on white, as on the website.
+  stripeConnectionRow: { minHeight: 60, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: colors.white },
+  stripeConnectionText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700' },
   stripeConnectionDetail: { fontSize: 12, fontWeight: '800' },
-  cleanupStatsCard: { marginHorizontal: 20, flexDirection: 'row', overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: '#E3EBE4', backgroundColor: '#F4F7F4' },
-  cleanupStat: { flex: 1, minHeight: 78, alignItems: 'center', paddingHorizontal: 6, paddingVertical: 12 },
-  cleanupStatDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: '#DDE2DE' },
-  cleanupStatValue: { color: '#2B5132', fontSize: 24, fontWeight: '600' },
-  cleanupStatLabelContainer: { flexGrow: 1, marginTop: 4, justifyContent: 'center', alignSelf: 'stretch' },
-  cleanupStatLabel: { color: '#687178', fontSize: 12, lineHeight: 17, fontWeight: '500', textAlign: 'center' },
-  activeCleanupCard: { borderWidth: 1, borderColor: '#E0E5E1', backgroundColor: '#FFFFFF' },
-  activeCleanupRow: { minHeight: 124, padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF' },
-  activeCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E5E1' },
-  activeCleanupIcon: { width: 46, height: 46, marginRight: 13, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F4F2' },
-  activeCleanupCopy: { flex: 1, marginRight: 8 },
-  activeCleanupTitle: { color: '#30363B', fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  activeCleanupStatus: { marginTop: 4, color: '#687178', fontSize: 13, fontWeight: '800' },
-  activeCleanupReward: { marginTop: 3, color: '#245F2A', fontSize: 13, fontWeight: '800' },
-  activeCleanupDeadline: { marginTop: 3, color: '#687178', fontSize: 13, lineHeight: 18 },
-  activeCleanupLink: { marginTop: 8, color: '#2F7D32', fontSize: 14, fontWeight: '800' },
-  activeCleanupEmpty: { minHeight: 220, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  activeCleanupEmptyTitle: { marginTop: 12, color: '#303B34', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  activeCleanupEmptyText: { marginTop: 6, color: '#6D7970', fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 290 },
-  completedCleanupRow: { minHeight: 82, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF' },
-  completedCleanupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E0E3E5' },
-  completedCleanupIcon: { width: 40, height: 40, marginRight: 13, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2F7D32' },
-  completedCleanupCopy: { flex: 1, marginRight: 8 },
-  completedCleanupTitle: { color: '#30363B', fontSize: 15, lineHeight: 21, fontWeight: '600' },
-  completedCleanupMeta: { marginTop: 5, color: '#687178', fontSize: 13 },
-  completedCleanupReward: { marginTop: 4, color: '#245F2A', fontSize: 13, fontWeight: '800' },
-  completedCleanupEmpty: { minHeight: 210, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emailRow: { minHeight: 68, paddingHorizontal: 17, justifyContent: 'center' },
-  emailCopy: { minWidth: 0 },
-  emailLabel: { color: '#727B82', fontSize: 12, fontWeight: '700' },
-  emailText: { marginTop: 3, color: '#30363B', fontSize: 15 },
-  deleteCard: { marginTop: 24 },
-  signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#F5F6F7' },
-  signedOutIcon: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E4EEE5' },
-  signedOutTitle: { marginTop: 20, color: '#202428', fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  signedOutText: { maxWidth: 360, marginTop: 10, color: '#667078', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  primaryButton: { width: '100%', maxWidth: 390, minHeight: 54, marginTop: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#2F7D32' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  signedOutSupport: { width: '100%', maxWidth: 390, marginTop: 28, overflow: 'hidden', borderRadius: 14 },
+  emailLabel: { color: colors.ink, fontSize: 16, fontWeight: '600' },
+  emailText: { flexShrink: 1, color: colors.muted, fontSize: 15, fontWeight: '700' },
+  // Nothing-yet cards: a bug and a heading, no explanation.
+  quietEmpty: { minHeight: 0, paddingVertical: 26 },
+  paymentsTrust: { marginTop: 12, marginBottom: 4, marginHorizontal: 24, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  paymentsTrustText: { flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 },
+  signedOutContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, backgroundColor: colors.white },
+  signedOutTitle: { marginTop: 20, color: colors.ink, fontSize: 24, fontFamily: fonts.heading, textAlign: 'center' },
+  signedOutText: { maxWidth: 360, marginTop: 10, color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  primaryButton: { width: '100%', maxWidth: 390, marginTop: 24 },
+  signedOutSupport: { alignSelf: 'stretch', marginTop: 28, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: 'hidden', backgroundColor: colors.white },
 });

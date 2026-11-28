@@ -4,8 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FloatingBottomTabBar from './FloatingBottomTabBar';
 import MapScreen from './MapScreen';
+import CommunityScreen from './CommunityScreen';
 import ProfileScreen from './ProfileScreen';
 import ReportsScreen from './ReportsScreen';
+import { colors, fonts } from './lib/theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,7 +23,9 @@ export default function AppTabs({ onLaunchReady }) {
           headerTitleAlign: 'center',
           headerBackVisible: false,
           tabBarShowLabel: false,
-          sceneStyle: { backgroundColor: '#F5F6F7' },
+          // Tabs cross-fade instead of cutting; the map stays mounted underneath.
+          animation: 'fade',
+          sceneStyle: { backgroundColor: colors.mist },
         }}
       >
         <Tab.Screen
@@ -39,7 +43,7 @@ export default function AppTabs({ onLaunchReady }) {
                 />
               </View>
             ),
-            headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
+            headerStyle: { backgroundColor: colors.white, height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Reports',
           }}
@@ -56,6 +60,26 @@ export default function AppTabs({ onLaunchReady }) {
           )}
         </Tab.Screen>
         <Tab.Screen
+          name="Community"
+          component={CommunityScreen}
+          options={{
+            title: 'Community',
+            headerLeft: () => (
+              <View style={styles.headerLogoArea} pointerEvents="none">
+                <Image
+                  source={require('./assets/LB_Logo_PNG.png')}
+                  resizeMode="contain"
+                  style={styles.headerLogo}
+                  accessible={false}
+                />
+              </View>
+            ),
+            headerStyle: { backgroundColor: colors.white, height: insets.top + Math.max(56, 34 * fontScale + 24) },
+            headerTitleStyle: styles.profileHeaderTitle,
+            tabBarAccessibilityLabel: 'Community',
+          }}
+        />
+        <Tab.Screen
           name="Profile"
           component={ProfileScreen}
           options={{
@@ -70,7 +94,7 @@ export default function AppTabs({ onLaunchReady }) {
                 />
               </View>
             ),
-            headerStyle: { backgroundColor: '#FFFFFF', height: insets.top + Math.max(56, 34 * fontScale + 24) },
+            headerStyle: { backgroundColor: colors.white, height: insets.top + Math.max(56, 34 * fontScale + 24) },
             headerTitleStyle: styles.profileHeaderTitle,
             tabBarAccessibilityLabel: 'Profile',
           }}
@@ -80,20 +104,21 @@ export default function AppTabs({ onLaunchReady }) {
 }
 
 const styles = StyleSheet.create({
+  // Every header uses the larger logo (58 × 40).
   headerLogoArea: {
-    width: 52,
+    width: 64,
     height: 44,
     marginLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerLogo: {
-    width: 42,
-    height: 34,
+    width: 58,
+    height: 40,
   },
   profileHeaderTitle: {
-    color: '#1F2328',
+    color: colors.ink,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
   },
 });

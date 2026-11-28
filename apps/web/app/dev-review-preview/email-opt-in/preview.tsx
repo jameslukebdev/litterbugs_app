@@ -1,0 +1,226 @@
+'use client';
+
+import { useState, type FormEvent, type ReactNode } from 'react';
+import styles from './preview.module.css';
+
+export type PreviewScreen = 'account' | 'signup' | 'email' | 'unsubscribe' | 'preferences' | 'recipients' | 'privacy';
+type Status = 'subscribed' | 'unsubscribed';
+type Member = { name: string; email: string; status: Status; source: 'Existing account' | 'Signup default' | 'Account settings' };
+
+const SCREENS: { id: PreviewScreen; title: string }[] = [
+  { id: 'account', title: 'App settings' },
+  { id: 'signup', title: 'New account' },
+  { id: 'email', title: 'Email' },
+  { id: 'unsubscribe', title: 'Unsubscribe' },
+  { id: 'preferences', title: 'Website preferences' },
+  { id: 'recipients', title: 'Luke’s recipient list' },
+  { id: 'privacy', title: 'Privacy draft' },
+];
+
+function initialMembers(): Member[] {
+  const examples = ['Alex Morgan', 'Sam Rivera', 'Taylor Brooks', 'Casey Lane', 'Jordan Ellis', 'Riley Reed'];
+  return Array.from({ length: 200 }, (_, index) => ({
+    name: examples[index] ?? `Member ${index + 1}`,
+    email: index === 0 ? 'alex@example.com' : `member${String(index + 1).padStart(3, '0')}@example.com`,
+    status: 'subscribed',
+    source: 'Existing account',
+  }));
+}
+
+function Icon({ kind, size = 22 }: { kind: 'mail' | 'back' | 'check' | 'copy' | 'download' | 'user' | 'arrow'; size?: number }) {
+  const paths: Record<typeof kind, ReactNode> = {
+    mail: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></>,
+    back: <path d="m14 6-6 6 6 6" />,
+    check: <path d="m5 12 4 4L19 6" />,
+    copy: <><rect x="8" y="8" width="12" height="13" rx="2" /><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3" /></>,
+    download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
+    arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[kind]}</svg>;
+}
+
+function Logo() {
+  // The existing wordmark asset is also used by the real app and website.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className={styles.logo} src="/brand/litterbugs-logo.png" alt="Litterbugs" />;
+}
+
+function Phone({ children }: { children: ReactNode }) {
+  return <div className={styles.phone}>
+    <div className={styles.statusBar} aria-hidden><strong>9:41</strong><span className={styles.island} /><span>▮▮▮ &nbsp; ▰</span></div>
+    {children}
+    <div className={styles.homeBar} aria-hidden />
+  </div>;
+}
+
+function PreferenceForm({ subscribed, onSave, website = false }: { subscribed: boolean; onSave: (next: boolean) => void; website?: boolean }) {
+  const [checked, setChecked] = useState(subscribed);
+  const [saved, setSaved] = useState(false);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    onSave(checked);
+    setSaved(true);
+  };
+  return <form className={styles.preferenceForm} onSubmit={submit}>
+    <span className={styles.mailIcon}><Icon kind="mail" size={26} /></span>
+    <h1>Email preferences</h1>
+    <div className={styles.preferenceBox}>
+      <div className={styles.preferenceRow}>
+        <label htmlFor={website ? 'website-weekly' : 'app-weekly'}><strong>Litterbugs emails</strong></label>
+        <input id={website ? 'website-weekly' : 'app-weekly'} className={styles.switch} role="switch" type="checkbox" checked={checked} onChange={e => { setChecked(e.target.checked); setSaved(false); }} />
+      </div>
+    </div>
+    <button className={styles.primary} type="submit" disabled={checked === subscribed && !saved}>{saved ? 'Saved' : 'Save preferences'}</button>
+    {saved ? <p className={styles.success} role="status"><Icon kind="check" size={18} />Saved</p> : null}
+  </form>;
+}
+
+function Signup({ onCreate }: { onCreate: (member: { name: string; email: string }) => void }) {
+  const [name, setName] = useState('Jamie Parker');
+  const [email, setEmail] = useState('jamie@example.com');
+  const [created, setCreated] = useState(false);
+  if (created) return <div className={styles.signupSuccess}>
+    <span className={styles.successIcon}><Icon kind="check" size={30} /></span>
+    <h1>You’re all set</h1>
+    <p>Your Litterbugs account is ready.</p>
+    <button className={styles.primary} onClick={() => setCreated(false)}>Back to signup</button>
+  </div>;
+  return <form className={styles.signupForm} onSubmit={e => { e.preventDefault(); onCreate({ name: name.trim(), email: email.trim() }); setCreated(true); }}>
+    <Logo />
+    <h1>Make a little difference</h1>
+
+    <label className={styles.field}>Your name<input autoComplete="off" value={name} onChange={e => setName(e.target.value)} required /></label>
+    <label className={styles.field}>Email address<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} required /></label>
+    <button type="submit" className={styles.primary}>Create account</button>
+    <p className={styles.terms}>By creating an account, you agree to the Terms and Privacy Policy.</p>
+  </form>;
+}
+
+function Unsubscribe({ onUnsubscribe, onPreferences }: { onUnsubscribe: (email: string) => void; onPreferences: () => void }) {
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  if (done) return <div className={styles.unsubscribeSuccess}>
+    <Logo />
+    <span className={styles.successIcon}><Icon kind="check" size={30} /></span>
+    <h1>You’re unsubscribed</h1>
+    <button className={styles.secondary} onClick={onPreferences}>Email preferences</button>
+    <button className={styles.textButton} onClick={() => { setEmail(''); setDone(false); }}>Another email address</button>
+  </div>;
+  return <form className={styles.unsubscribeForm} onSubmit={e => { e.preventDefault(); onUnsubscribe(email.trim()); setDone(true); }}>
+    <Logo />
+    <span className={styles.mailIcon}><Icon kind="mail" size={28} /></span>
+    <h1>Unsubscribe from email list</h1>
+    <label className={styles.field}>Email address<input type="email" name="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>
+    <button className={styles.primary} type="submit">Unsubscribe</button>
+  </form>;
+}
+
+function Email({ onUnsubscribe, onPreferences }: { onUnsubscribe: () => void; onPreferences: () => void }) {
+  return <div className={styles.emailWindow}>
+    <div className={styles.emailToolbar}><span>Gmail</span><span>Inbox</span></div>
+    <div className={styles.emailHeader}>
+      <h1>A little cleanup news from Litterbugs</h1>
+      <div className={styles.sender}><span className={styles.senderIcon}><Icon kind="mail" /></span><div><strong>Litterbugs Community Cleanup</strong><span>teamlitterbugs@gmail.com</span><small>to me</small></div><time>9:00 AM</time></div>
+    </div>
+    <article className={styles.emailBody}>
+      <Logo />
+      <h2>Around the community</h2>
+      <p>Hi Alex,</p>
+      <p>Here’s a little inspiration from the community: a spot to help clean, a chance to fund someone’s effort, or a reminder that small actions add up.</p>
+      <div className={styles.emailCallout}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/bugs/bee.png" alt="" />
+        <div><h3>A few dollars. A cleaner spot.</h3><p>Adding to a cleanup fund gives someone a little extra reason to get out there and help.</p></div>
+      </div>
+      <p>Thanks for being part of the community.</p>
+      <p>Luke<br /><strong>Litterbugs Community Cleanup</strong></p>
+      <footer className={styles.emailFooter}>
+        <p>Litterbugs Community Cleanup<br /><span className={styles.placeholder}>[Business mailing address]</span></p>
+        <nav aria-label="Email footer links"><a href="/privacy" target="_blank" rel="noreferrer">Privacy policy</a><span aria-hidden> | </span><a href="?screen=unsubscribe" onClick={e => { e.preventDefault(); onUnsubscribe(); }}>Unsubscribe</a><span aria-hidden> | </span><a href="?screen=preferences" onClick={e => { e.preventDefault(); onPreferences(); }}>Email preferences</a></nav>
+      </footer>
+    </article>
+  </div>;
+}
+
+function PrivacyDraft() {
+  return <div className={styles.website}>
+    <div className={styles.websiteNav}><Logo /><span>Draft · Not published</span></div>
+    <article className={styles.privacyDraft}>
+      <p className={styles.draftLabel}>Proposed addition to the privacy policy</p>
+      <h1>Account emails and community updates</h1>
+      <p>We use your account email address to send Litterbugs community news, cleanup opportunities, and ways to support cleanups. Existing and new accounts are subscribed to these emails by default.</p>
+      <p>You can unsubscribe at any time using the link in an email or by turning off Litterbugs emails in your account’s Email preferences. Unsubscribing does not close your account or stop essential account, security, payment, or support emails.</p>
+      <p>We use Google Gmail to send community emails. We retain your email preference and the information needed to honor unsubscribe requests.</p>
+      <a href="https://litterbugs.app/privacy" target="_blank" rel="noreferrer">Published privacy policy</a>
+    </article>
+  </div>;
+}
+
+function Recipients({ members, onEmail }: { members: Member[]; onEmail: () => void }) {
+  const [filter, setFilter] = useState<'subscribed' | 'all' | 'unsubscribed'>('subscribed');
+  const [query, setQuery] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const subscribed = members.filter(m => m.status === 'subscribed');
+  const unsubscribed = members.filter(m => m.status === 'unsubscribed');
+  const visible = members.filter(m => (filter === 'all' || m.status === filter) && `${m.name} ${m.email}`.toLowerCase().includes(query.toLowerCase()));
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(subscribed.map(m => m.email).join(', ')); setCopied(true); setError(''); }
+    catch { setError('Copy wasn’t available in this browser. Download the CSV instead.'); }
+  };
+  const download = () => {
+    const csv = 'email\r\n' + subscribed.map(m => m.email).join('\r\n') + '\r\n';
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'litterbugs-sample-email-list.csv'; a.click(); URL.revokeObjectURL(url);
+  };
+  return <div className={styles.admin}>
+    <div className={styles.adminTop}><div><h1>Email list</h1></div><button className={styles.secondary} onClick={onEmail}>Preview email<Icon kind="arrow" size={18} /></button></div>
+    <div className={styles.counts}><div><strong>{subscribed.length}</strong><span>Subscribed</span></div><div><strong>{unsubscribed.length}</strong><span>Unsubscribed</span></div><div><strong>{members.length}</strong><span>Total accounts</span></div></div>
+    <div className={styles.exportPanel}><span className={styles.mailIcon}><Icon kind="mail" size={24} /></span><div><h2>Recipients</h2></div><div className={styles.exportActions}><button className={styles.primary} disabled={!subscribed.length} onClick={copy}><Icon kind="copy" size={18} />{copied ? 'Bcc list copied' : 'Copy Bcc list'}</button><button className={styles.secondary} disabled={!subscribed.length} onClick={download}><Icon kind="download" size={18} />Download CSV</button></div></div>
+    {copied ? <p className={styles.success} role="status">{subscribed.length} sample addresses copied.</p> : null}
+    {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+    <div className={styles.listTools}><div className={styles.filters} role="group" aria-label="Filter recipients">{(['subscribed', 'all', 'unsubscribed'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'all' ? 'All accounts' : value === 'subscribed' ? 'Subscribed' : 'Unsubscribed'}</button>)}</div><input className={styles.search} aria-label="Search sample recipients" placeholder="Search name or email" value={query} onChange={e => setQuery(e.target.value)} /></div>
+    <div className={styles.tableScroll}><table><thead><tr><th scope="col">Member</th><th scope="col">Litterbugs emails</th><th scope="col">How they joined</th></tr></thead><tbody>{visible.slice(0, 8).map(m => <tr key={m.email}><td><strong>{m.name}</strong><span>{m.email}</span></td><td><span className={m.status === 'subscribed' ? styles.subscribed : styles.muted}>{m.status === 'subscribed' ? 'Subscribed' : 'Unsubscribed'}</span></td><td>{m.source}</td></tr>)}</tbody></table>{visible.length === 0 ? <p className={styles.empty}>No accounts match this view.</p> : null}</div>
+    <p className={styles.tableNote}>{Math.min(8, visible.length)} of {visible.length} accounts</p>
+  </div>;
+}
+
+export function EmailOptInPreview({ initialScreen }: { initialScreen: PreviewScreen }) {
+  const [revision, setRevision] = useState(0);
+  return <PreviewSession key={revision} initialScreen={initialScreen} onReset={() => {
+    const url = new URL(window.location.href); url.searchParams.set('screen', initialScreen); window.history.replaceState(null, '', url);
+    setRevision(r => r + 1);
+  }} />;
+}
+
+function PreviewSession({ initialScreen, onReset }: { initialScreen: PreviewScreen; onReset: () => void }) {
+  const [screen, setScreen] = useState(initialScreen);
+  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const current = members[0];
+  const details = SCREENS.find(item => item.id === screen)!;
+  const navigate = (next: PreviewScreen) => {
+    setScreen(next);
+    const url = new URL(window.location.href); url.searchParams.set('screen', next); window.history.replaceState(null, '', url);
+  };
+  const save = (next: boolean) => setMembers(list => list.map((m, index) => index === 0 ? { ...m, status: next ? 'subscribed' : 'unsubscribed', source: 'Account settings' } : m));
+  const unsubscribe = (email: string) => setMembers(list => list.map(m => m.email.toLowerCase() === email.toLowerCase() ? { ...m, status: 'unsubscribed' } : m));
+  const create = ({ name, email }: { name: string; email: string }) => setMembers(list => list.some(m => m.email.toLowerCase() === email.toLowerCase()) ? list : [...list, { name, email, status: 'subscribed', source: 'Signup default' }]);
+  return <main className={styles.preview}>
+    <header className={styles.previewHeader}><Logo /><div><strong>Email preferences preview</strong><span>Sample data</span></div><button className={styles.reset} onClick={onReset}>Reset preview</button></header>
+    <div className={styles.workspace}>
+      <aside className={styles.sidebar}><h2>The whole experience</h2><nav aria-label="Preview screens">{SCREENS.map((item, index) => <button key={item.id} aria-current={screen === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><span className={styles.stepNumber}>{index + 1}</span><span>{item.title}</span><Icon kind="arrow" size={16} /></button>)}</nav></aside>
+      <section className={styles.previewArea} aria-label={details.title}><div className={styles.sceneTitle}><div><h2>{details.title}</h2></div><span className={styles.viewLabel}>{screen === 'account' || screen === 'signup' ? 'App / mobile' : screen === 'email' ? 'Gmail' : 'Website'}</span></div>
+        <div className={`${styles.stage} ${screen === 'recipients' ? styles.adminStage : ''}`}>
+          {screen === 'account' ? <Phone><div className={styles.phoneNav}><span><Icon kind="back" />Settings</span></div><PreferenceForm subscribed={current.status === 'subscribed'} onSave={save} /></Phone> : null}
+          {screen === 'signup' ? <Phone><Signup onCreate={create} /></Phone> : null}
+          {screen === 'email' ? <Email onUnsubscribe={() => navigate('unsubscribe')} onPreferences={() => navigate('preferences')} /> : null}
+          {screen === 'unsubscribe' ? <div className={styles.publicPaper}><Unsubscribe onUnsubscribe={unsubscribe} onPreferences={() => navigate('preferences')} /></div> : null}
+          {screen === 'preferences' ? <div className={styles.website}><div className={styles.websiteNav}><Logo /><span><Icon kind="user" size={18} />My account</span></div><div className={styles.webPreferences}><div className={styles.webBreadcrumb}>Account <span>/</span> Email preferences</div><PreferenceForm website subscribed={current.status === 'subscribed'} onSave={save} /></div></div> : null}
+          {screen === 'recipients' ? <Recipients members={members} onEmail={() => navigate('email')} /> : null}
+          {screen === 'privacy' ? <PrivacyDraft /> : null}
+        </div>
+      </section>
+    </div>
+  </main>;
+}

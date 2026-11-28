@@ -1,5 +1,165 @@
 # Current Mobile Release Candidates
 
+## Multi-size audit — local only, November13
+
+Source `16582b9fc7cacd7248dfe8a09ab3eaabce0c3a14` fixes compact-screen tutorial overlap, exactly150%
+text truncation of Report Litter, and selected pins obscured by search/card.
+Short/large-text map previews reserve the pin and fixed grabber/X; content
+scrolls inside. Dragging the fixed header dismisses even after content has
+scrolled. Existing normal/larger styling and platform motion timings remain.
+
+Native checks: physical iPhone6s375×667; existing iPhone17Pro simulator402×874
+(default and accessibility-medium text); physical Pixel5 with temporary logical
+displays320×568 (default/150% text),360×640 and412×915. These Android sizes
+are virtual-display configurations on one Pixel, not separate phone models.
+iPhone6s used current local JS/assets in the existing isolated27 native shell,
+not a new store binary. Map/cards, tutorial, reports/details and profile/navigation
+were inspected. Both physical phones passed scrolled-content→grabber dismissal;
+X also closes. Pixel1080×2340/density440/font1.0 and simulator large text restored.
+
+658 mobile tests pass/1 existing skip; scoped ESLint and225-module source check
+pass. Evidence: `artifacts/mobile-2.1.0/device-evidence/screen-size-audit/audit.json`
+and selected native screenshots. Existing Pixel draft preserved; no publication,
+payment/funding/cleanup transaction or new authentication-integration claim.
+Existing Apple-revocation/Facebook exclusions retained.
+
+Owner explicitly held rebuild/replacement work to inspect sizes. No prior review
+was canceled; no new build/upload/submission, OTA, deployment or push started.
+Submitted iOS28/Android25 still lack the local follow-ups. Both refreshed store
+binaries and their final artifact checks remain pending. Public release stays
+manual; simulator remains open.
+
+## Welcome replay test link removed — local only, November13
+
+Source `0d7bedb49c763363da22ab978fc5f783ff1af6d6` removes the Profile welcome-replay test row from both
+platforms. Previously __DEV__-only, so it was already absent from store builds;
+now test screens also omit it. “How Litterbugs works” and normal first-launch
+welcome remain.8 existing onboarding/discovery-memory checks, Profile lint and
+225-module source check pass. No map/animation changes, native build, upload,
+resubmission, OTA, deploy or push; existing manual public-release holds retained.
+
+## Android report-card motion — local only, November13
+
+Source `00e95d84d295d38964da02072cf149a22aa12cce` smooths Android map preview opening and closing. Waits for
+native card layout; travel is the measured card height plus bottom/shadow
+clearance, with native eased360ms entry/280ms exit. Card stays mounted through
+exit, content updates do not restart entry, quick reopen reverses from current
+position, and old exits cannot clear a newer selection. iPhone's original
+240/180ms motion and full-screen distance remain unchanged; explicit regression
+passes. No pin/camera behavior changes in this follow-up.
+
+648 mobile tests pass/1 existing skip; scoped production lint and225-module
+source check pass. Physical Pixel QA recordings show continuous up/down travel.
+Owner confirmed “Yes, both directions feel smooth.” Local evidence:
+`device-evidence/android-card-smooth.json`, `android-card-smooth-open.mp4` and
+`android-card-smooth-close.mp4` under artifacts/mobile-2.1.0. No native build,
+store upload/review change, OTA, deploy or push. Manual public release holds
+retained; submitted iOS28/Android25 remain unchanged and lack local follow-ups.
+
+## November13 — Android camera and prompt drop start, local only
+
+Source `419f6377c1f912e27098df37948882ada3c59f6e` scopes camera corrections to Android's own map adapter.
+Native gestures no longer echo camera positions back through a controlled region;
+search/location requests still move the map. Android pins hide offscreen and
+replay on return, starting during camera movement instead of waiting for the
+map to settle. This shortens the delay before dropping; native fall520ms,
+stagger60ms and first-image readiness100ms are unchanged. iPhone behavior stays
+approved, with its original map component and all iPhone branches preserved.
+
+642 mobile tests pass/1 existing skip; scoped lint and225-module source check
+pass. Physical Pixel search, cluster zoom, panning/reentry and idle stability
+checked. Owner confirmed “Yes, both feel right.” iPhone artwork/animation/card/
+framing file hashes match the saved approved baseline; existing iPhone hook
+regressions pass. Evidence: local device-evidence/android-map-rediscovery.json/mp4.
+
+No native build, upload, review change, OTA, deploy or push. iPhone simulator stays
+open. Existing submitted iOS28/Android25 remain unchanged, with manual public
+release holds retained. Refreshed candidates are still needed to include local
+follow-ups; no iOS rebuild/resubmission during this Android-only pass.
+
+## November13 — report card follow-up on both phones, local only
+
+Latest local source `f37328aee983c15e165d8456bb22eef8b23fe980` additionally
+makes detail-toolbar favorite/share icons32 points (was20), touch targets52,
+and removes Hide from the toolbar/list menu on both platforms. Old hidden items
+can still be restored.9 focused tests, scoped lint and source check pass;
+iPhone simulator appearance verified. Both refreshed builds still pending.
+
+Source `06fcdef4e95e3eabdb431af6fb099d241f6d73ac` adds bottom-up report previews,
+swipe-down dismissal at the top of content, a fixed44-point close target and
+short-screen scrolling on iPhone and Android. Header polished to one continuous
+card/photo edge,36-point rail,3-point gray grabber and vertically centered18-point
+plain X (no gray circle). iPhone normal pin drop shortened520→280ms with25ms
+stagger; Android native pin timing unchanged. Prior iPhone re-entry fix225a0be retained.
+
+634 mobile tests passed/1 existing skip;22 focused checks and scoped component
+lint pass.224-module source check0 errors. Simulator X dismissal verified;
+owner confirmed swipe-down closes cleanly. Both submitted iOS28 and Android25
+lack these newer shared card changes, so refreshed builds for **both platforms**
+are needed before public release. Existing reviews/manual release unchanged;
+no build/upload/OTA/deploy/push started. Privacy details remain complete.
+
+## November13 — iPhone map follow-up, local only
+
+Owner requested an iPhone-only correction after submission. Source
+`225a0bec528424fa241b81624961b77a9ea96db5` hides already-landed pins when they
+leave view, then starts the full drop into an empty spot on return. Android's
+in-place marker behavior remains unchanged. Also guards an old animation cleanup
+from cutting short a fresh drop. Owner manually verified the simulator behavior;
+6 hook regressions/12 focused tests pass, hook lint and224-module source check pass.
+
+This local correction is **not included in submitted iOS2.1.0(28)**. A refreshed
+iOS candidate is needed to include it before public release. Android25 and both
+existing review submissions are unchanged; no new native build/OTA/upload was
+started. Apple privacy remains complete and public release remains manual.
+
+## November13 — full2.1.0 app submitted; public release manual
+
+Owner found missing artwork and a selected pin partly hidden by the report card.
+The simulator's stopped Metro server caused missing newly loaded images; restarting
+it with analytics disabled restored the existing artwork. Source eaa461a changes
+only selected-pin vertical framing from30% to22%; repeated selection of both
+reported cards verified the bug and tail visible above the preview. Two targeted
+map-framing tests pass. Screenshot: artifacts/mobile-2.1.0/device-evidence/selected-pin-fixed.png.
+
+Frozen release source is now7e4275b598cb37c1932294d451f3e110e171f7ff (c34f569 plus
+that one helper change). Both refreshed production builds finished: iOS28 / Android25. Previous iOS27 /
+Android24 originals remain historical evidence and do not contain this fix. Do
+not upload them as the latest candidate. Owner subsequently authorized upload
+and store review submission, with public release held manual. See the latest
+readiness addendum for exact submission state. Apple28 is Waiting for Review;
+Google25 and Data safety are in review; quick checks completed at the3:08PM
+follow-up. Luke was added to Burrow Bros;28 shows internal Testing for that group.
+Apple manual release and Google managed publishing ON hold public release.
+At the owner’s follow-up request, Apple2.1 privacy details are now complete and
+published:19 categories, no unfinished setup, reload verified at3:18PM ET.
+Remaining: store approvals/actual feedback and explicit owner release instruction.
+
+
+## November 13 — original27/24 verification (superseded)
+
+The latest unreleased candidate is local source `c34f5698b7c880e3392512206d8f588f0b846d8e`.
+Both production EAS builds finished: iOS **2.1.0 (27)** / `14f76fb5-40d9-4f3d-8c95-13489935ec7f`, Android **2.1.0 (24)** / `e6a72070-4f04-4626-afec-29e9956874be`.
+Original signed IPA/AAB are under `artifacts/mobile-2.1.0`; hashes, symbol matches,
+physical-device evidence and store handoff are in
+[the November13 readiness record](reviews/2026-11-13-mobile-release-readiness.md).
+Analytics stays ON by default; test-device exclusions persist. No store upload/submission,
+GitHub push or mobile OTA publication. Submission remains withheld; apply the prepared
+Apple privacy entries in coordination with release. Luke accepted the updated agreement;
+App Store Connect now has2.1.0 in **Prepare for Submission**, with release notes,
+review instructions and support/marketing URLs saved. The policy URL for the next
+version is https://litterbugs.app/privacy. Manual release remains selected; no build
+is attached/uploaded. Dedicated standard reviewer credentials are now saved in
+Apple’s private fields; password sign-in/profile access verified, no admin rights.
+Privacy data-type answers still require immediate Publish, so no privacy-label
+draft is claimed. Pixel remote Expo/FCM delivery and tap/helper handling passed in
+a disposable copy after the owner made it available again. Original phone data
+was preserved. See the latest store handoff in the readiness record.
+
+Public status checked November13: Apple **2.0.1**, released October31;
+Google Play **2.0.1 (21)**, released October29. The historical October30 Apple
+status below is superseded by this public readback.
+
 ## October 30 — current store status checked
 
 Google Play Console production Releases shows **21 (2.0.1)** as **Available on

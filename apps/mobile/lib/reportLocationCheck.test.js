@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { requireReportLocation, withinReportingDistance } from './reportLocationCheck';
+afterEach(() => vi.useRealTimers());
 
 const origin = { latitude: 0, longitude: 0 };
 const api = (overrides = {}) => ({
@@ -29,5 +30,20 @@ describe('GPS-required report publication', () => {
   });
   it('returns only the GPS evidence needed for publication', async () => {
     await expect(requireReportLocation(api(), origin)).resolves.toEqual({ ...origin, capturedAt: expect.any(String) });
+  });
+  it('makes a stalled GPS check retryable and correctly classifies the timeout', async () => {
+    vi.useFakeTimers();
+    const check = requireReportLocation(api({ getCurrentPositionAsync: () => new Promise(() => {}) }), origin);
+    const result = expect(check).rejects.toMatchObject({ reason: 'location_timeout' });
+    await vi.advanceTimersByTimeAsync(20000);
+    await result;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('keeps permission refusal separate from unavailable GPS and permits a fresh retry', async () => {
+    const location = api({ getForegroundPermissionsAsync: vi.fn().mockResolvedValueOnce({ granted: false }).mockResolvedValue({ granted: true }) });
+    await expect(requireReportLocation(location, origin)).rejects.toMatchObject({ reason: 'location_denied' });
+    await expect(requireReportLocation(location, origin)).resolves.toMatchObject(origin);
+    await expect(requireReportLocation(api({ getCurrentPositionAsync: vi.fn().mockRejectedValue(new Error('No provider')) }), origin)).rejects.toMatchObject({ reason: 'location_unavailable' });
+    await expect(requireReportLocation(api({ getForegroundPermissionsAsync: vi.fn().mockRejectedValue(new Error('Unavailable')) }), origin)).rejects.toMatchObject({ reason: 'location_unavailable' });
   });
 });

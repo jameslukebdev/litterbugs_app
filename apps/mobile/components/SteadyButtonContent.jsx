@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { colors } from '../lib/theme';
 
 // Reserve the label's space throughout a request; only longer requests show motion.
-export default function SteadyButtonContent({ label, busy, busyLabel, color = '#FFFFFF' }) {
+export default function SteadyButtonContent({ label, busy, busyLabel, color = colors.white, maxFontSizeMultiplier }) {
   const [showProgress, setShowProgress] = useState(false);
   useEffect(() => {
     if (!busy) { setShowProgress(false); return; }
@@ -10,7 +11,7 @@ export default function SteadyButtonContent({ label, busy, busyLabel, color = '#
     return () => clearTimeout(timer);
   }, [busy]);
   return <View style={styles.content} accessible accessibilityLabel={busy ? busyLabel || label : label} accessibilityState={{ busy: Boolean(busy) }}>
-    <Text style={[styles.label, { color }]}>{label}</Text>
+    <Text style={[styles.label, { color }]} maxFontSizeMultiplier={maxFontSizeMultiplier}>{label}</Text>
     {busy && showProgress ? <ActivityIndicator style={styles.progress} size="small" color={color} /> : null}
   </View>;
 }

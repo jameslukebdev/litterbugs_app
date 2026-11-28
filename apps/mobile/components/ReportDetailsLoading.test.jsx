@@ -3,13 +3,23 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('react-native', () => {
   const Box = ({ children, accessibilityLabel }) => <div aria-label={accessibilityLabel}>{children}</div>;
-  return { Modal: Box, View: Box, Text: Box, TouchableOpacity: Box, ScrollView: Box, ActivityIndicator: () => null, Linking: {}, Alert: {}, Platform: { OS: 'android' } };
+  return { Modal: Box, View: Box, Text: Box, TouchableOpacity: Box, ScrollView: Box, ActivityIndicator: () => null, Image: () => null, Linking: {}, Alert: {}, Platform: { OS: 'android' } };
 });
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('../styles/MapScreen.styles', () => ({ default: {} }));
 vi.mock('../CompletedCleanupStory', () => ({ default: () => <div>Cleanup story</div> }));
 vi.mock('./ReportPhotoGallery', () => ({ default: () => <div>Original photos</div> }));
+vi.mock('./ReportIssueActions', () => ({ default: () => null }));
+vi.mock('../lib/cleanupIssues', () => ({ canEditReportContent: () => false }));
+vi.mock('./ReportSiteActivity', () => ({ default: () => null }));
+vi.mock('./ContributionSupporters', () => ({ default: () => null }));
+vi.mock('./LeaveTipButton', () => ({ default: () => null }));
 vi.mock('../ReporterIdentity', () => ({ default: () => null }));
+vi.mock('./LoadingBee', () => ({ default: ({ message }) => <div>{message}</div> }));
+vi.mock('./FlowDone', () => ({ FlowDoneHost: () => null, showFlowDone: vi.fn() }));
+vi.mock('./SlideUp', () => ({ default: ({ children }) => <div>{children}</div> }));
+vi.mock('../CompactRankBadge', () => ({ default: () => null }));
+vi.mock('../ProfileAvatar', () => ({ default: () => null }));
 vi.mock('../ReportShareSheet', () => ({ default: () => null }));
 vi.mock('../BrandedLoadingState', () => ({ default: ({ title }) => <div>{title}</div>, LoadingButtonContent: () => null }));
 vi.mock('../lib/funding', () => ({ formatUsd: () => '$0.00' }));
@@ -22,9 +32,9 @@ describe('completed report loading layout', () => {
     detailsOpen: true, selectedReport: { id: 'a', title: 'Clean road', cleanup_state: 'completed', litter_types: [] },
     insets: { top: 20, bottom: 0 }, reportPhotoUrls: [], completedCleanupImpactLoading: true,
   };
-  it('keeps Close available without showing content that the arriving story would push down', () => {
+  it('keeps Back to map available without showing content that the arriving story would push down', () => {
     const html = renderToStaticMarkup(<ReportDetailsSheet state={state} actions={{}} />);
-    expect(html).toContain('Close report');
+    expect(html).toContain('Back to map');
     expect(html).toContain('Loading cleanup…');
     expect(html).not.toContain('Original photos');
     expect(html).not.toContain('Clean road');

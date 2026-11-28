@@ -1,4 +1,12 @@
 const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
+  tip_received: {
+    title: 'You got a tip',
+    message: 'Someone thanked you with a tip.',
+  },
+  cleanup_issue_requested: { title: 'Cleanup needs your help', message: 'A cleaner has a question about your report.' },
+  cleanup_issue_replied: { title: 'New cleanup reply', message: 'There’s a reply to your cleanup issue.' },
+  cleanup_issue_report_updated: { title: 'Report updated', message: 'The reporter updated the cleanup details.' },
+  cleanup_issue_resolved: { title: 'Cleanup issue resolved', message: 'The cleanup issue has been resolved.' },
   admin_cleanup_needed: {
     title: 'Cleanup needs attention',
     message: 'A cleanup or payment issue needs your review. Open your admin inbox.',
@@ -24,8 +32,8 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     message: 'Your cleanup claim expired and is available to other volunteers again.',
   },
   completion_submitted: {
-    title: 'Cleanup ready for review',
-    message: 'A cleanup was submitted for your review.',
+    title: 'Your spot was cleaned up',
+    message: 'Check the before and after photos, then approve the cleanup or ask for changes.',
   },
   changes_requested: {
     title: 'Changes requested',
@@ -52,16 +60,20 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     message: 'The payout is paused while a Litterbugs team member reviews the cleanup.',
   },
   cleanup_reward_sent: {
-    title: 'Cleanup reward sent',
-    message: 'Your cleanup reward was sent to your payout account.',
+    title: 'Cleanup payout sent',
+    message: 'Your cleanup payout was sent to your payout account.',
   },
   cleanup_payout_failed: {
-    title: 'Cleanup reward needs attention',
-    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the reward transfer.',
+    title: 'Cleanup payout needs attention',
+    message: 'Your cleanup is approved, but a Litterbugs team member needs to review the payout.',
+  },
+  reporter_payout_waiting: {
+    title: 'A payout is waiting for you',
+    message: 'A spot you reported was cleaned up. Set up payouts to receive your reporter payout.',
   },
   cleanup_fund_increased: {
     title: 'Cleanup fund increased',
-    message: 'A member added money to your report’s cleaner reward.',
+    message: 'A member added money to your report’s cleanup fund.',
   },
   cleanup_contribution_refunded: {
     title: 'Contribution refunded',
@@ -91,7 +103,18 @@ const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
     title: 'Cleanup funding unavailable',
     message: 'Your report was reviewed and cannot accept cleanup funding.',
   },
+  nearby_reports_daily: {
+    title: 'New litter near you',
+    message: 'New litter reports are available in your area for funding and cleanup.',
+  },
+  cleanup_completed_nearby: {
+    title: 'Cleanup completed near you',
+    message: 'A cleanup has been completed in your area. Help celebrate the impact!',
+  },
 });
+
+/** Every notification's title and message, as shown in Updates (and pushed to the phone). */
+export const CLEANUP_NOTIFICATION_COPY = CLEANUP_NOTIFICATION_CONTENT;
 
 export function cleanupNotificationPresentation(notices) {
   if (!notices?.length) return null;
@@ -103,6 +126,16 @@ export function cleanupNotificationPresentation(notices) {
   }
 
   const eventType = notices[0].event_type ?? notices[0].eventType;
+  const tip = notices[0].tip;
+  // As on the website: "Sarah tipped you $5.00", with their note as the message.
+  if (eventType === 'tip_received' && tip && Number.isFinite(tip.tip_amount_cents)) {
+    const from = tip.tipper_name?.trim() || 'Someone';
+    const note = tip.note?.trim();
+    return {
+      title: `${from} tipped you $${(tip.tip_amount_cents / 100).toFixed(2)}`,
+      message: note ? `\u201c${note}\u201d` : 'Thank you for helping keep your community clean.',
+    };
+  }
   return CLEANUP_NOTIFICATION_CONTENT[eventType] ?? {
     title: 'Cleanup update',
     message: 'There is an update to one of your cleanups.',
@@ -112,10 +145,26 @@ export function cleanupNotificationPresentation(notices) {
 export function cleanupNotificationDestination(notification) {
   const eventType = notification?.event_type ?? notification?.eventType;
   const reportId = notification?.report_id ?? notification?.reportId;
+  const issueId = notification?.issue_id ?? notification?.issueId;
+  if (eventType?.startsWith('cleanup_issue_') && issueId) return { name: 'CleanupIssue', label: 'View conversation', params: { issueId } };
   const cleanupId = notification?.cleanup_attempt_id ?? notification?.cleanupId;
 
   if (eventType === 'admin_moderation_needed' || eventType === 'admin_cleanup_needed') {
     return { url: 'https://litterbugs.app/admin', label: 'Open admin inbox' };
+  }
+
+  // The daily nearby alert is about an area, not one report: open the map where the person is.
+  if (eventType === 'nearby_reports_daily') {
+    return {
+      name: 'App',
+      label: 'See new reports',
+      params: { screen: 'Map', params: { showNearby: true } },
+    };
+  }
+
+  // A tip opens Payments, where it shows up in the payouts view.
+  if (eventType === 'tip_received') {
+    return { name: 'Payments', label: 'View Earnings', params: {} };
   }
 
   if (!reportId) return null;
@@ -136,7 +185,17 @@ export function cleanupNotificationDestination(notification) {
     };
   }
 
-  if (eventType === 'cleanup_payout_failed') {
+  // As on the website: a sent payout opens your earnings.
+  if (eventType === 'cleanup_reward_sent') {
+    return {
+      name: 'Payments',
+      label: 'View Earnings',
+      params: {},
+    };
+  }
+
+  // A waiting reporter payout opens payout setup, like a payout that needs attention.
+  if (eventType === 'cleanup_payout_failed' || eventType === 'reporter_payout_waiting') {
     return {
       name: 'PayoutSetup',
       label: 'Review Payout Setup',

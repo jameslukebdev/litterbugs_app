@@ -1,6 +1,9 @@
+import { formatCleanupHours } from './lib/cleanupImpactPresentation';
+import { trackCleanupApproved } from './lib/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import RemotePhoto from './components/RemotePhoto';
+import { PhotoBatchProvider } from './components/PhotoBatch';
 import { createSignedPhotoUrl } from './lib/cleanupReview';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useFocusedResource from './lib/useFocusedResource';
@@ -21,8 +24,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BrandedLoadingState from './BrandedLoadingState';
-import SteadyButtonContent from './components/SteadyButtonContent';
+import LoadingBee from './components/LoadingBee';
+import BrandBug from './components/BrandBug';
+import { EmptyState, ErrorText, PrimaryButton, SecondaryButton, TextLink } from './components/ui';
 
 import CompactRankBadge from './CompactRankBadge';
 import ProfileAvatar from './ProfileAvatar';
@@ -41,6 +45,7 @@ import {
 import { permanentUserId } from './lib/reportAccess';
 import { useReports } from './lib/reports';
 import { useSession } from './lib/session';
+import { colors, fonts } from './lib/theme';
 
 const reviewErrorMessage = (error) => {
   const message = error?.message ?? '';
@@ -65,7 +70,7 @@ const formatSubmittedAt = (value) => new Date(value).toLocaleString(undefined, {
 });
 
 function LoadingState() {
-  return <BrandedLoadingState title="Loading cleanup evidence…" message="Preparing the before-and-after photos for review." />;
+  return <LoadingBee label="Loading cleanup evidence" style={{ backgroundColor: colors.white }} />;
 }
 
 function ReviewPhoto({ title, url, path, bucket, index, count, width }) {
@@ -76,10 +81,13 @@ function ReviewPhoto({ title, url, path, bucket, index, count, width }) {
   </View>;
 }
 
-function PhotoSection({ title, urls, paths = [], bucket, emptyText, width }) {
+function PhotoSection({ title, bug, urls, paths = [], bucket, emptyText, width }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.photoHeading}>
+        {bug ? <BrandBug kind={bug} size={18} /> : null}
+        <Text style={[styles.sectionTitle, bug === 'ladybug' && { color: colors.needsCleanup }, bug === 'flower' && { color: colors.done }]}>{title}</Text>
+      </View>
       {urls.length > 0 ? (
         <ScrollView
           horizontal
@@ -102,7 +110,7 @@ function PhotoSection({ title, urls, paths = [], bucket, emptyText, width }) {
         </ScrollView>
       ) : (
         <View style={styles.emptyPhotoState}>
-          <Ionicons name="image-outline" size={28} color="#7A848A" />
+          <Ionicons name="image-outline" size={28} color={colors.muted} />
           <Text style={styles.emptyPhotoText}>{emptyText}</Text>
         </View>
       )}
@@ -218,6 +226,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
         Alert.alert('Review still pending', 'The cleanup has not been approved yet. Your feedback is saved. Check the current review status and try again.');
         return;
       }
+      // Only the server's completed status counts; a sent decision alone does not.
+      if (reviewedAttempt?.status === 'completed') trackCleanupApproved(context.attempt.id);
       await clearReviewDraft();
       await refreshReports({ showRefresh: false });
 
@@ -240,7 +250,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
     Alert.alert(
       'Approve this cleanup?',
       context?.attempt?.is_paid
-        ? 'This will mark the report as cleaned, end your dispute window, and start the protected reward payout.'
+        ? 'This will mark the report as cleaned, end your dispute window, and start the protected payout.'
         : 'This will mark the litter report as cleaned and preserve it as a completed cleanup.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -309,7 +319,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               await clearReviewDraft();
               await retryContext();
               setMode('review');
-              Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The reward remains paused.');
+              Alert.alert('Dispute submitted', 'A Litterbugs team member will review it. The payout remains paused.');
             } catch (error) {
               Alert.alert('Couldn’t submit dispute', reviewErrorMessage(error));
             } finally {
@@ -326,18 +336,14 @@ export default function CleanupReviewScreen({ navigation, route }) {
   if (!context) {
     return (
       <View style={styles.centerState}>
-        <Ionicons name="alert-circle-outline" size={44} color="#A33A32" />
-        <Text style={styles.centerTitle}>Review unavailable</Text>
-        <Text style={styles.centerText}>{loadError}</Text>
-        <TouchableOpacity accessibilityRole="button" style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>Retry</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.secondaryButtonText}>Go back</Text>
-        </TouchableOpacity>
+        <EmptyState icon={<Ionicons name="alert-circle-outline" size={40} color={colors.red} />} title="Review unavailable" text={loadError} action={{ label: 'Try again', onPress: retryContext }} />
+        <TextLink label="Go back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
 
   const cleanerName = context.cleaner?.display_name || 'Cleaner profile unavailable';
+  const cleanerFirstName = context.cleaner?.display_name?.trim().split(/\s+/)[0] || 'A volunteer';
   const photoViewerWidth = Math.max(screenWidth - 74, 1);
 
   return (
@@ -346,6 +352,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      {/* Before and after photos appear together. */}
+      <PhotoBatchProvider>
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -354,43 +362,33 @@ export default function CleanupReviewScreen({ navigation, route }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {reviewDraftError || loadError ? <Text accessibilityRole="alert" style={{ color: '#B42318', padding: 16 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</Text> : null}
-        {loadError ? <TouchableOpacity accessibilityRole="button" disabled={loading} style={styles.secondaryButton} onPress={retryContext}><Text style={styles.secondaryButtonText}>{loading ? 'Updating…' : 'Try again'}</Text></TouchableOpacity> : null}
-        <Text style={styles.eyebrow}>REPORTER REVIEW</Text>
-        <Text style={styles.title}>Review this cleanup</Text>
+        {reviewDraftError || loadError ? <ErrorText style={{ marginTop: 0, marginBottom: 8 }}>{reviewDraftError || 'Couldn’t update this cleanup. Refresh before sending your review.'}</ErrorText> : null}
+        {loadError ? <TextLink align="start" disabled={loading} label={loading ? 'Updating…' : 'Try again'} onPress={retryContext} /> : null}
+        {/* Website review screen: who cleaned, when it was sent, and when it approves itself. */}
         <Text style={styles.reportTitle}>{context.report.title || 'Litter cleanup'}</Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cleaner</Text>
-          <TouchableOpacity
-            style={styles.identityRow}
-            disabled={!context.cleaner?.id}
-            onPress={() => navigation.navigate('PublicProfile', {
-              profileId: context.cleaner.id,
-              sourceReportId: context.report.id,
-            })}
-            accessibilityRole={context.cleaner?.id ? 'button' : undefined}
-            accessibilityLabel={context.cleaner?.id ? `View ${cleanerName} profile` : undefined}
-          >
-            <ProfileAvatar profile={context.cleaner} size={48} />
-            <View style={styles.identityCopy}>
-              <Text style={styles.identityName}>{cleanerName}</Text>
-              <CompactRankBadge userId={context.cleaner?.id} />
-              {context.cleaner?.username ? (
-                <Text style={styles.identityUsername}>@{context.cleaner.username}</Text>
-              ) : null}
-              {context.attempt.is_self_cleanup ? (
-                <Text style={styles.selfCleanup}>Original reporter and cleaner</Text>
-              ) : null}
-            </View>
-            {context.cleaner?.id ? (
-              <Ionicons name="chevron-forward" size={20} color="#7B858B" />
-            ) : null}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.identityRow}
+          disabled={!context.cleaner?.id}
+          onPress={() => navigation.navigate('PublicProfile', {
+            profileId: context.cleaner.id,
+            sourceReportId: context.report.id,
+          })}
+          accessibilityRole={context.cleaner?.id ? 'button' : undefined}
+          accessibilityLabel={context.cleaner?.id ? `View ${cleanerName} profile` : undefined}
+        >
+          <ProfileAvatar profile={context.cleaner} size={48} />
+          <View style={styles.identityCopy}>
+            <Text style={styles.title}>{context.attempt.is_self_cleanup ? 'You cleaned up this spot' : `${cleanerFirstName} cleaned up this spot`}</Text>
+            <Text style={styles.identityUsername}>
+              Sent {formatSubmittedAt(context.submission.created_at)}.
+              {!context.attempt.is_paid && context.attempt.review_due_at ? ` If you don’t respond by ${formatSubmittedAt(context.attempt.review_due_at)}, it’s approved automatically.` : ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <PhotoSection
-          title="Before cleanup"
+          title="Before"
+          bug="ladybug"
           urls={context.beforePhotoUrls}
           paths={context.beforePhotoPaths}
           bucket="report_photos"
@@ -400,7 +398,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
 
         {context.attempt.is_paid ? (
           <View style={styles.financialCard}>
-            <Text style={styles.financialEyebrow}>FUNDED CLEANUP</Text>
+            <Text style={styles.financialEyebrow}>Funded cleanup</Text>
             <Text style={styles.financialReward}>Cleaner receives {formatUsd(context.attempt.reward_amount_cents)}</Text>
             <Text style={styles.financialSummary}>
               {context.attempt.financial_review_summary
@@ -416,7 +414,8 @@ export default function CleanupReviewScreen({ navigation, route }) {
           </View>
         ) : null}
         <PhotoSection
-          title="After cleanup"
+          title="After"
+          bug="flower"
           urls={context.afterPhotoUrls}
           paths={context.afterPhotoPaths}
           bucket="cleanup_photos"
@@ -425,38 +424,24 @@ export default function CleanupReviewScreen({ navigation, route }) {
         />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cleanup information</Text>
-          <Text style={styles.infoLabel}>Description</Text>
+          <Text style={styles.sectionTitle}>{context.attempt.is_self_cleanup ? 'Your note' : `${cleanerFirstName}’s note`}</Text>
           <Text style={styles.description}>{context.submission.description}</Text>
-
-          <View style={styles.metricRow}>
-            <View style={styles.metric}>
-              <Text style={styles.infoLabel}>Bags or items</Text>
-              <Text style={styles.metricValue}>
-                {context.submission.bags_or_items_removed ?? 'Not provided'}
-              </Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.infoLabel}>Weight removed</Text>
-              <Text style={styles.metricValue}>
-                {context.submission.weight_pounds
-                  ? `${context.submission.weight_pounds} lb`
-                  : 'Not provided'}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.infoLabel}>Submitted</Text>
-          <Text style={styles.metricValue}>
-            {formatSubmittedAt(context.submission.created_at)}
-          </Text>
+          {context.submission.bags_or_items_removed || context.submission.weight_pounds || context.submission.duration_minutes ? (
+            <Text style={styles.noteFacts}>
+              {[
+                context.submission.bags_or_items_removed ? `${context.submission.bags_or_items_removed} ${Number(context.submission.bags_or_items_removed) === 1 ? 'bag or item' : 'bags or items'}` : null,
+                context.submission.weight_pounds ? `${context.submission.weight_pounds} lb removed` : null,
+                context.submission.duration_minutes ? `${formatCleanupHours(context.submission.duration_minutes)} hrs` : null,
+              ].filter(Boolean).join('  ·  ')}
+            </Text>
+          ) : null}
         </View>
 
         {context.attempt.is_paid && mode === 'review' ? (
           <View style={styles.actionSection}>
             {context.attempt.dispute_status === 'open' ? (
               <View style={styles.disputeStatusCard}>
-                <Ionicons name="shield-checkmark-outline" size={22} color="#8A6400" />
+                <Ionicons name="shield-checkmark-outline" size={22} color={colors.yellow} />
                 <Text style={styles.disputeStatusText}>A Litterbugs team member is reviewing your dispute. The reward remains paused.</Text>
               </View>
             ) : context.attempt.financial_review_status === 'passed' && context.attempt.review_due_at ? (
@@ -467,17 +452,17 @@ export default function CleanupReviewScreen({ navigation, route }) {
                   onPress={confirmApproval}
                   disabled={submitting}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
                   <Text style={styles.approveButtonText}>Approve cleanup</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.requestButton} onPress={() => setMode('dispute')} disabled={submitting}>
-                  <Ionicons name="flag-outline" size={21} color="#A33A32" />
+                  <Ionicons name="flag-outline" size={21} color={colors.red} />
                   <Text style={styles.requestButtonText}>Dispute cleanup</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <View style={styles.disputeStatusCard}>
-                <ActivityIndicator color="#8A6400" />
+                <ActivityIndicator color={colors.yellow} />
                 <Text style={styles.disputeStatusText}>The cleanup is still being reviewed. The payout is paused.</Text>
               </View>
             )}
@@ -495,13 +480,9 @@ export default function CleanupReviewScreen({ navigation, route }) {
               maxLength={1000}
               textAlignVertical="top"
             />
-            {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
-            <TouchableOpacity style={[styles.requestSubmitButton, submitting && styles.disabled]} onPress={submitPaidDispute} disabled={submitting}>
-              <SteadyButtonContent label="Submit dispute" busy={submitting} busyLabel="Submitting dispute…" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => setMode('review')} disabled={submitting}>
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <ErrorText style={styles.error}>{errors.note}</ErrorText>
+            <PrimaryButton label="Submit dispute" busy={submitting} busyLabel="Submitting dispute…" onPress={submitPaidDispute} style={styles.requestSubmitButton} />
+            <SecondaryButton label="Cancel" onPress={() => setMode('review')} disabled={submitting} style={styles.secondaryButton} />
           </View>
         ) : mode === 'review' ? (
           <View style={styles.actionSection}>
@@ -510,7 +491,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               onPress={confirmApproval}
               disabled={submitting}
             >
-              <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+              <Ionicons name="checkmark-circle-outline" size={21} color={colors.white} />
               <Text style={styles.approveButtonText}>Approve cleanup</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -518,7 +499,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
               onPress={() => setMode('request_changes')}
               disabled={submitting}
             >
-              <Ionicons name="refresh-circle-outline" size={21} color="#A33A32" />
+              <Ionicons name="refresh-circle-outline" size={21} color={colors.red} />
               <Text style={styles.requestButtonText}>Request Changes</Text>
             </TouchableOpacity>
           </View>
@@ -543,7 +524,7 @@ export default function CleanupReviewScreen({ navigation, route }) {
                     <Ionicons
                       name={selected ? 'checkbox' : 'square-outline'}
                       size={23}
-                      color={selected ? '#2F7D32' : '#7B858B'}
+                      color={selected ? colors.primary : colors.muted}
                     />
                     <View style={styles.reasonCopy}>
                       <Text style={styles.reasonTitle}>{reason.label}</Text>
@@ -553,10 +534,10 @@ export default function CleanupReviewScreen({ navigation, route }) {
                 );
               })}
             </View>
-            {errors.reasons ? <Text style={styles.error}>{errors.reasons}</Text> : null}
+            <ErrorText style={styles.error}>{errors.reasons}</ErrorText>
 
             <Text style={styles.noteLabel}>Optional note</Text>
-            <TextInput editable={reviewDraftReady && !submitting} selectionColor="#2F7D32"
+            <TextInput editable={reviewDraftReady && !submitting} selectionColor={colors.primary}
               style={[styles.noteInput, errors.note && styles.inputError]}
               value={note}
               onChangeText={(value) => {
@@ -572,90 +553,77 @@ export default function CleanupReviewScreen({ navigation, route }) {
             <Text style={styles.characterCount}>
               {note.length}/{MAX_CLEANUP_REVIEW_NOTE_LENGTH}
             </Text>
-            {errors.note ? <Text style={styles.error}>{errors.note}</Text> : null}
+            <ErrorText style={styles.error}>{errors.note}</ErrorText>
 
-            <TouchableOpacity
-              style={[styles.requestSubmitButton, submitting && styles.disabled]}
-              onPress={submitChangeRequest}
-              disabled={submitting}
-            >
-              <SteadyButtonContent label="Send change request" busy={submitting} busyLabel="Sending review…" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => setMode('review')}
-              disabled={submitting}
-            >
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
+            <PrimaryButton label="Send change request" busy={submitting} busyLabel="Sending review…" onPress={submitChangeRequest} style={styles.requestSubmitButton} />
+            <SecondaryButton label="Cancel" onPress={() => setMode('review')} disabled={submitting} style={styles.secondaryButton} />
           </View>
         )}
       </ScrollView>
+      </PhotoBatchProvider>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20 },
-  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFFFFF' },
-  centerTitle: { marginTop: 14, color: '#30363B', fontSize: 22, fontWeight: '600' },
-  centerText: { maxWidth: 340, marginTop: 9, color: '#677178', fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  eyebrow: { color: '#2F7D32', fontSize: 12, fontWeight: '600', letterSpacing: 1.2 },
-  title: { marginTop: 7, color: '#202428', fontSize: 24, lineHeight: 31, fontWeight: '600' },
-  reportTitle: { marginTop: 7, color: '#687178', fontSize: 15, fontWeight: '700' },
-  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  sectionTitle: { color: '#30363B', fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  financialCard: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: '#9CCB9F', borderRadius: 18, backgroundColor: '#EAF6EB' },
-  financialEyebrow: { color: '#3F6843', fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  financialReward: { marginTop: 5, color: '#245F2A', fontSize: 22, fontWeight: '600' },
-  financialSummary: { marginTop: 8, color: '#526C55', fontSize: 14, lineHeight: 20 },
-  disputeDeadline: { marginTop: 10, color: '#37633B', fontSize: 13, fontWeight: '600' },
-  paidReviewNotice: { padding: 15, color: '#59636A', fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: '#FFFFFF' },
-  disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#E7CF79', borderRadius: 14, backgroundColor: '#FFF9DD' },
-  disputeStatusText: { flex: 1, color: '#755900', fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  identityRow: { minHeight: 64, marginTop: 10, flexDirection: 'row', alignItems: 'center' },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: colors.white },
+  title: { color: colors.ink, fontSize: 19, lineHeight: 24, fontFamily: fonts.heading },
+  reportTitle: { color: colors.muted, fontSize: 15, fontWeight: '700' },
+  photoHeading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  noteFacts: { marginTop: 10, color: colors.ink, fontSize: 14, fontWeight: '700' },
+  section: { marginTop: 20, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white },
+  sectionTitle: { color: colors.ink, fontSize: 17, lineHeight: 23, fontFamily: fonts.heading },
+  financialCard: { marginTop: 20, padding: 16, borderWidth: 2, borderColor: colors.yellowBorder, borderRadius: 18, backgroundColor: colors.yellowSoft },
+  financialEyebrow: { color: colors.yellow, fontSize: 14, fontWeight: '800' },
+  financialReward: { marginTop: 4, color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
+  financialSummary: { marginTop: 8, color: colors.body, fontSize: 14, lineHeight: 20 },
+  disputeDeadline: { marginTop: 10, color: colors.yellow, fontSize: 13, fontWeight: '700' },
+  paidReviewNotice: { padding: 15, color: colors.body, fontSize: 14, lineHeight: 20, borderRadius: 13, backgroundColor: colors.white },
+  disputeStatusCard: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.yellowBorder, borderRadius: 14, backgroundColor: colors.yellowSoft },
+  disputeStatusText: { flex: 1, color: colors.yellow, fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  identityRow: { minHeight: 64, marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   identityCopy: { flex: 1, marginLeft: 12 },
-  identityName: { color: '#202428', fontSize: 16, fontWeight: '600' },
-  identityUsername: { marginTop: 2, color: '#687178', fontSize: 13 },
-  selfCleanup: { marginTop: 4, color: '#2F7D32', fontSize: 12, fontWeight: '600' },
+  identityName: { color: colors.ink, fontSize: 16, fontWeight: '600' },
+  identityUsername: { marginTop: 2, color: colors.muted, fontSize: 13 },
+  selfCleanup: { marginTop: 4, color: colors.primary, fontSize: 12, fontWeight: '600' },
   photoScroll: { marginTop: 13, borderRadius: 15 },
-  photoViewer: { height: 300, overflow: 'hidden', borderRadius: 15, backgroundColor: '#E9ECEE' },
+  photoViewer: { height: 300, overflow: 'hidden', borderRadius: 15, backgroundColor: colors.line },
   photo: { width: '100%', height: '100%' },
-  photoOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: '#EEF1F2' },
-  photoStatusText: { color: '#687178', fontSize: 14, fontWeight: '700' },
-  photoRetryButton: { minHeight: 38, marginTop: 2, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#8FBC92', borderRadius: 11, backgroundColor: '#FFFFFF' },
-  photoRetryText: { color: '#2F7D32', fontSize: 13, fontWeight: '600' },
-  photoCountBadge: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: 'rgba(31, 36, 39, 0.76)' },
-  photoCountText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-  emptyPhotoState: { minHeight: 108, marginTop: 13, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: '#F1F3F4' },
-  emptyPhotoText: { color: '#687178', fontSize: 14, textAlign: 'center' },
-  infoLabel: { marginTop: 17, color: '#6D767D', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  description: { marginTop: 7, color: '#30363B', fontSize: 16, lineHeight: 23 },
+  photoOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.mist },
+  photoStatusText: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  photoRetryButton: { minHeight: 38, marginTop: 2, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryLight, borderRadius: 11, backgroundColor: colors.white },
+  photoRetryText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  photoCountBadge: { position: 'absolute', right: 10, bottom: 10, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: 'rgba(41, 41, 50, 0.76)' },
+  photoCountText: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  emptyPhotoState: { minHeight: 108, marginTop: 13, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: colors.mist },
+  emptyPhotoText: { color: colors.muted, fontSize: 14, textAlign: 'center' },
+  infoLabel: { marginTop: 17, color: colors.ink, fontSize: 13, fontWeight: '800' },
+  description: { marginTop: 7, color: colors.ink, fontSize: 16, lineHeight: 23 },
   metricRow: { flexDirection: 'row', gap: 12 },
-  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 12, backgroundColor: '#F3F7F3' },
-  metricValue: { marginTop: 5, color: '#30363B', fontSize: 15, fontWeight: '600' },
+  metric: { flex: 1, padding: 12, marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white },
+  metricValue: { marginTop: 5, color: colors.ink, fontSize: 15, fontWeight: '600' },
   actionSection: { marginTop: 22 },
-  approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: '#2F7D32' },
-  approveButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#D9AAA5', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  requestButtonText: { color: '#A33A32', fontSize: 15, fontWeight: '600' },
-  changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: '#E2EAE3', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  helper: { marginTop: 7, color: '#6D767D', fontSize: 14, lineHeight: 20 },
+  approveButton: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, backgroundColor: colors.primary },
+  approveButtonText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  requestButton: { minHeight: 52, marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.redBorder, borderRadius: 14, backgroundColor: colors.white },
+  requestButtonText: { color: colors.red, fontSize: 15, fontWeight: '600' },
+  changeSection: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.line, borderRadius: 16, backgroundColor: colors.white },
+  helper: { marginTop: 7, color: colors.muted, fontSize: 14, lineHeight: 20 },
   reasonList: { marginTop: 14, gap: 9 },
-  reasonRow: { padding: 13, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: '#D6DBDE', borderRadius: 13, backgroundColor: '#FFFFFF' },
-  reasonRowSelected: { borderColor: '#7EB282', backgroundColor: '#F4FAF4' },
+  reasonRow: { padding: 13, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderColor: colors.lineStrong, borderRadius: 13, backgroundColor: colors.white },
+  reasonRowSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
   reasonCopy: { flex: 1 },
-  reasonTitle: { color: '#30363B', fontSize: 14, fontWeight: '600' },
-  reasonDescription: { marginTop: 3, color: '#6D767D', fontSize: 13, lineHeight: 18 },
-  noteLabel: { marginTop: 18, color: '#59636A', fontSize: 13, fontWeight: '600' },
-  noteInput: { minHeight: 112, marginTop: 8, padding: 13, borderWidth: 1, borderColor: '#DCE4DE', borderRadius: 13, color: '#202428', fontSize: 15, lineHeight: 21, backgroundColor: '#FFFFFF' },
-  characterCount: { marginTop: 5, color: '#8A9297', fontSize: 12, textAlign: 'right' },
-  inputError: { borderColor: '#C94F45' },
-  error: { marginTop: 7, color: '#B63D34', fontSize: 13, lineHeight: 18 },
-  requestSubmitButton: { minHeight: 52, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#A33A32' },
-  requestSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  secondaryButton: { minHeight: 50, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#98B79A', borderRadius: 14, backgroundColor: '#FFFFFF' },
-  secondaryButtonText: { color: '#2F7D32', fontSize: 15, fontWeight: '600' },
+  reasonTitle: { color: colors.ink, fontSize: 14, fontWeight: '600' },
+  reasonDescription: { marginTop: 3, color: colors.muted, fontSize: 13, lineHeight: 18 },
+  noteLabel: { marginTop: 18, color: colors.body, fontSize: 13, fontWeight: '600' },
+  noteInput: { minHeight: 112, marginTop: 8, padding: 13, borderWidth: 1, borderColor: colors.line, borderRadius: 13, color: colors.ink, fontSize: 15, lineHeight: 21, backgroundColor: colors.white },
+  characterCount: { marginTop: 5, color: colors.subtle, fontSize: 12, textAlign: 'right' },
+  inputError: { borderColor: colors.red },
+  error: { marginTop: 7, fontSize: 13, lineHeight: 18 },
+  requestSubmitButton: { marginTop: 18, backgroundColor: colors.red },
+  requestSubmitText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  secondaryButton: { marginTop: 12 },
   disabled: { opacity: 0.6 },
 });
