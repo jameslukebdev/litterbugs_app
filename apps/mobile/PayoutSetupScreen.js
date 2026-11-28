@@ -7,9 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ConnectAccountOnboarding, ConnectComponentsProvider, loadConnectAndInitialize } from '@stripe/stripe-react-native';
+import { ConnectAccountOnboarding, ConnectComponentsProvider, ConnectPayouts, loadConnectAndInitialize } from '@stripe/stripe-react-native';
 
-import { createPayoutDashboardLink, createPayoutOnboardingLink, createPayoutSession, loadPayoutStatus } from './lib/funding';
+import { createPayoutDashboardLink, createPayoutManageSession, createPayoutOnboardingLink, createPayoutSession, loadPayoutStatus } from './lib/funding';
 import { trackPayoutSetup } from './lib/analytics';
 import { payoutSetupPresentation } from './lib/payoutSetupPresentation';
 import {
@@ -31,6 +31,69 @@ const PAYOUT_BROWSER_OPTIONS = {
   // the browser in our task preserves its form when members check SMS codes.
   createTask: false,
 };
+
+const PAYOUTS_APPEARANCE = {
+  variables: {
+    colorPrimary: colors.primary, colorText: colors.ink, colorBackground: colors.white, borderRadius: '14px',
+    buttonBorderRadius: '10px', buttonPaddingX: '12px', buttonPaddingY: '6px', buttonLabelFontSize: '14px', buttonLabelFontWeight: '600',
+    buttonSecondaryColorBackground: '#ffffff', buttonSecondaryColorBorder: '#e3dff0', buttonSecondaryColorText: '#45434d',
+  },
+};
+
+/**
+ * Once a cleaner can be paid, their balance, payouts and bank or card live here, in Stripe's embedded
+ * payouts view, instead of a separate Stripe dashboard in the browser.
+ */
+function PayoutsView({ insets }) {
+  const [instance, setInstance] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    setInstance(null);
+    (async () => {
+      const session = await createPayoutManageSession();
+      if (cancelled) return;
+      if (!session) { setFailed(true); return; }
+      let first = session.clientSecret;
+      setInstance(loadConnectAndInitialize({
+        publishableKey: session.publishableKey,
+        fetchClientSecret: async () => {
+          if (first) { const secret = first; first = null; return secret; }
+          return (await createPayoutManageSession())?.clientSecret;
+        },
+        appearance: PAYOUTS_APPEARANCE,
+      }));
+    })().catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [attempt]);
+  return (
+    <View style={[styles.payoutsView, { paddingBottom: insets.bottom }]}>
+      <View style={styles.payoutsHead}>
+        <BrandBug kind="bee" size={32} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.payoutsTitle}>Payouts</Text>
+          <View style={styles.connectedPill}><Text style={styles.connectedText}>Connected through Stripe</Text></View>
+        </View>
+      </View>
+      {failed ? (
+        <View style={styles.payoutsFailed}>
+          <Text style={styles.noticeText}>Your payouts couldn’t load.</Text>
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => setAttempt(value => value + 1)} accessibilityRole="button">
+            <Text style={styles.secondaryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : instance ? (
+        <ConnectComponentsProvider connectInstance={instance}>
+          <ConnectPayouts style={{ flex: 1 }} onLoadError={() => setFailed(true)} />
+        </ConnectComponentsProvider>
+      ) : (
+        <View style={styles.center}><LoadingBee label="Loading your payouts" /></View>
+      )}
+    </View>
+  );
+}
 
 export default function PayoutSetupScreen(props) {
   const { user } = useSession();
@@ -215,6 +278,10 @@ function PayoutSetupController({ navigation, route }) {
     return <View style={styles.center}><LoadingBee label="Checking your payout setup" /></View>;
   }
 
+  if (enabled && !updatingRequiredDetails && !setupNotice && !workflowToken) {
+    return <PayoutsView insets={insets} />;
+  }
+
   return (
     <>
     {connect ? (
@@ -248,7 +315,7 @@ function PayoutSetupController({ navigation, route }) {
       <Text style={styles.text}>
         {enabled
           ? 'Use this account for cleanup and reporter payouts. Stripe sends them to your connected payout account.'
-          : workflowCopy?.text || 'Payouts go straight to your bank. Setup takes about 3 minutes and happens right here, on a secure form from Stripe.'}
+          : workflowCopy?.text || 'Payouts go straight to your bank or debit card. Setup takes about 3 minutes and happens right here, on a secure form from Stripe.'}
       </Text>
 
       {/* What to have ready, so nobody starts and then has to stop and look for something. */}
@@ -285,7 +352,7 @@ function PayoutSetupController({ navigation, route }) {
         {showBusy ? <ActivityIndicator size="small" color={enabled ? colors.primary : colors.white} style={styles.buttonSpinner} /> : null}
       </TouchableOpacity>
       {needsEligibilityConfirmation ? <Text style={styles.confirmNote}>By continuing, you confirm you are at least 18 and can be paid in the United States.</Text> : null}
-      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}><Text style={{ fontWeight: '800', color: colors.green }}>Secured by Stripe.</Text> Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank-account number.</Text></View>
+      <View style={styles.trustRow}><Ionicons name="lock-closed-outline" size={13} color={colors.muted} /><Text style={styles.trustText}><Text style={{ fontWeight: '800', color: colors.green }}>Secured by Stripe.</Text> Stripe checks your identity and sends your payouts. Litterbugs never receives your full bank or card number.</Text></View>
       {!enabled ? <View style={[styles.card, styles.expectations]}>
         <Text style={styles.cardTitle}>What to expect</Text>
         <View style={styles.row}><Ionicons name="person-circle-outline" size={20} color={colors.primary} /><Text style={styles.rowText}>No business or LLC is required. You’ll set up a personal payout account with Stripe.</Text></View>
@@ -335,4 +402,10 @@ const styles = StyleSheet.create({
   secondaryButton: { minHeight: 52, marginTop: 22, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.line, borderRadius: 14, backgroundColor: colors.white },
   secondaryText: { color: colors.primaryDark, fontSize: 16, fontWeight: '800' },
   disabled: { opacity: 0.6 },
+  payoutsView: { flex: 1, backgroundColor: colors.white },
+  payoutsHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  payoutsTitle: { color: colors.ink, fontSize: 22, fontFamily: fonts.heading },
+  connectedPill: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, borderWidth: 1, borderColor: '#8ed7c5', backgroundColor: '#b9e9dd' },
+  connectedText: { color: '#125443', fontSize: 12, fontWeight: '800' },
+  payoutsFailed: { paddingHorizontal: 20, paddingTop: 8 },
 });

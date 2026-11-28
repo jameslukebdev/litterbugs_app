@@ -1,4 +1,8 @@
 const CLEANUP_NOTIFICATION_CONTENT = Object.freeze({
+  tip_received: {
+    title: 'You got a tip',
+    message: 'Someone thanked you with a tip.',
+  },
   cleanup_issue_requested: { title: 'Cleanup needs your help', message: 'A cleaner has a question about your report.' },
   cleanup_issue_replied: { title: 'New cleanup reply', message: 'There’s a reply to your cleanup issue.' },
   cleanup_issue_report_updated: { title: 'Report updated', message: 'The reporter updated the cleanup details.' },
@@ -122,6 +126,16 @@ export function cleanupNotificationPresentation(notices) {
   }
 
   const eventType = notices[0].event_type ?? notices[0].eventType;
+  const tip = notices[0].tip;
+  // As on the website: "Sarah tipped you $5.00", with their note as the message.
+  if (eventType === 'tip_received' && tip && Number.isFinite(tip.tip_amount_cents)) {
+    const from = tip.tipper_name?.trim() || 'Someone';
+    const note = tip.note?.trim();
+    return {
+      title: `${from} tipped you $${(tip.tip_amount_cents / 100).toFixed(2)}`,
+      message: note ? `\u201c${note}\u201d` : 'Thank you for helping keep your community clean.',
+    };
+  }
   return CLEANUP_NOTIFICATION_CONTENT[eventType] ?? {
     title: 'Cleanup update',
     message: 'There is an update to one of your cleanups.',
@@ -146,6 +160,11 @@ export function cleanupNotificationDestination(notification) {
       label: 'See new reports',
       params: { screen: 'Map', params: { showNearby: true } },
     };
+  }
+
+  // A tip opens Payments, where it shows up in the payouts view.
+  if (eventType === 'tip_received') {
+    return { name: 'Payments', label: 'View Earnings', params: {} };
   }
 
   if (!reportId) return null;

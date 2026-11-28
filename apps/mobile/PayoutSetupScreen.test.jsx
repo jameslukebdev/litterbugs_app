@@ -22,12 +22,14 @@ vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ b
 vi.mock('./lib/session', () => ({ useSession: () => ({ user: { id: 'test-member' } }) }));
 vi.mock('./lib/funding', () => ({
   loadPayoutStatus: vi.fn(), createPayoutOnboardingLink: vi.fn(), createPayoutDashboardLink: vi.fn(), createPayoutSession: vi.fn(),
+  createPayoutManageSession: vi.fn(async () => ({ clientSecret: 'manage_secret', publishableKey: 'pk_test_x' })),
 }));
 vi.mock('./lib/analytics', () => ({ trackPayoutSetup: vi.fn() }));
 vi.mock('@stripe/stripe-react-native', () => ({
   loadConnectAndInitialize: vi.fn(params => ({ params })),
   ConnectComponentsProvider: ({ children }) => children,
   ConnectAccountOnboarding: ({ title }) => <div data-embedded-setup>{title}</div>,
+  ConnectPayouts: () => <div data-embedded-payouts>Stripe payouts</div>,
 }));
 vi.mock('expo-web-browser', () => ({
   WebBrowserPresentationStyle: { FORM_SHEET: 'formSheet' },
@@ -107,16 +109,14 @@ it('opens current remediation while preserving an enabled account’s readiness'
   expect(createPayoutDashboardLink).not.toHaveBeenCalled();
 });
 
-it('opens the payout dashboard directly when Stripe has no current remediation', async () => {
+it('shows payouts inside the app, not in a separate Stripe dashboard, once a member can be paid', async () => {
   await render({ onboardingStatus: 'enabled', payoutsEnabled: true, age18Confirmed: true, requirementsDue: [] });
-  expect(host.textContent).not.toContain('in review');
+  await act(async () => {});
+  expect(host.textContent).toContain('Connected through Stripe');
+  expect(host.querySelector('[data-embedded-payouts]')).not.toBeNull();
   expect(host.textContent).not.toContain('What to expect');
-  expect(host.querySelector('[role="checkbox"]')).toBeNull();
-  await act(() => button('Review payout details').click());
-  expect(createPayoutDashboardLink).toHaveBeenCalledOnce();
-  expect(openBrowserAsync).toHaveBeenCalledWith('https://example.com/test-dashboard',
-    expect.objectContaining({ createTask: false }));
-  expect(createPayoutOnboardingLink).not.toHaveBeenCalled();
+  expect(createPayoutDashboardLink).not.toHaveBeenCalled();
+  expect(openBrowserAsync).not.toHaveBeenCalled();
 });
 
 it('lets members review a pending setup without implying they must start again', async () => {

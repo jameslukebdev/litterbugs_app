@@ -72,6 +72,15 @@ export async function createPayoutSession() {
   return data;
 }
 
+/** A short session for Stripe's payouts view (balance, payouts, bank or card) inside the app. */
+export async function createPayoutManageSession() {
+  const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
+    body: { mode: 'manage' },
+  });
+  if (error || !data?.clientSecret || !data?.publishableKey) return null;
+  return data;
+}
+
 export async function createPayoutDashboardLink() {
   const { data, error } = await supabase.functions.invoke('create-cleaner-onboarding-link', {
     body: { mode: 'dashboard' },

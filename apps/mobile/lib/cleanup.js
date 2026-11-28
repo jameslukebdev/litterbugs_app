@@ -69,7 +69,7 @@ export async function releaseCleanup(cleanupId) {
 export async function loadUnreadCleanupNotifications() {
   const { data, error } = await supabase
     .from('cleanup_notifications')
-    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at, tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)')
     .is('read_at', null)
     .order('created_at', { ascending: true })
     .limit(20);
@@ -83,7 +83,7 @@ export async function loadCleanupNotifications({ userId, unreadOnly = false } = 
   if (!userId) return [];
   let query = supabase
     .from('cleanup_notifications')
-    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at, read_at, report:reports!cleanup_notifications_report_id_fkey(id,title)')
+    .select('id, cleanup_attempt_id, report_id, review_id, submission_id, issue_id, event_type, created_at, read_at, report:reports!cleanup_notifications_report_id_fkey(id,title), tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)')
     .eq('user_id', userId);
   if (unreadOnly) query = query.is('read_at', null);
   const { data, error } = await query.order('created_at', { ascending: false }).order('id').limit(50);
