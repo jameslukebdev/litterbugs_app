@@ -166,6 +166,21 @@ Deno.serve(async (request: Request) => {
       failed: invalidDeliveries.length + contextFailures,
     });
   }
+  // Tip pushes name the amount, the sender and their note. If that lookup fails the
+  // plain "You got a tip" message still goes out.
+  const tipDeliveries = validDeliveries.filter((delivery) => delivery.event_type === "tip_received");
+  if (tipDeliveries.length) {
+    const { data: tipRows, error: tipError } = await admin.from("cleanup_notifications")
+      .select("id, tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents, tipper_name, note)")
+      .in("id", tipDeliveries.map((delivery) => delivery.notification_id));
+    if (tipError) console.error("Unable to load tip details for push", tipError);
+    type TipRow = { id: string; tip: CleanupPushDelivery["tip"] | NonNullable<CleanupPushDelivery["tip"]>[] };
+    const tips = new Map(((tipRows ?? []) as unknown as TipRow[])
+      .map((row) => [row.id, Array.isArray(row.tip) ? row.tip[0] ?? null : row.tip]));
+    validDeliveries = validDeliveries.map((delivery) =>
+      delivery.event_type === "tip_received" ? { ...delivery, tip: tips.get(delivery.notification_id) ?? null } : delivery
+    );
+  }
   const messages = validDeliveries.map(cleanupPushMessage);
 
   const headers: Record<string, string> = {

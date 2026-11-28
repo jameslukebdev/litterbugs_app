@@ -13,6 +13,7 @@ function fixture() {
     flag: true, ready: true, stripeReady: true, showOnBoards: true,
     signedIn: null as null | { id: string; email: string; is_anonymous: boolean },
     tips: [] as Row[], intents: [] as Row[], intentCreates: 0,
+    reports: [] as Row[], attempts: [] as Row[],
   };
   const match = (row: Row, filters: [string, string, unknown][]) => filters.every(([op, column, value]) =>
     op === 'eq' ? row[column] === value : op === 'is' ? row[column] === value : (value as unknown[]).includes(row[column]));
@@ -23,6 +24,8 @@ function fixture() {
       if (table === 'cleanup_feature_flags') return [{ enabled: state.flag }];
       if (table === 'cleaner_payout_accounts') return state.ready ? [{ stripe_account_id: 'acct_cleaner', onboarding_status: 'enabled',
         payouts_enabled: true, country: 'US', age_18_confirmed_at: '2026-01-01' }] : [];
+      if (table === 'reports') return state.reports.filter(row => match(row, filters));
+      if (table === 'cleanup_attempts') return state.attempts.filter(row => match(row, filters));
       return state.tips.filter(row => match(row, filters));
     };
     const builder: any = {
@@ -30,6 +33,7 @@ function fixture() {
       eq: (column: string, value: unknown) => { filters.push(['eq', column, value]); return builder; },
       is: (column: string, value: unknown) => { filters.push(['is', column, value]); return builder; },
       in: (column: string, value: unknown[]) => { filters.push(['in', column, value]); return builder; },
+      limit: () => builder,
       maybeSingle: async () => ({ data: rows()[0] ?? null, error: null }),
       single: async () => ({ data: rows()[0] ?? null, error: rows()[0] ? null : { message: 'not found' } }),
       insert: async (row: Row) => {
@@ -48,6 +52,7 @@ function fixture() {
   const admin = {
     from: query,
     rpc: (_name: string, args: Row) => ({ maybeSingle: async () => {
+      if (args.target_profile_id === tipperId) return { data: { name: 'Sam T.' }, error: null };
       assert(args.target_profile_id === cleanerId);
       return { data: state.showOnBoards ? { name: 'Jordan R.', can_receive_tips: true } : null, error: null };
     } }),
@@ -147,4 +152,27 @@ Deno.test('webhook marks tips paid, failed and refunded, and rejects mismatched 
   await failed.call();
   await reconcileCleanerTipPaymentIntent(failed.admin, failed.state.intents[0] as any, false, 'card_declined');
   assert(failed.state.tips[0].status === 'failed' && failed.state.tips[0].failure_code === 'card_declined');
+});
+
+Deno.test('a tip carries the sender’s name, their note and the report it came from', async () => {
+  const reportId = '91000000-0000-4000-8000-0000000000bb';
+  const f = fixture();
+  f.state.reports.push({ id: reportId, user_id: tipperId });
+  f.state.attempts.push({ id: 'a', report_id: reportId, cleaner_id: cleanerId, status: 'completed' });
+  assert((await f.call({ tipperName: '  Sarah   K ', note: ' Thanks for the creek! ', reportId, role: 'cleaner' })).status === 200);
+  const tip = f.state.tips[0];
+  assert(tip.tipper_name === 'Sarah K' && tip.note === 'Thanks for the creek!' && tip.report_id === reportId && tip.recipient_role === 'cleaner');
+
+  // A report the person had nothing to do with is not linked; signed-in members default to their leaderboard name.
+  const other = fixture();
+  other.state.signedIn = { id: tipperId, email: 'member@example.com', is_anonymous: false };
+  other.state.reports.push({ id: reportId, user_id: 'someone-else' });
+  assert((await other.call({ reportId, role: 'reporter' })).status === 200);
+  assert(other.state.tips[0].report_id === null && other.state.tips[0].tipper_name === 'Sam T.' && other.state.tips[0].recipient_role === 'reporter');
+
+  // Guests without a name stay anonymous; over-long notes are refused before anything is created.
+  const guest = fixture();
+  assert((await guest.call()).status === 200 && guest.state.tips[0].tipper_name === null && guest.state.tips[0].note === null);
+  const long = fixture();
+  assert((await long.call({ note: 'x'.repeat(281) })).status === 400 && long.state.tips.length === 0);
 });

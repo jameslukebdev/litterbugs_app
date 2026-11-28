@@ -41,7 +41,8 @@ export async function createCleanerTipResponse(request: Request, dependencies = 
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
-  let body: { cleanerId?: unknown; tipAmountCents?: unknown; clientRequestId?: unknown; receiptEmail?: unknown };
+  let body: { cleanerId?: unknown; tipAmountCents?: unknown; clientRequestId?: unknown; receiptEmail?: unknown;
+    tipperName?: unknown; note?: unknown; reportId?: unknown; role?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -53,6 +54,12 @@ export async function createCleanerTipResponse(request: Request, dependencies = 
     return jsonResponse({ error: "Enter a tip from $3 to $1,000" }, 400);
   }
   const tipCents = Number(tipAmountCents);
+  // A short signature and note travel with the tip to the person tipped.
+  const typedName = typeof body.tipperName === "string" ? body.tipperName.trim().replace(/\s+/g, " ") : "";
+  const note = typeof body.note === "string" ? body.note.trim() : "";
+  if (typedName.length > 60 || note.length > 280) return jsonResponse({ error: "Keep your name under 60 characters and your note under 280" }, 400);
+  if (body.reportId !== undefined && body.reportId !== null && !isUuid(body.reportId)) return jsonResponse({ error: "Invalid request" }, 400);
+  const role = body.role === "reporter" ? "reporter" : "cleaner";
 
   const admin = serviceClient();
   // Guests can tip. A signed-in (non-anonymous) member is recorded as the tipper.
@@ -85,8 +92,27 @@ export async function createCleanerTipResponse(request: Request, dependencies = 
       return jsonResponse({ error: "They can’t receive tips right now" }, 409);
     }
 
+    // A report link is only kept when this person really cleaned or reported that report.
+    let reportId: string | null = null;
+    if (isUuid(body.reportId)) {
+      const { data: report } = await admin.from("reports").select("id, user_id").eq("id", body.reportId).maybeSingle();
+      const { data: cleaned } = await admin.from("cleanup_attempts").select("id").eq("report_id", body.reportId)
+        .eq("cleaner_id", cleanerId).eq("status", "completed").limit(1).maybeSingle();
+      if (report && (report.user_id === cleanerId || cleaned)) reportId = report.id;
+    }
+    // Signed-in members who leave the name blank are shown by their leaderboard name.
+    let tipperName = typedName || null;
+    if (!tipperName && tipper) {
+      const { data: own } = await admin.rpc("tip_recipient", { target_profile_id: tipper.id }).maybeSingle();
+      tipperName = (own as { name?: string } | null)?.name ?? null;
+    }
+
     const fee = tipFeeCents(tipCents);
     const { error: insertError } = await admin.from("cleaner_tips").insert({
+      tipper_name: tipperName,
+      note: note || null,
+      recipient_role: role,
+      report_id: reportId,
       cleaner_id: cleanerId,
       tipper_id: tipper?.id ?? null,
       client_request_id: clientRequestId,

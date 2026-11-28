@@ -9,6 +9,8 @@ export type CleanupPushDelivery = {
   review_id: string | null;
   submission_id: string | null;
   issue_id?: string | null;
+  /** Loaded for tip_received: amount, who sent it and their note. */
+  tip?: { tip_amount_cents: number; tipper_name: string | null; note: string | null } | null;
 };
 
 export const notificationContent = (eventType: string) => {
@@ -161,6 +163,11 @@ export const notificationContent = (eventType: string) => {
         body:
           "Your report can now accept contributions. Adding funds is optional.",
       };
+    case "tip_received":
+      return {
+        title: "You got a tip",
+        body: "Someone thanked you with a tip. Open Litterbugs to see it.",
+      };
     case "report_funding_rejected":
       return {
         title: "Cleanup funding unavailable",
@@ -179,8 +186,21 @@ export const isCleanupIssueEvent = (eventType: string) =>
     "cleanup_issue_report_updated",
   ].includes(eventType);
 
+/** "Sarah tipped you $5.00", with their note as the message when they wrote one. */
+export function tipPushContent(tip: NonNullable<CleanupPushDelivery["tip"]>) {
+  const amount = `$${(tip.tip_amount_cents / 100).toFixed(2)}`;
+  const from = tip.tipper_name?.trim() || "Someone";
+  const note = tip.note?.trim();
+  return {
+    title: `${from} tipped you ${amount}`,
+    body: note ? `\u201c${note}\u201d` : "Thank you for helping keep your community clean.",
+  };
+}
+
 export function cleanupPushMessage(delivery: CleanupPushDelivery) {
-  const content = notificationContent(delivery.event_type);
+  const content = delivery.event_type === "tip_received" && delivery.tip
+    ? tipPushContent(delivery.tip)
+    : notificationContent(delivery.event_type);
   if (!content) throw new Error("Unsupported cleanup notification event");
   const issue = isCleanupIssueEvent(delivery.event_type);
   const validId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -202,6 +222,9 @@ export function cleanupPushMessage(delivery: CleanupPushDelivery) {
       submissionId: delivery.submission_id,
       // Existing app versions retain their report destination. New clients can
       // use this authenticated website URL without exposing conversation text.
+      ...(delivery.event_type === "tip_received"
+        ? { url: "https://litterbugs.app/account/notifications" }
+        : {}),
       ...(issue
         ? {
           issueId,
