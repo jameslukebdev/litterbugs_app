@@ -48,6 +48,6 @@ export function ReporterEarnings({ userId }: { userId: string }) {
           <Icon name="chevron-right" />
         </Link>) : <p className="member-empty">No reporter earnings yet.</p>}
     </div>
-    <p style={{ padding: '0 18px', fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Reporter earnings go to your connected bank on its regular payout schedule. You must be 18 or older and eligible for U.S. payouts.</p>
+    <p style={{ padding: '0 18px', fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>Reporter earnings go to your connected bank or debit card on its regular payout schedule. You must be 18 or older and eligible for U.S. payouts.</p>
   </section>;
 }
