@@ -49,6 +49,7 @@ import ExpiredReportsScreen from './ExpiredReportsScreen';
 import FundingContributionScreen from './FundingContributionScreen';
 import PayoutSetupScreen from './PayoutSetupScreen';
 import PublicProfileScreen from './PublicProfileScreen';
+import TipScreen from './TipScreen';
 import RankCelebrationManager from './RankCelebrationManager';
 import { FlowDoneHost } from './components/FlowDone';
 import ReportUserScreen from './ReportUserScreen';
@@ -332,6 +333,11 @@ function AppNavigation({
           name="PublicProfile"
           component={PublicProfileScreen}
           options={{ ...headerOptions, title: 'Profile' }}
+        />
+        <Stack.Screen
+          name="Tip"
+          component={TipScreen}
+          options={{ ...headerOptions, title: 'Leave a tip' }}
         />
         <Stack.Screen
           name="BlockedAccounts"

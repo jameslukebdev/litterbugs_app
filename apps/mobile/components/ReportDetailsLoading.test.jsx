@@ -13,6 +13,7 @@ vi.mock('./ReportIssueActions', () => ({ default: () => null }));
 vi.mock('../lib/cleanupIssues', () => ({ canEditReportContent: () => false }));
 vi.mock('./ReportSiteActivity', () => ({ default: () => null }));
 vi.mock('./ContributionSupporters', () => ({ default: () => null }));
+vi.mock('./LeaveTipButton', () => ({ default: () => null }));
 vi.mock('../ReporterIdentity', () => ({ default: () => null }));
 vi.mock('./LoadingBee', () => ({ default: ({ message }) => <div>{message}</div> }));
 vi.mock('./FlowDone', () => ({ FlowDoneHost: () => null, showFlowDone: vi.fn() }));

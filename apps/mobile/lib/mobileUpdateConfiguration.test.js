@@ -21,7 +21,7 @@ describe('mobile over-the-air updates', () => {
       enabled: true, checkAutomatically: 'ON_LOAD', fallbackToCacheTimeout: 0,
     });
     expect(config.runtimeVersion).toEqual({ policy: 'appVersion' });
-    expect(config.version).toBe('2.1.2');
+    expect(config.version).toBe('2.2.0');
     expect(config.platforms).toEqual(['ios', 'android']);
   });
 

@@ -7,6 +7,7 @@ import ReportSiteActivity from './ReportSiteActivity';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CompletedCleanupStory from '../CompletedCleanupStory';
+import LeaveTipButton from './LeaveTipButton';
 import ReportPhotoGallery from './ReportPhotoGallery';
 import { FlowDoneHost, showFlowDone } from './FlowDone';
 import HopOnTrue from './HopOnTrue';
@@ -380,7 +381,18 @@ export default function ReportDetailsSheet({ state, actions }) {
                 }
               } : undefined}
             />
-
+            <LeaveTipButton
+              reportId={selectedReport.id}
+              cleaner={completedCleanupImpact?.cleaner}
+              reporter={selectedReport?.reporter}
+              currentUserId={currentUserId}
+              visible={Boolean(detailsOpen)}
+              style={{ marginHorizontal: 22, marginTop: 4, marginBottom: 8 }}
+              onTip={(person) => {
+                setDetailsOpen(false);
+                navigation.getParent()?.navigate('Tip', { profileId: person.id, name: person.name, role: person.role, reportId: selectedReport.id });
+              }}
+            />
           </>
         ) : null}
 

@@ -34,6 +34,12 @@ export const BOTTOM_NAV_SLOTS = Object.freeze([
     label: 'Map',
   },
   {
+    key: 'community',
+    routeName: 'Community',
+    iconName: 'people-outline',
+    label: 'Community',
+  },
+  {
     key: 'profile',
     routeName: 'Profile',
     iconName: 'person-outline',

@@ -17,6 +17,8 @@ const BUGS = {
   dragonfly: require('../assets/bugs/dragonfly.png'),
   gnat: require('../assets/bugs/gnat.png'),
   'lightning-bug': require('../assets/bugs/lightning-bug.png'),
+  // Leaderboards' bug (web public/brand/bugs/champion-beetle.svg).
+  'champion-beetle': require('../assets/bugs/champion-beetle.png'),
 };
 
 const steps = (count) => Array.from({ length: count }, (_, index) => index / (count - 1));
@@ -53,6 +55,11 @@ const MOVES = {
   ] },
   'lightning-bug': { duration: 800, transform: (t) => [
     { scale: t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.12, 1] }) },
+  ] },
+  // The champion beetle's victory hop.
+  'champion-beetle': { duration: 620, transform: (t) => [
+    { translateY: t.interpolate({ inputRange: [0, 0.35, 0.7, 0.85, 1], outputRange: [0, -9, 0, -2, 0] }) },
+    { rotate: t.interpolate({ inputRange: [0, 0.35, 0.7, 1], outputRange: ['0deg', '-8deg', '4deg', '0deg'] }) },
   ] },
   cocoon: { duration: 900, transform: (t) => [
     { rotate: t.interpolate({ inputRange: steps(6), outputRange: ['0deg', '-14deg', '11deg', '-7deg', '4deg', '0deg'] }) },

@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import FloatingBottomTabBar from './FloatingBottomTabBar';
 import MapScreen from './MapScreen';
+import CommunityScreen from './CommunityScreen';
 import ProfileScreen from './ProfileScreen';
 import ReportsScreen from './ReportsScreen';
 import { colors, fonts } from './lib/theme';
@@ -58,6 +59,26 @@ export default function AppTabs({ onLaunchReady }) {
             <MapScreen {...screenProps} onLaunchReady={onLaunchReady} />
           )}
         </Tab.Screen>
+        <Tab.Screen
+          name="Community"
+          component={CommunityScreen}
+          options={{
+            title: 'Community',
+            headerLeft: () => (
+              <View style={styles.headerLogoArea} pointerEvents="none">
+                <Image
+                  source={require('./assets/LB_Logo_PNG.png')}
+                  resizeMode="contain"
+                  style={styles.headerLogo}
+                  accessible={false}
+                />
+              </View>
+            ),
+            headerStyle: { backgroundColor: colors.white, height: insets.top + Math.max(56, 34 * fontScale + 24) },
+            headerTitleStyle: styles.profileHeaderTitle,
+            tabBarAccessibilityLabel: 'Community',
+          }}
+        />
         <Tab.Screen
           name="Profile"
           component={ProfileScreen}
