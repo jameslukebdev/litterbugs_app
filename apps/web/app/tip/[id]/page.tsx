@@ -54,7 +54,8 @@ export default async function TipPage({ params, searchParams }: {
             {facts && <p className={styles.facts}>{facts}</p>}
           </header>
           {recipient.can_receive_tips
-            ? <TipForm cleanerId={id} name={recipient.name} backHref={backHref} backLabel={backLabel} />
+            ? <TipForm cleanerId={id} name={recipient.name} backHref={backHref} backLabel={backLabel}
+              role={reporter ? 'reporter' : 'cleaner'} reportId={fromReport ? back.split('/')[2] : undefined} />
             : <p className={styles.closed}>{recipient.name} can’t receive tips right now.</p>}
         </section>
       </main>

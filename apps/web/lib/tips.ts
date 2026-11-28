@@ -24,7 +24,10 @@ export type TipStart = {
   totalAmountCents: number;
 };
 
-export async function startCleanerTip(input: { cleanerId: string; tipAmountCents: number; clientRequestId: string; receiptEmail?: string }): Promise<TipStart> {
+export async function startCleanerTip(input: {
+  cleanerId: string; tipAmountCents: number; clientRequestId: string; receiptEmail?: string;
+  tipperName?: string; note?: string; reportId?: string; role?: 'cleaner' | 'reporter';
+}): Promise<TipStart> {
   const { data, error } = await createClient().functions.invoke('create-cleaner-tip', { body: input });
   if (error || data?.error || typeof data?.clientSecret !== 'string' || !/^pk_(live|test)_/.test(data?.publishableKey ?? '')) {
     throw new Error(await edgeFunctionErrorMessage(data, error, 'We couldn’t start your tip. No payment has been made. Please try again.'));

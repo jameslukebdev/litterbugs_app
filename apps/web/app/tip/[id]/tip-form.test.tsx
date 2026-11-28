@@ -60,3 +60,15 @@ it('shows the backend’s message when the tip can’t start', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Continue to pay $5.75' }));
   expect(await screen.findByText('They can’t receive tips right now')).toBeTruthy();
 });
+
+it('sends the tipper’s name, note, role and report with the tip', async () => {
+  render(<TipForm cleanerId={cleanerId} name="Nevan" backHref="/reports/r" role="reporter" reportId="91000000-0000-4000-8000-0000000000bb" />);
+  fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Sarah' } });
+  expect((screen.getByLabelText('Add a note') as HTMLTextAreaElement).maxLength).toBe(280);
+  fireEvent.change(screen.getByLabelText('Add a note'), { target: { value: '  Thanks for spotting this!  ' } });
+  fireEvent.change(screen.getByLabelText('Email for your receipt'), { target: { value: 'guest@example.com' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Continue to pay $5.75' }));
+  await waitFor(() => expect(startCleanerTip).toHaveBeenCalledOnce());
+  expect(startCleanerTip.mock.calls[0][0]).toMatchObject({ tipperName: 'Sarah', note: 'Thanks for spotting this!', role: 'reporter',
+    reportId: '91000000-0000-4000-8000-0000000000bb' });
+});

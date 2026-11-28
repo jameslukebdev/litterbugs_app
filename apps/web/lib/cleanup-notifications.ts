@@ -5,6 +5,10 @@ export type CleanupNotification = Database['public']['Tables']['cleanup_notifica
 type NotificationTarget = Pick<CleanupNotification, 'event_type' | 'contribution_id'> & { report_id: string | null; id?: string; issue_id?: string | null };
 
 const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: string }> = {
+  tip_received: {
+    title: 'You got a tip',
+    message: 'Someone thanked you with a tip.',
+  },
   cleanup_issue_requested:{title:'Cleanup issue reported',message:'The cleaner sent a private message about your report.'},
   cleanup_issue_replied:{title:'New cleanup response',message:'There is a private response to your cleanup issue.'},
   cleanup_issue_report_updated:{title:'Cleanup report updated',message:'The reporter updated the public report.'},
@@ -107,11 +111,23 @@ const CLEANUP_NOTIFICATION_CONTENT: Record<string, { title: string; message: str
   },
 };
 
-export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'>) {
+/** The tip behind a tip_received notification, readable by the person tipped. */
+export type TipNotice = { tip_amount_cents: number; tipper_name: string | null; note: string | null };
+
+export function notificationPresentation(notice: Pick<CleanupNotification, 'event_type'> & { tip?: TipNotice | null }) {
+  if (notice.event_type === 'tip_received' && notice.tip) {
+    const from = notice.tip.tipper_name?.trim() || 'Someone';
+    const note = notice.tip.note?.trim();
+    return {
+      title: `${from} tipped you $${(notice.tip.tip_amount_cents / 100).toFixed(2)}`,
+      message: note ? `\u201c${note}\u201d` : 'Thank you for helping keep your community clean.',
+    };
+  }
   return CLEANUP_NOTIFICATION_CONTENT[notice.event_type] ?? { title: 'Cleanup update', message: 'There is an update to one of your cleanups.' };
 }
 export function notificationHref(notice: NotificationTarget, view?: NotificationView) {
   if(notice.event_type.startsWith('cleanup_issue_') && notice.issue_id)return `/account/cleanup-issues/${encodeURIComponent(notice.issue_id)}`;
+  if (notice.event_type === 'tip_received') return '/account/payments';
   if (notice.event_type.startsWith('admin_')) return '/admin';
   if (notice.event_type === 'nearby_reports_daily') return notice.id ? nearbyAlertHref(notice.id, view) : '/account/notifications';
   if (notice.event_type === 'cleanup_contribution_refunded') return notice.contribution_id ? `/account/payments/${encodeURIComponent(notice.contribution_id)}` : '/account/payments';

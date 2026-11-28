@@ -6,11 +6,11 @@ import { IoChevronForward, IoNotificationsOutline } from 'react-icons/io5';
 import { BrandBug } from './brand-bug';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { notificationHref, notificationPresentation, type CleanupNotification } from '@/lib/cleanup-notifications';
+import { notificationHref, notificationPresentation, type CleanupNotification, type TipNotice } from '@/lib/cleanup-notifications';
 import { notificationInboxHref, type NotificationView } from '@/lib/notification-view';
 import { notifyDataChanged, useDataRefresh } from '@/lib/use-data-refresh';
 
-type Notice = CleanupNotification & { report: ({ title: string | null } & import('@/lib/report-context').ReportContextFields) | null };
+type Notice = CleanupNotification & { report: ({ title: string | null } & import('@/lib/report-context').ReportContextFields) | null; tip?: TipNotice | null };
 const defaultView: NotificationView = { filter: 'all', page: 1 };
 export function NotificationInbox({ userId, view = defaultView }: { userId: string; view?: NotificationView }) {
   return <AccountNotificationInbox key={userId} userId={userId} view={view} />;
@@ -34,11 +34,11 @@ function AccountNotificationInbox({ userId, view }: { userId: string; view: Noti
     const sequence = ++request.current;
     if (mutation.current) return;
     void (async () => {
-      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(id,title,created_at,litter_types,types)').eq('user_id', userId);
+      let query = createClient().from('cleanup_notifications').select('*, report:reports!cleanup_notifications_report_id_fkey(id,title,created_at,litter_types,types), tip:cleaner_tips!cleanup_notifications_tip_id_fkey(tip_amount_cents,tipper_name,note)').eq('user_id', userId);
       if (filter === 'unread') query = query.is('read_at', null);
       const { data, error } = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 50, page * 50);
       if (error) throw error;
-      if (!cancelled && sequence === request.current) { setSnapshot({ filter, page, notices: data.slice(0, 50), hasMore: data.length > 50, loaded: true }); setMessage(''); }
+      if (!cancelled && sequence === request.current) { setSnapshot({ filter, page, notices: (data as unknown as Notice[]).slice(0, 50), hasMore: data.length > 50, loaded: true }); setMessage(''); }
     })().catch(() => { if (!cancelled && sequence === request.current) { setSnapshot(previous => previous.filter === filter && previous.page === page ? { ...previous, loaded: true } : { filter, page, notices: [], hasMore: false, loaded: true }); setMessage('Updates could not be refreshed. Check your connection and try again.'); } });
     return () => { cancelled = true; };
   }, [userId, filter, page, refresh, retry]);

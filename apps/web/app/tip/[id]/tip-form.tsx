@@ -18,11 +18,16 @@ const stripeAppearance = {
 
 type Done = { tipCents: number; email: string };
 
-export function TipForm({ cleanerId, name, backHref, backLabel = 'Back to the leaderboard' }: {
+export function TipForm({ cleanerId, name, backHref, backLabel = 'Back to the leaderboard', role = 'cleaner', reportId }: {
   cleanerId: string; name: string; backHref: string; backLabel?: string;
+  role?: 'cleaner' | 'reporter'; reportId?: string;
 }) {
   const amountId = useId();
   const emailId = useId();
+  const fromId = useId();
+  const noteId = useId();
+  const [from, setFrom] = useState('');
+  const [note, setNote] = useState('');
   const [dollars, setDollars] = useState('5');
   const [email, setEmail] = useState('');
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
@@ -74,7 +79,9 @@ export function TipForm({ cleanerId, name, backHref, backLabel = 'Back to the le
     requestId.current ??= crypto.randomUUID();
     try {
       setStart(await startCleanerTip({ cleanerId, tipAmountCents: cents, clientRequestId: requestId.current,
-        ...(accountEmail ? {} : { receiptEmail }) }));
+        ...(accountEmail ? {} : { receiptEmail }),
+        ...(from.trim() ? { tipperName: from.trim() } : {}), ...(note.trim() ? { note: note.trim() } : {}),
+        role, ...(reportId ? { reportId } : {}) }));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'We couldn’t start your tip. Please try again.');
     } finally {
@@ -131,6 +138,16 @@ export function TipForm({ cleanerId, name, backHref, backLabel = 'Back to the le
           {invalid && <small id={`${amountId}-error`} className={styles.inputError} role="alert">Enter $3 to $1,000.</small>}
         </div>
       </fieldset>
+      <div className={styles.email}>
+        <label htmlFor={fromId}>Your name</label>
+        <input id={fromId} autoComplete="name" maxLength={60} placeholder={accountEmail ? 'Your leaderboard name' : 'Anonymous'}
+          value={from} onChange={event => setFrom(event.currentTarget.value)} />
+      </div>
+      <div className={styles.email}>
+        <label htmlFor={noteId}>Add a note</label>
+        <textarea id={noteId} rows={3} maxLength={280} placeholder="Say something nice"
+          value={note} onChange={event => setNote(event.currentTarget.value)} />
+      </div>
       {!accountEmail && <div className={styles.email}>
         <label htmlFor={emailId}>Email for your receipt</label>
         <input id={emailId} type="email" autoComplete="email" value={email} onChange={event => { setEmail(event.currentTarget.value); setMessage(''); }} />
