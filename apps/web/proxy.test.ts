@@ -1,14 +1,16 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-const { updateSession, resolveRoute } = vi.hoisted(() => ({ updateSession: vi.fn(), resolveRoute: vi.fn() }));
+const { updateSession, resolveRoute, resolveMissing } = vi.hoisted(() => ({ updateSession: vi.fn(), resolveRoute: vi.fn(), resolveMissing: vi.fn() }));
 vi.mock('@/lib/supabase/proxy', () => ({ updateSession }));
 vi.mock('@/lib/public-report-route', () => ({ resolvePublicReportRoute: resolveRoute }));
+vi.mock('@/lib/missing-page-route', () => ({ resolveMissingPage: resolveMissing }));
 vi.mock('@/lib/local-site-store', () => ({ localOccurrence: vi.fn() }));
 import { proxy } from './proxy';
 beforeEach(() => {
   vi.clearAllMocks();
   updateSession.mockImplementation(async () => NextResponse.next());
   resolveRoute.mockResolvedValue({ kind: 'pass' });
+  resolveMissing.mockResolvedValue('pass');
 });
 
 it.each(['https://litterbugs.app/reports', 'https://www.litterbugs.app/reports/history'])(
@@ -41,4 +43,18 @@ it('answers a report that is not public with a real 404 that search engines must
 it('leaves form posts and other non-read requests to the page', async () => {
   await proxy(new NextRequest('https://litterbugs.app/reports/id', { method: 'POST' }));
   expect(resolveRoute).not.toHaveBeenCalled();
+});
+
+it('answers a missing tip, member, site, town or archive page with a real 404 before the page streams', async () => {
+  resolveMissing.mockResolvedValue('missing');
+  const response = await proxy(new NextRequest('https://litterbugs.app/communities/us/zz/nowhere'));
+  expect(response.status).toBe(404);
+  expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
+  expect(updateSession).not.toHaveBeenCalled();
+});
+
+it('lets pages through when the missing-page check passes', async () => {
+  const response = await proxy(new NextRequest('https://litterbugs.app/communities/us/nc/boone'));
+  expect(response.status).toBe(200);
+  expect(updateSession).toHaveBeenCalled();
 });
