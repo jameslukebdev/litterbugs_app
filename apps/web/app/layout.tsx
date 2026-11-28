@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
-      { url: '/brand/litterbugs-favicon.svg', type: 'image/svg+xml' },
       { url: '/brand/litterbugs-favicon-32.png', type: 'image/png', sizes: '32x32' },
       { url: '/brand/litterbugs-favicon-48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/brand/litterbugs-favicon-96.png', type: 'image/png', sizes: '96x96' },
       { url: '/brand/litterbugs-favicon-192.png', type: 'image/png', sizes: '192x192' },
     ],
     shortcut: '/favicon.ico',
