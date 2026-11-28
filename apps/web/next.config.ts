@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
     // previews already cached by social and messaging apps still ask for the old address.
     { source: '/reports/:id/opengraph-image', destination: '/reports/:id/opengraph-image/card', permanent: false },
   ],
+  // Share cards are for social previews, not search results: keep crawlers from queuing them as pages.
+  // Report photos stay indexable for image search.
+  headers: async () => [
+    { source: '/reports/:id/opengraph-image/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex' }] },
+    { source: '/reports/:id/share-image', headers: [{ key: 'X-Robots-Tag', value: 'noindex' }] },
+  ],
 };
 
 export default nextConfig;
