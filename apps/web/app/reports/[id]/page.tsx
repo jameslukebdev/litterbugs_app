@@ -26,6 +26,9 @@ import { loadReportSite } from '@/lib/report-site';
 import { ReportLocation } from './report-location';
 import { ReportPhotos } from './report-photos';
 import { ReportShareButton } from './report-share-button';
+import { ReportTipButton } from './report-tip-button';
+import { leaderboardTipLinks } from '@/lib/tips-server';
+import { tipPageHref } from '@/lib/tips';
 import { ReportAccountActions } from '@/components/report-account-actions';
 
 import styles from './report-share.module.css';
@@ -94,6 +97,15 @@ export default async function SharedReportPage({ params }: Props) {
   const completed = report.state === 'completed';
   const inProgress = report.state === 'in_progress';
   const expired = report.state === 'expired';
+  // A finished cleanup thanks the people behind it: Tip the cleaner and the reporter, when each can be paid.
+  const tipPeople = completed ? [
+    report.cleanerId ? { id: report.cleanerId, name: report.cleanerName || 'the cleaner', role: 'cleaner' as const } : null,
+    report.reporterId && report.reporterId !== report.cleanerId
+      ? { id: report.reporterId, name: report.reporterName || 'the reporter', role: 'reporter' as const } : null,
+  ].filter(person => person !== null) : [];
+  const tippable = tipPeople.length ? await leaderboardTipLinks(tipPeople.map(person => person.id)) : {};
+  const tips = tipPeople.filter(person => tippable[person.id])
+    .map(person => ({ ...person, href: tipPageHref(person.id, { role: person.role, back: `/reports/${report.id}`, town: report.community?.name }) }));
   // The town's leaderboard, when the report's community is public.
   const community = report.community;
   const localCommunityHref = community?.path ?? null;
@@ -180,6 +192,7 @@ export default async function SharedReportPage({ params }: Props) {
               {report.fundingEligible && <Link className="report-action-link button-link report-action-fund" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'fund'))}`}><BrandBug kind="bee" size={21} className="bug-hop" />Fund</Link>}
               <Link className="report-action-link button-link report-action-clean" prefetch={false} href={`/sign-in?${SHARED_REPORT_AUTH_PARAM}=1&next=${encodeURIComponent(reportMapHref(report.id, 'clean'))}`}><BrandBug kind="butterfly" size={21} className="bug-hop" />Clean</Link>
             </div> : !completed && !report.localDevelopment ? <Link className="primary-button button-link" href={mapHref}>View on map</Link> : null}</ReportAccountActions>
+            <ReportTipButton people={tips} />
 
             </div>
           </header>

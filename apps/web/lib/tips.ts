@@ -31,3 +31,10 @@ export async function startCleanerTip(input: { cleanerId: string; tipAmountCents
   }
   return data as TipStart;
 }
+
+export type TipRole = 'cleaner' | 'reporter';
+
+/** Where a Tip button sends people: the tip page, told who it's for and where to come back to. */
+export function tipPageHref(id: string, { role, back, town }: { role: TipRole; back: string; town?: string | null }) {
+  return `/tip/${id}?${new URLSearchParams({ role, back, ...(town ? { town } : {}) })}`;
+}

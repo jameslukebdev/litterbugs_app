@@ -1,0 +1,126 @@
+/* Tips use the soft heart family: pale pink fill, Litterbugs red heart, dark red text. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid #f8d3d7;
+  border-radius: 14px;
+  background: #fff0f1;
+  color: #a8323b;
+  font: 900 16px/1 'Playful Nunito', system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.button svg {
+  width: 15px;
+  height: 15px;
+  color: #e0434f;
+}
+
+.button:hover {
+  border-color: #f1aab2;
+  background: #ffe3e6;
+}
+
+.button:focus-visible {
+  outline: 3px solid #5146ed;
+  outline-offset: 2px;
+}
+
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid #e3dff0;
+  border-radius: 22px;
+  background: #fff;
+  color: #292932;
+  box-shadow: 0 24px 60px -24px rgba(42, 34, 90, .4);
+}
+
+.dialog::backdrop {
+  background: rgba(41, 41, 50, .5);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.head h2 {
+  margin: 0;
+  font: 900 20px/1.2 'Playful Nunito', system-ui, sans-serif;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f4f3f7;
+  color: #45434d;
+  cursor: pointer;
+}
+
+.people {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e3dff0;
+  border-radius: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.person:hover {
+  border-color: #f1aab2;
+  background: #fff8f8;
+}
+
+.person img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.person span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.person strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person small {
+  color: #686477;
+  font-size: 14px;
+}
+
+.person > svg {
+  color: #8b879a;
+}

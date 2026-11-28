@@ -78,11 +78,11 @@ export async function createCleanerTipResponse(request: Request, dependencies = 
     const accountId = payout?.stripe_account_id;
     if (!recipient || !payout || !accountId || payout.onboarding_status !== "enabled" || !payout.payouts_enabled
       || payout.country !== "US" || !payout.age_18_confirmed_at) {
-      return jsonResponse({ error: "This cleaner can’t receive tips right now" }, 409);
+      return jsonResponse({ error: "They can’t receive tips right now" }, 409);
     }
     // The ledger can lag Stripe; confirm the cleaner can receive money before anyone is charged.
     if (!stripeRecipientState(await retrieveStripeRecipientAccount(accountId)).payoutsEnabled) {
-      return jsonResponse({ error: "This cleaner can’t receive tips right now" }, 409);
+      return jsonResponse({ error: "They can’t receive tips right now" }, 409);
     }
 
     const fee = tipFeeCents(tipCents);

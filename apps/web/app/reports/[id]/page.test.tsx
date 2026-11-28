@@ -15,6 +15,9 @@ vi.mock('@/lib/server-contributor-credits', () => ({
   withServerContributorCredits: async (reports: PublicReportShareModel[]) => reports.map(report => ({ ...report, contributorCredit: report.contributorCredit ?? null })),
 }));
 vi.mock('@/components/public-account-action', () => ({ PublicAccountAction: () => <button>Sign in</button> }));
+const { tipLinks } = vi.hoisted(() => ({ tipLinks: vi.fn().mockResolvedValue({}) }));
+vi.mock('@/lib/tips-server', () => ({ leaderboardTipLinks: tipLinks }));
+vi.mock('@/components/community-rank', () => ({ CommunityRank: () => null }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: {
   getUser: async () => ({ data: { user: null } }),
   onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
@@ -183,4 +186,41 @@ it('keeps an older occurrence focused on its own Timeline and links the combined
  expect(screen.getAllByRole('heading',{name:'Timeline'})).toHaveLength(1);
  expect(screen.queryByText('Reported by New reporter')).toBeNull();
  loadSite.mockResolvedValue(null);
+});
+
+it('thanks a finished cleanup with Tip buttons only for people who can be paid', async () => {
+  const cleaner = '91000000-0000-4000-8000-000000000001';
+  const reporter = '91000000-0000-4000-8000-000000000002';
+  tipLinks.mockImplementation(async (ids: string[]) => Object.fromEntries(ids.filter(id => id === cleaner).map(id => [id, `/tip/${id}`])));
+  loadReport.mockResolvedValue({ ...report, state: 'completed', community: { slug: 'us-nc-boone', path: '/communities/us/nc/boone', name: 'Boone' },
+    cleanerName: 'Nevan', cleanerId: cleaner, reporterName: 'James B.', reporterId: reporter });
+  render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+  expect(tipLinks).toHaveBeenCalledWith([cleaner, reporter]);
+  // Only the cleaner can be paid, so one button goes straight to their tip page.
+  const tip = screen.getByRole('link', { name: 'Leave a tip for Nevan' });
+  expect(tip.getAttribute('href')).toBe(`/tip/${cleaner}?role=cleaner&back=%2Freports%2Freport-id&town=Boone`);
+  expect(screen.queryByRole('button', { name: 'Leave a tip' })).toBeNull();
+  tipLinks.mockResolvedValue({});
+});
+
+it('offers no tips before a cleanup is finished', async () => {
+  tipLinks.mockClear();
+  loadReport.mockResolvedValue({ ...report, cleanerId: '91000000-0000-4000-8000-000000000001', reporterId: '91000000-0000-4000-8000-000000000002' });
+  render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+  expect(tipLinks).not.toHaveBeenCalled();
+  expect(screen.queryByText('Leave a tip')).toBeNull();
+});
+
+it('asks who to tip when both the cleaner and the reporter can be paid', async () => {
+  const cleaner = '91000000-0000-4000-8000-000000000001';
+  const reporter = '91000000-0000-4000-8000-000000000002';
+  tipLinks.mockImplementation(async (ids: string[]) => Object.fromEntries(ids.map(id => [id, `/tip/${id}`])));
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+  loadReport.mockResolvedValue({ ...report, state: 'completed', cleanerName: 'Nevan', cleanerId: cleaner, reporterName: 'James B.', reporterId: reporter });
+  render(await SharedReportPage({ params: Promise.resolve({ id: report.id }) }));
+  fireEvent.click(screen.getByRole('button', { name: 'Leave a tip' }));
+  expect(screen.getByRole('heading', { name: 'Who would you like to tip?' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: /Nevan.*Cleaned it up/ }).getAttribute('href')).toContain(`/tip/${cleaner}?role=cleaner`);
+  expect(screen.getByRole('link', { name: /James B\..*Reported it/ }).getAttribute('href')).toContain(`/tip/${reporter}?role=reporter`);
+  tipLinks.mockResolvedValue({});
 });

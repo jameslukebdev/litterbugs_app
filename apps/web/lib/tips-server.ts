@@ -12,6 +12,7 @@ export type TipRecipient = {
   rank_points: number;
   cleanups: number;
   can_receive_tips: boolean;
+  reports: number;
 };
 
 const profileId = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
@@ -24,7 +25,7 @@ export async function loadTipRecipient(id: string): Promise<TipRecipient | null>
   return (Array.isArray(data) ? data[0] : data) as TipRecipient ?? null;
 }
 
-/** Tip links for the leaderboard: only cleaners who can be paid right now get a Tip button. */
+/** Tip links for leaderboards and report pages: only people who can be paid right now get a Tip button. */
 export async function leaderboardTipLinks(profileIds: readonly string[]): Promise<Record<string, string>> {
   const ids = [...new Set(profileIds.filter(id => profileId.test(id)))].slice(0, 200);
   if (!ids.length) return {};

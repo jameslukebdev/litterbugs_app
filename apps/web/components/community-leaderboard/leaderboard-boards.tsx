@@ -145,9 +145,10 @@ export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLef
 
           <ol className={styles.lanes} key={`${board}-${period}`} id="board-panel" role="tabpanel" aria-labelledby={`tab-${board}`}>
             {visible.map(row => {
-              const tipHref = board === 'clean' ? tipLinks?.[row.profileId] : undefined;
+              // Cleaners and reporters can be tipped; funders give money, so their board has no Tip.
+              const tipHref = board === 'fund' ? undefined : tipLinks?.[row.profileId];
               const reviewHref = tipHref?.startsWith('/tip/')
-                ? `${tipHref}?${new URLSearchParams({ back: pagePath, ...(row.communityName ? { town: row.communityName } : {}) })}`
+                ? `${tipHref}?${new URLSearchParams({ role: board === 'report' ? 'reporter' : 'cleaner', back: pagePath, ...(row.communityName ? { town: row.communityName } : {}) })}`
                 : tipHref;
               return <BoardRow key={row.profileId} row={row} unit={unit} scope={scope} tipHref={reviewHref} />;
             })}

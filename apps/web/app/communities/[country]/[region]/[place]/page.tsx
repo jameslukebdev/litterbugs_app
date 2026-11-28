@@ -52,7 +52,7 @@ export default async function CommunityPage({ params, searchParams }: Props) {
     <div role="main" id="main-content" tabIndex={-1} data-community-slug={community.slug}>
       <LeaderboardBoards
         boards={boards}
-        tipLinks={await leaderboardTipLinks([...boards.clean.all, ...boards.clean.month].map(row => row.profileId))}
+        tipLinks={await leaderboardTipLinks([...boards.clean.all, ...boards.clean.month, ...boards.report.all, ...boards.report.month].map(row => row.profileId))}
         initial={{ board: typeof query.board === 'string' ? query.board : undefined, period: typeof query.period === 'string' ? query.period : undefined }}
         champions={champions}
         scope={{ kind: 'community', slug: community.slug, path: community.path, shortName: community.name }}

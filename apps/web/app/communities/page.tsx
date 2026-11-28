@@ -36,7 +36,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
     <div role="main" id="main-content" tabIndex={-1}>
       <LeaderboardBoards
         boards={boards}
-        tipLinks={await leaderboardTipLinks([...boards.clean.all, ...boards.clean.month].map(row => row.profileId))}
+        tipLinks={await leaderboardTipLinks([...boards.clean.all, ...boards.clean.month, ...boards.report.all, ...boards.report.month].map(row => row.profileId))}
         initial={{ board: typeof query.board === 'string' ? query.board : undefined, period: typeof query.period === 'string' ? query.period : undefined }}
         scope={{ kind: 'global' }}
         monthName={month.monthName}

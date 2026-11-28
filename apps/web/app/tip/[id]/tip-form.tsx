@@ -18,7 +18,9 @@ const stripeAppearance = {
 
 type Done = { tipCents: number; email: string };
 
-export function TipForm({ cleanerId, name, backHref }: { cleanerId: string; name: string; backHref: string }) {
+export function TipForm({ cleanerId, name, backHref, backLabel = 'Back to the leaderboard' }: {
+  cleanerId: string; name: string; backHref: string; backLabel?: string;
+}) {
   const amountId = useId();
   const emailId = useId();
   const [dollars, setDollars] = useState('5');
@@ -48,7 +50,9 @@ export function TipForm({ cleanerId, name, backHref }: { cleanerId: string; name
     const secret = params.get('payment_intent_client_secret');
     const key = params.get('pk');
     if (!secret || !key || !/^pk_(live|test)_/.test(key)) return;
-    window.history.replaceState(window.history.state, '', window.location.pathname + (params.get('back') ? `?back=${encodeURIComponent(params.get('back')!)}` : ''));
+    const keep = new URLSearchParams();
+    for (const name of ['role', 'back', 'town']) { const value = params.get(name); if (value) keep.set(name, value); }
+    window.history.replaceState(window.history.state, '', window.location.pathname + (keep.size ? `?${keep}` : ''));
     void loadStripe(key).then(stripe => stripe?.retrievePaymentIntent(secret)).then(result => {
       const intent = result?.paymentIntent;
       if (intent && (intent.status === 'succeeded' || intent.status === 'processing')) {
@@ -89,7 +93,7 @@ export function TipForm({ cleanerId, name, backHref }: { cleanerId: string; name
       <FaHeart aria-hidden="true" />
       <h2>Thanks for tipping {name}!</h2>
       <p>{name} gets {formatUsd(done.tipCents)}.{done.email ? ` Your receipt is on its way to ${done.email}.` : ''}</p>
-      <Link className="secondary-button" href={backHref}>Back to the leaderboard</Link>
+      <Link className="secondary-button" href={backHref}>{backLabel}</Link>
     </div>;
   }
 
@@ -100,7 +104,7 @@ export function TipForm({ cleanerId, name, backHref }: { cleanerId: string; name
         <button type="button" className={styles.change} onClick={changeAmount}>Change amount</button>
       </div>
       <Elements stripe={stripe} options={{ clientSecret: start.clientSecret, appearance: stripeAppearance }}>
-        <PayStep start={start} cleanerId={cleanerId} backHref={backHref} receiptEmail={receiptEmail}
+        <PayStep start={start} receiptEmail={receiptEmail}
           onPaid={() => setDone({ tipCents: start.tipAmountCents, email: receiptEmail })} />
       </Elements>
     </div>;
@@ -147,8 +151,8 @@ export function TipForm({ cleanerId, name, backHref }: { cleanerId: string; name
   );
 }
 
-function PayStep({ start, cleanerId, backHref, receiptEmail, onPaid }: {
-  start: TipStart; cleanerId: string; backHref: string; receiptEmail: string; onPaid: () => void;
+function PayStep({ start, receiptEmail, onPaid }: {
+  start: TipStart; receiptEmail: string; onPaid: () => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -160,9 +164,10 @@ function PayStep({ start, cleanerId, backHref, receiptEmail, onPaid }: {
     if (!stripe || !elements || busy) return;
     setBusy(true);
     setMessage('');
-    const back = new URL(backHref, window.location.origin).pathname;
-    const returnUrl = new URL(`/tip/${cleanerId}`, window.location.origin);
-    returnUrl.search = new URLSearchParams({ pk: start.publishableKey, tip: String(start.tipAmountCents), back }).toString();
+    const returnUrl = new URL(window.location.href);
+    returnUrl.hash = '';
+    returnUrl.searchParams.set('pk', start.publishableKey);
+    returnUrl.searchParams.set('tip', String(start.tipAmountCents));
     const result = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: returnUrl.toString(), receipt_email: receiptEmail },

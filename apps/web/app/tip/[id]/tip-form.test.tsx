@@ -54,9 +54,9 @@ it('uses a signed-in member’s account email and rejects amounts under $3', asy
 });
 
 it('shows the backend’s message when the tip can’t start', async () => {
-  startCleanerTip.mockRejectedValue(new Error('This cleaner can’t receive tips right now'));
+  startCleanerTip.mockRejectedValue(new Error('They can’t receive tips right now'));
   render(<TipForm cleanerId={cleanerId} name="Jordan R." backHref="/communities" />);
   fireEvent.change(screen.getByLabelText('Email for your receipt'), { target: { value: 'guest@example.com' } });
   fireEvent.click(screen.getByRole('button', { name: 'Continue to pay $5.75' }));
-  expect(await screen.findByText('This cleaner can’t receive tips right now')).toBeTruthy();
+  expect(await screen.findByText('They can’t receive tips right now')).toBeTruthy();
 });
