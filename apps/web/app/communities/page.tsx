@@ -1,3 +1,4 @@
+import { leaderboardTipLinks } from '@/lib/tips-server';
 import { Website } from '@/components/public-website';
 import { LeaderboardBoards } from '@/components/community-leaderboard/leaderboard-boards';
 import { TownFinder, type FinderTown } from '@/components/community-leaderboard/town-finder';
@@ -35,6 +36,7 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
     <div role="main" id="main-content" tabIndex={-1}>
       <LeaderboardBoards
         boards={boards}
+        tipLinks={await leaderboardTipLinks([...boards.clean.all, ...boards.clean.month].map(row => row.profileId))}
         initial={{ board: typeof query.board === 'string' ? query.board : undefined, period: typeof query.period === 'string' ? query.period : undefined }}
         scope={{ kind: 'global' }}
         monthName={month.monthName}

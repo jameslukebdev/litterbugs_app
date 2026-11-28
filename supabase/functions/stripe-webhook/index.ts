@@ -1,4 +1,5 @@
 import { reconcileSuccessfulPaymentIntent } from "../_shared/reconcile-payment.ts";
+import { reconcileCleanerTipPaymentIntent, reconcileCleanerTipRefund } from "../_shared/cleaner-tip.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { reconcileReporterTransfer } from "../_shared/reporter-payout.ts";
 import Stripe from "npm:stripe@22.5.0";
@@ -312,12 +313,17 @@ Deno.serve(async (request: Request) => {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const intent = event.data.object as Stripe.PaymentIntent;
-        await reconcileSuccessfulPaymentIntent(admin, intent);
+        if (intent.metadata?.purpose === "cleaner_tip") await reconcileCleanerTipPaymentIntent(admin, intent, true);
+        else await reconcileSuccessfulPaymentIntent(admin, intent);
         break;
       }
       case "payment_intent.payment_failed":
       case "payment_intent.canceled": {
         const intent = event.data.object as Stripe.PaymentIntent;
+        if (intent.metadata?.purpose === "cleaner_tip") {
+          await reconcileCleanerTipPaymentIntent(admin, intent, false, intent.last_payment_error?.code ?? event.type);
+          break;
+        }
         const { error } = await admin.rpc("finalize_cleanup_contribution", {
           payment_intent_id: intent.id,
           charge_id: null,
@@ -330,7 +336,9 @@ Deno.serve(async (request: Request) => {
       case "refund.created":
       case "refund.updated":
       case "refund.failed":
-        await reconcileRefund(admin, event.data.object as Stripe.Refund);
+        if (!await reconcileCleanerTipRefund(admin, event.data.object as Stripe.Refund)) {
+          await reconcileRefund(admin, event.data.object as Stripe.Refund);
+        }
         break;
       case "transfer.created":
       case "transfer.updated":

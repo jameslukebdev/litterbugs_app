@@ -10,6 +10,12 @@ entrypoint = "./functions/create-cleanup-contribution/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/create-cleanup-contribution/*.html" ]
 
+[functions.create-cleaner-tip]
+enabled = true
+verify_jwt = false
+import_map = "./functions/create-cleaner-tip/deno.json"
+entrypoint = "./functions/create-cleaner-tip/index.ts"
+
 [functions.create-cleaner-onboarding-link]
 enabled = true
 verify_jwt = false

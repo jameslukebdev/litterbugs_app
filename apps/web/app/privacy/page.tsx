@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { publicPageMetadata } from '@/lib/public-page-metadata';
 import Link from 'next/link';
+import { publicPageMetadata } from '@/lib/public-page-metadata';
 
 import { LegalPage } from '@/components/legal-page';
 import { AnalyticsPreferences } from '@/components/website-analytics';
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             <li>Account identifiers, email address, profile details, authentication choices, and support communications.</li>
             <li>Litter reports, descriptions, approximate or precise report locations, photos, cleanup evidence, and dispute reasons.</li>
             <li>Notification preferences, blocked-user choices, and safety or moderation reports.</li>
-            <li>Information submitted to Stripe during cleaner onboarding, although Litterbugs does not receive or store full card or bank-account numbers.</li>
+            <li>Information submitted to Stripe during cleaner onboarding, including a bank account or debit card for payouts, although Litterbugs does not receive or store full card or bank-account numbers.</li>
           </ul>,
         },
         {
@@ -38,7 +38,8 @@ export default function PrivacyPage() {
           content: <ul>
             <li>Device, operating-system, app-version, session, authentication, notification-token, error, and security information.</li>
             <li>Report, claim, submission, review, dispute, administrator-decision, and completed-cleanup history.</li>
-            <li>Contribution and reward amounts; Stripe customer, PaymentIntent, charge, refund, transfer, and connected-account identifiers and statuses; and payout-readiness state.</li>
+            <li>Contribution, tip, and reward amounts; Stripe customer, PaymentIntent, charge, refund, transfer, and connected-account identifiers and statuses; and payout-readiness state.</li>
+            <li>For tips, the cleaner tipped and the amount. The receipt email you enter is passed to Stripe, which sends your receipt; Litterbugs does not keep it with the tip.</li>
             <li>Append-only financial and administrator audit records used to reconcile transactions, prevent fraud, and explain decisions.</li>
           </ul>,
         },

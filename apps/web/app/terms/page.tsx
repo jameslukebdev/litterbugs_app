@@ -49,6 +49,14 @@ export default function TermsPage() {
           </>,
         },
         {
+          title: 'Tips',
+          content: <>
+            <p>Anyone can tip a cleaner who has finished Stripe payout setup, including people without a Litterbugs account. Tips are between <strong>$3 and $1,000</strong>. The cleaner receives the whole tip directly in their Stripe account. Litterbugs adds a service fee on top of the tip, currently $0.50 plus 5% of the tip, keeps that fee, and covers standard processing costs. The tip, the fee and the total are shown before you pay.</p>
+            <p>By confirming a tip, you authorize Litterbugs and Stripe to charge the selected payment method for the displayed total. Tips are voluntary gifts to the cleaner. They are not payments for a service, not charitable donations, and not represented as tax deductible. Tips are not refunded because you changed your mind, but Litterbugs may refund a tip that was unauthorized, duplicated, or fraudulent, which also takes the tip back from the cleaner. This does not limit rights that cannot be waived under applicable law or governing payment-network rules.</p>
+            <p>Cleaners are responsible for determining and reporting taxes on tips they receive.</p>
+          </>,
+        },
+        {
           title: 'Reporter rewards',
           content: <>
             <p>Reporting is free. Contributions made under the fee introduced October 21, 2026 qualify for a reporter reward after the cleanup is approved. The reward is 5% of that cleanup&apos;s eligible principal, rounded once to the nearest cent. It does not reduce the cleaner&apos;s reward. A person who both reports and cleans may receive both rewards.</p>

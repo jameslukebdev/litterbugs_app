@@ -6,6 +6,7 @@ import { getHeaderProfile, getServerHeaderProfile, subscribeHeaderProfile } from
 import type { Board, Boards, Champion, LeaderboardRow, Period } from '@/lib/community-leaderboards';
 import { BOARD_COPY, daysLeftLabel, ordinal, rankFor } from './ranks';
 import { RankPath } from './rank-path';
+import { LeaderboardTipAction } from '@/components/leaderboard-tip-action';
 import styles from './leaderboard.module.css';
 
 const BOARDS: Board[] = ['clean', 'report', 'fund'];
@@ -36,8 +37,9 @@ function relativeTime(iso: string, now: number) {
   return `Updated ${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
 }
 
-export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLeft, updatedAt, champions, top, finder, side, children, initial }: {
+export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLeft, updatedAt, champions, top, finder, side, children, initial, tipLinks }: {
   boards: Boards;
+  tipLinks?: Readonly<Record<string, string>>;
   /** Board and period from the address (?board=reporters&period=all), so the right board shows before scripts load. */
   initial?: { board?: string; period?: string };
   scope: LeaderboardScope;
@@ -142,7 +144,13 @@ export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLef
           </div>
 
           <ol className={styles.lanes} key={`${board}-${period}`} id="board-panel" role="tabpanel" aria-labelledby={`tab-${board}`}>
-            {visible.map(row => <BoardRow key={row.profileId} row={row} unit={unit} scope={scope} />)}
+            {visible.map(row => {
+              const tipHref = board === 'clean' ? tipLinks?.[row.profileId] : undefined;
+              const reviewHref = tipHref?.startsWith('/tip/')
+                ? `${tipHref}?${new URLSearchParams({ back: pagePath, ...(row.communityName ? { town: row.communityName } : {}) })}`
+                : tipHref;
+              return <BoardRow key={row.profileId} row={row} unit={unit} scope={scope} tipHref={reviewHref} />;
+            })}
             {!rows.length && <li className={styles.emptyLane}>{copy.none} {scope.kind === 'community' ? `in ${where} ` : ''}yet{period === 'month' ? ' this month' : ''}.</li>}
           </ol>
           {rows.length > VISIBLE && <button type="button" className={styles.showAll} aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>
@@ -216,18 +224,39 @@ export function LeaderboardBoards({ boards, scope, monthName, monthEnds, daysLef
   </div>;
 }
 
-function BoardRow({ row, unit, scope }: { row: LeaderboardRow; unit: (n: number) => string; scope: LeaderboardScope }) {
+function BoardRow({ row, unit, scope, tipHref }: {
+  row: LeaderboardRow; unit: (n: number) => string; scope: LeaderboardScope; tipHref?: string;
+}) {
   const rank = rankFor(row.rankPoints);
   // The global board names each person's town instead of their rank, so it doubles as a way into town pages.
   const detail = scope.kind === 'global' && row.communityName ? row.communityName : rank.name;
-  return <li>
-    <Link className={styles.row} href={`/members/${row.profileId}`} aria-label={`${ordinal(row.place)}, ${row.name}, ${row.score} ${unit(row.score)}. View profile`}>
-      <span className={styles.pos} data-medal={row.place <= 3 ? row.place : undefined}>{row.place}</span>
-      <img className={styles.rowBug} src={rank.artwork} alt="" />
+  const profileHref = `/members/${row.profileId}`;
+  const profileLabel = `${ordinal(row.place)}, ${row.name}, ${row.score} ${unit(row.score)}. View profile`;
+  const markers = <>
+    <span className={styles.pos} data-medal={row.place <= 3 ? row.place : undefined}>{row.place}</span>
+    <img className={styles.rowBug} src={rank.artwork} alt="" />
+  </>;
+  const score = <span className={styles.score}><b>{row.score}</b> {unit(row.score)}</span>;
+
+  return <li>{tipHref ? (
+    <div className={styles.row}>
+      {markers}
+      <div className={styles.who}>
+        <Link className={styles.profileName} href={profileHref} aria-label={profileLabel} title={row.name}>{row.name}</Link>
+        <span>{detail}</span>
+      </div>
+      <div className={styles.rowActions}>
+        {score}
+        <LeaderboardTipAction name={row.name} href={tipHref} />
+      </div>
+    </div>
+  ) : (
+    <Link className={styles.row} href={profileHref} aria-label={profileLabel}>
+      {markers}
       <span className={styles.who}><strong title={row.name}>{row.name}</strong><span>{detail}</span></span>
-      <span className={styles.score}><b>{row.score}</b> {unit(row.score)}</span>
+      {score}
     </Link>
-  </li>;
+  )}</li>;
 }
 
 /** Placeholder rows while a leaderboard page loads. */

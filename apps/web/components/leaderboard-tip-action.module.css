@@ -1,0 +1,46 @@
+/* Tips use the soft heart family: pale pink fill, Litterbugs red heart, dark red text. */
+.tip {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #f8d3d7;
+  border-radius: 999px;
+  background: #fff0f1;
+  color: #a8323b;
+  font-family: 'Playful Nunito', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+/* Keep a 44px tap target without a 44px-tall pill. */
+.tip::after {
+  content: '';
+  position: absolute;
+  inset: -6px -2px;
+}
+
+.tip svg {
+  width: 12px;
+  height: 12px;
+  color: #e0434f;
+}
+
+.tip:hover {
+  border-color: #f1aab2;
+  background: #ffe3e6;
+}
+
+.tip:hover svg {
+  transform: scale(1.12);
+}
+
+.tip:focus-visible {
+  outline: 3px solid #5146ed;
+  outline-offset: 2px;
+}
